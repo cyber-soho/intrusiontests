@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 01: Invisible Attacking Lab Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #fcfcfc; color: #2d3748; }
+        .chart-container { position: relative; width: 100%; max-width: 450px; margin-left: auto; margin-right: auto; height: 350px; max-height: 350px; }
+        .nav-active { background-color: #e2e8f0; font-weight: 600; border-left: 4px solid #4a5568; }
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .tab-active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .node-btn { transition: all 0.2s; }
+        .node-btn:hover { transform: scale(1.05); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .node-active { background-color: #cbd5e1; border-color: #475569; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05); border: 1px solid rgba(0, 0, 0, 0.05); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row">
+
+    <!-- Chosen Palette: Warm Neutrals & Slate (Background: #fcfcfc, Text: #2d3748, Accents: #4a5568 / #e53e3e for warnings) -->
+    <!-- Application Structure Plan: The SPA uses a "Dashboard / Interactive Syllabus" structure. The linear document is transformed into task-oriented tabs (Overview, Prep, Architecture, Build, Verification, Assessment). This prevents cognitive overload and allows students to track their progress systematically. The interactive architecture diagram replaces static text descriptions, and interactive checklists replace bullet points, ensuring active engagement. -->
+    <!-- Visualization & Content Choices: 1. Disclaimers -> Red Alert Banner -> Goal: Immediate awareness of legal limits. 2. Prerequisites -> Interactive Checklist -> Goal: Task completion tracking. 3. Network Flow -> CSS Flexbox Interactive Node Map -> Goal: Understand the 'Onion' routing visually without SVG. 4. Grading Rubric -> Chart.js Donut Chart -> Goal: Quickly grasp assessment weights. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <nav class="w-full md:w-64 bg-white border-r border-gray-200 flex-shrink-0 z-10 sticky top-0 md:h-screen overflow-y-auto">
+        <div class="p-6">
+            <h1 class="text-xl font-bold text-gray-800 leading-tight">Lab 01<br><span class="text-sm font-normal text-gray-500">Invisible Attacking Lab</span></h1>
+        </div>
+        <ul class="flex flex-col text-sm" id="navMenu">
+            <li><button data-target="sec-overview" class="nav-btn w-full text-left px-6 py-4 hover:bg-gray-50 transition nav-active">Overview & Safety</button></li>
+            <li><button data-target="sec-prep" class="nav-btn w-full text-left px-6 py-4 hover:bg-gray-50 transition">Preparation & Tools</button></li>
+            <li><button data-target="sec-architecture" class="nav-btn w-full text-left px-6 py-4 hover:bg-gray-50 transition">Network Architecture</button></li>
+            <li><button data-target="sec-build" class="nav-btn w-full text-left px-6 py-4 hover:bg-gray-50 transition">Build Guide</button></li>
+            <li><button data-target="sec-verify" class="nav-btn w-full text-left px-6 py-4 hover:bg-gray-50 transition">Verification & Threats</button></li>
+            <li><button data-target="sec-assessment" class="nav-btn w-full text-left px-6 py-4 hover:bg-gray-50 transition">Assessment & Rubric</button></li>
+        </ul>
+    </nav>
+
+    <main class="flex-1 p-6 md:p-12 overflow-y-auto w-full max-w-7xl mx-auto">
+        
+        <div id="sec-overview" class="tab-content tab-active">
+            <h2 class="text-3xl font-bold mb-2">Overview & Safety Protocol</h2>
+            <p class="text-gray-600 mb-8 text-lg">Understand the objectives, boundaries, and critical safety rules before beginning your lab build. This section outlines the foundation of your engagement.</p>
+
+            <div class="bg-red-50 border-l-4 border-red-600 p-6 mb-8 rounded-r-lg shadow-sm">
+                <h3 class="text-xl font-bold text-red-800 mb-2">&#9888; LEGAL DISCLAIMER & NON-NEGOTIABLE RULES</h3>
+                <p class="text-red-700 mb-4">This lab must be performed <strong>exclusively</strong> against systems you own or have explicit permission to test. Unauthorized use constitutes a criminal offense.</p>
+                <ul class="list-disc pl-5 text-red-700 space-y-2">
+                    <li><strong>Air-Gap:</strong> VMs must communicate only through VirtualBox Internal Networks (except OPNsense WAN).</li>
+                    <li><strong>No Real Targets:</strong> Scans/exploits touch ONLY your built lab targets.</li>
+                    <li><strong>Separate Identities:</strong> Do not use personal emails/names for VPN accounts.</li>
+                </ul>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="glass-panel p-6 rounded-xl">
+                    <h3 class="text-xl font-semibold mb-4 border-b pb-2">Learning Objectives</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start"><span class="mr-2 text-blue-500">&#10003;</span> Build an isolated virtual lab routing traffic through a layered anonymity chain.</li>
+                        <li class="flex items-start"><span class="mr-2 text-blue-500">&#10003;</span> Write and validate a Rules of Engagement (RoE) document.</li>
+                        <li class="flex items-start"><span class="mr-2 text-blue-500">&#10003;</span> Prove with Wireshark that your real IP is fully masked.</li>
+                        <li class="flex items-start"><span class="mr-2 text-blue-500">&#10003;</span> Utilize LLMs safely for troubleshooting and research.</li>
+                    </ul>
+                </div>
+                <div class="glass-panel p-6 rounded-xl">
+                    <h3 class="text-xl font-semibold mb-4 border-b pb-2">Rules of Engagement (RoE)</h3>
+                    <p class="text-sm text-gray-600 mb-4">You must create a formal RoE document. Your scope is strictly limited to:</p>
+                    <ul class="list-disc pl-5 text-sm space-y-1 bg-gray-50 p-4 rounded border">
+                        <li>OPNsense LAN: 192.168.10.0/24</li>
+                        <li>Metasploitable 3 Target</li>
+                        <li>DVWA / Juice Shop</li>
+                    </ul>
+                    <p class="text-sm mt-4 font-semibold text-red-600">Out of Scope: Your host machine IP, external internet addresses, other student systems.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="sec-prep" class="tab-content">
+            <h2 class="text-3xl font-bold mb-2">Preparation & Tooling</h2>
+            <p class="text-gray-600 mb-8 text-lg">Ensure your hardware meets the requirements and download all necessary software images before proceeding to the build phase.</p>
+
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xl font-semibold">Pre-Flight Checklist</h3>
+                    <span id="checklist-progress-text" class="text-sm font-bold text-blue-600">0% Completed</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                    <div id="checklist-progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-4" id="checklist-container">
+                </div>
+            </div>
+
+            <h3 class="text-xl font-semibold mb-4">Tooling Overview</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="tools-grid">
+            </div>
+        </div>
+
+        <div id="sec-architecture" class="tab-content">
+            <h2 class="text-3xl font-bold mb-2">Network Architecture: The Onion Stack</h2>
+            <p class="text-gray-600 mb-8 text-lg">Interact with the flow diagram below to understand how traffic routes from your attacker machine to the outside world, creating a layered anonymity chain.</p>
+
+            <div class="glass-panel p-8 rounded-xl bg-gray-50">
+                <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 text-center font-mono text-sm">
+                    <button class="node-btn w-full md:w-32 p-3 bg-white border-2 border-slate-300 rounded-lg shadow-sm font-bold text-slate-700" onclick="showNodeInfo('kali')">Kali / Whonix WS</button>
+                    <span class="text-2xl text-slate-400 hidden md:inline">&#8594;</span>
+                    <span class="text-2xl text-slate-400 md:hidden">&#8595;</span>
+                    
+                    <button class="node-btn w-full md:w-32 p-3 bg-white border-2 border-slate-300 rounded-lg shadow-sm font-bold text-slate-700" onclick="showNodeInfo('tor')">Whonix GW<br><span class="text-xs font-normal">(Tor Network)</span></button>
+                    <span class="text-2xl text-slate-400 hidden md:inline">&#8594;</span>
+                    <span class="text-2xl text-slate-400 md:hidden">&#8595;</span>
+
+                    <button class="node-btn w-full md:w-32 p-3 bg-white border-2 border-slate-300 rounded-lg shadow-sm font-bold text-slate-700" onclick="showNodeInfo('opnsense')">OPNsense<br><span class="text-xs font-normal">(LAN Gateway)</span></button>
+                    <span class="text-2xl text-slate-400 hidden md:inline">&#8594;</span>
+                    <span class="text-2xl text-slate-400 md:hidden">&#8595;</span>
+
+                    <button class="node-btn w-full md:w-32 p-3 bg-white border-2 border-slate-300 rounded-lg shadow-sm font-bold text-slate-700" onclick="showNodeInfo('vpn2')">WireGuard #2<br><span class="text-xs font-normal">(e.g., US)</span></button>
+                    <span class="text-2xl text-slate-400 hidden md:inline">&#8594;</span>
+                    <span class="text-2xl text-slate-400 md:hidden">&#8595;</span>
+
+                    <button class="node-btn w-full md:w-32 p-3 bg-white border-2 border-slate-300 rounded-lg shadow-sm font-bold text-slate-700" onclick="showNodeInfo('vpn1')">WireGuard #1<br><span class="text-xs font-normal">(e.g., NL)</span></button>
+                    <span class="text-2xl text-slate-400 hidden md:inline">&#8594;</span>
+                    <span class="text-2xl text-slate-400 md:hidden">&#8595;</span>
+
+                    <button class="node-btn w-full md:w-32 p-3 bg-gray-800 border-2 border-gray-900 rounded-lg shadow-sm font-bold text-white" onclick="showNodeInfo('target')">Target / Internet</button>
+                </div>
+
+                <div class="mt-8 p-6 bg-white rounded-lg border border-blue-100 shadow-inner min-h-[150px]" id="node-info-panel">
+                    <p class="text-gray-500 italic text-center mt-4">Click a node in the diagram above to understand what information is visible at that layer.</p>
+                </div>
+            </div>
+
+            <div class="mt-8 grid md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-lg border shadow-sm">
+                    <h4 class="font-bold border-b pb-2 mb-3">Internal Networks Required</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><span class="font-mono bg-gray-100 px-1 rounded">pentest-lan</span>: Connects all lab VMs to OPNsense LAN</li>
+                        <li><span class="font-mono bg-gray-100 px-1 rounded">whonix-internal</span>: Connects Whonix Gateway & Workstation</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-6 rounded-lg border shadow-sm">
+                    <h4 class="font-bold border-b pb-2 mb-3">Critical Requirement</h4>
+                    <p class="text-sm text-red-600 font-semibold">Disable IPv6 on your host machine's physical network adapter. IPv6 can bypass IPv4-only VPN tunnels and reveal your real IP address.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="sec-build" class="tab-content">
+            <h2 class="text-3xl font-bold mb-2">Lab Build Guide</h2>
+            <p class="text-gray-600 mb-8 text-lg">Follow these structural phases to configure your isolated environment. Ensure you take a VirtualBox snapshot after completing each major phase.</p>
+
+            <div class="space-y-4" id="accordion-container">
+            </div>
+        </div>
+
+        <div id="sec-verify" class="tab-content">
+            <h2 class="text-3xl font-bold mb-2">Verification & Threat Modeling</h2>
+            <p class="text-gray-600 mb-8 text-lg">An untested security architecture is inherently insecure. Perform these validation checks to ensure zero leaks.</p>
+
+            <div class="grid md:grid-cols-2 gap-8 mb-8">
+                <div class="glass-panel p-6 rounded-xl border-t-4 border-blue-500">
+                    <h3 class="text-xl font-bold mb-4">Verification Tests</h3>
+                    <ul class="space-y-4 text-sm">
+                        <li class="border-b pb-2">
+                            <strong>1. IP Leak Test:</strong> <code class="bg-gray-100 px-1">curl -s https://ipleak.net/json/</code><br>
+                            <span class="text-gray-600">Expected: Only Tor exit node IP. No real ISP data.</span>
+                        </li>
+                        <li class="border-b pb-2">
+                            <strong>2. DNS Leak Test:</strong> Visit dnsleaktest.com via Whonix.<br>
+                            <span class="text-gray-600">Expected: DNS servers belong to Tor/VPN infra only.</span>
+                        </li>
+                        <li class="border-b pb-2">
+                            <strong>3. WebRTC Test:</strong> Visit browserleaks.com/webrtc.<br>
+                            <span class="text-gray-600">Expected: Local IP is 10.152.x.x. No public IP.</span>
+                        </li>
+                        <li>
+                            <strong>4. IPv6 Test:</strong> <code class="bg-gray-100 px-1">curl -6 https://ipv6.icanhazip.com</code><br>
+                            <span class="text-gray-600">Expected: Connection timeout / Network unreachable.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="glass-panel p-6 rounded-xl border-t-4 border-red-500">
+                    <h3 class="text-xl font-bold mb-4">The Kill Switch Validation</h3>
+                    <p class="text-sm mb-4">Proves traffic stops if the VPN tunnel drops.</p>
+                    <ol class="list-decimal pl-5 text-sm space-y-2 mb-4">
+                        <li>Open Wireshark on host, capture WAN.</li>
+                        <li>Start continuous ping on Whonix WS: <code class="bg-gray-100 px-1">ping google.com</code></li>
+                        <li>In OPNsense, disable VPN1 instance.</li>
+                        <li><strong>Observe:</strong> Pings must stop instantly. Wireshark must show NO unencrypted traffic on WAN.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <h3 class="text-xl font-semibold mb-4">Threat Model: Critical Leak Vectors</h3>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4" id="threat-grid">
+            </div>
+        </div>
+
+        <div id="sec-assessment" class="tab-content">
+            <h2 class="text-3xl font-bold mb-2">Assessment & Report Requirements</h2>
+            <p class="text-gray-600 mb-8 text-lg">Your lab report is a professional teaching document. Review the grading rubric and screenshot requirements below.</p>
+
+            <div class="flex flex-col md:flex-row gap-8 items-start">
+                <div class="w-full md:w-1/2 glass-panel p-6 rounded-xl">
+                    <h3 class="text-lg font-bold mb-4 text-center">Grading Ponderation (1-2-2)</h3>
+                    <div class="chart-container">
+                        <canvas id="gradingChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="w-full md:w-1/2 space-y-6">
+                    <div class="bg-white p-6 rounded-lg border shadow-sm">
+                        <h4 class="font-bold border-b pb-2 mb-3">Mandatory Report Sections</h4>
+                        <ul class="list-decimal pl-5 text-sm space-y-2">
+                            <li>Introduction & Personal RoE (500 words)</li>
+                            <li>Network Architecture Flow (300 words + Diagram)</li>
+                            <li>LLM Research Process Documentation</li>
+                            <li>Phase-by-Phase Build Log (Screenshots required)</li>
+                            <li>Verification Evidence (Pass/Fail verdicts)</li>
+                            <li>Threat Model Analysis</li>
+                            <li>Alternative Tools Research</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-blue-50 p-6 rounded-lg border border-blue-200 shadow-sm">
+                        <h4 class="font-bold text-blue-800 mb-2">Screenshot Rules</h4>
+                        <ul class="list-disc pl-5 text-sm text-blue-900 space-y-1">
+                            <li>Must be high-resolution and readable.</li>
+                            <li>Include timestamp/date where possible.</li>
+                            <li>Must be heavily annotated (arrows/boxes) highlighting evidence.</li>
+                            <li>Embed in relevant sections, not as a bulk appendix.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const navBtns = document.querySelectorAll('.nav-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        navBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                navBtns.forEach(b => b.classList.remove('nav-active'));
+                tabContents.forEach(t => t.classList.remove('tab-active'));
+                
+                btn.classList.add('nav-active');
+                document.getElementById(btn.dataset.target).classList.add('tab-active');
+            });
+        });
+
+        const checklistItems = [
+            "Hardware: 16GB+ RAM, 120GB+ SSD, 4+ CPU Cores",
+            "VirtualBox 7.x + Extension Pack downloaded",
+            "OPNsense ISO (amd64, dvd) downloaded",
+            "Whonix OVAs (Gateway & Workstation) downloaded",
+            "Kali Linux or Parrot OS OVA downloaded",
+            "Windows 10 Evaluation ISO downloaded",
+            "Metasploitable 3 setup verified",
+            "Two (2) separate ProtonVPN free accounts created"
+        ];
+
+        let completedItems = 0;
+        const checklistContainer = document.getElementById('checklist-container');
+        const progressBar = document.getElementById('checklist-progress-bar');
+        const progressText = document.getElementById('checklist-progress-text');
+
+        checklistItems.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = "flex items-center p-3 border rounded-lg bg-white shadow-sm cursor-pointer hover:bg-gray-50 transition";
+            div.innerHTML = `
+                <input type="checkbox" id="check-${index}" class="w-5 h-5 text-blue-600 rounded mr-3 cursor-pointer">
+                <label for="check-${index}" class="text-sm text-gray-700 cursor-pointer select-none w-full">${item}</label>
+            `;
+            
+            div.addEventListener('click', (e) => {
+                if(e.target.tagName !== 'INPUT') {
+                    const checkbox = div.querySelector('input');
+                    checkbox.checked = !checkbox.checked;
+                    updateProgress();
+                }
+            });
+
+            div.querySelector('input').addEventListener('change', updateProgress);
+            checklistContainer.appendChild(div);
+        });
+
+        function updateProgress() {
+            const checkboxes = document.querySelectorAll('#checklist-container input[type="checkbox"]');
+            completedItems = Array.from(checkboxes).filter(cb => cb.checked).length;
+            const percent = Math.round((completedItems / checklistItems.length) * 100);
+            progressBar.style.width = percent + '%';
+            progressText.innerText = percent + '% Completed';
+            
+            if(percent === 100) {
+                progressBar.classList.remove('bg-blue-600');
+                progressBar.classList.add('bg-green-500');
+                progressText.classList.remove('text-blue-600');
+                progressText.classList.add('text-green-600');
+            } else {
+                progressBar.classList.add('bg-blue-600');
+                progressBar.classList.remove('bg-green-500');
+                progressText.classList.add('text-blue-600');
+                progressText.classList.remove('text-green-600');
+            }
+        }
+
+        const tools = [
+            { name: "VirtualBox", desc: "Runs all VMs on your host machine." },
+            { name: "OPNsense", desc: "Firewall/Router enforcing VPN routing & kill switch." },
+            { name: "ProtonVPN", desc: "Provides the two encrypted VPN tunnels." },
+            { name: "Whonix", desc: "Routes workstation traffic purely through Tor." },
+            { name: "Kali / Parrot", desc: "Primary penetration testing platform." },
+            { name: "Wireshark", desc: "Traffic Analyzer to verify no unencrypted leaks." }
+        ];
+
+        const toolsGrid = document.getElementById('tools-grid');
+        tools.forEach(tool => {
+            toolsGrid.innerHTML += `
+                <div class="p-4 border rounded-lg bg-white shadow-sm hover:shadow-md transition">
+                    <h4 class="font-bold text-slate-800">${tool.name}</h4>
+                    <p class="text-sm text-gray-600 mt-1">${tool.desc}</p>
+                </div>
+            `;
+        });
+
+        const nodeData = {
+            'kali': { title: "Kali / Whonix Workstation", text: "You: The only entity that sees the full, unencrypted picture and the original target destination." },
+            'tor': { title: "Tor Exit Node", text: "Sees traffic arriving from ProtonVPN server #2. Has no knowledge of the original Tor user's IP." },
+            'opnsense': { title: "OPNsense Firewall", text: "Enforces rules. Forces LAN traffic into VPN2, and VPN2 traffic into VPN1. Implements DNS over TLS and the Kill Switch." },
+            'vpn2': { title: "ProtonVPN #2", text: "Sees traffic arriving from ProtonVPN #1. Encrypts data again. Has no knowledge of your origin ISP." },
+            'vpn1': { title: "ProtonVPN #1", text: "Sees traffic from your ISP. Cannot read content. Sends it to VPN #2." },
+            'target': { title: "Target System", text: "Sees a Tor exit node IP address. Has absolutely zero connection to you." }
+        };
+
+        window.showNodeInfo = function(nodeId) {
+            const panel = document.getElementById('node-info-panel');
+            const data = nodeData[nodeId];
+            
+            document.querySelectorAll('.node-btn').forEach(b => b.classList.remove('node-active'));
+            event.currentTarget.classList.add('node-active');
+
+            panel.innerHTML = `
+                <h4 class="text-xl font-bold text-slate-800 mb-2">${data.title}</h4>
+                <p class="text-gray-700 leading-relaxed">${data.text}</p>
+            `;
+        };
+
+        const buildSteps = [
+            { title: "1. OPNsense Installation", content: "Create BSD VM (2GB RAM). 2 Adapters: NAT (WAN) and Internal (pentest-lan). Assign interfaces (WAN=em0, LAN=em1). Set LAN IP to 192.168.10.1." },
+            { title: "2. Double VPN Configuration", content: "Download WireGuard confs from ProtonVPN. Create instances in OPNsense. Assign interfaces (WAN_VPN1, WAN_VPN2). Set firewall rules to route LAN -> VPN2 -> VPN1." },
+            { title: "3. Whonix Deployment", content: "Import Gateway & Workstation OVAs. Start Gateway first (wait for Tor 100%). Start Workstation. Verify with `curl https://check.torproject.org/api/ip`." },
+            { title: "4. Kali / Target Deployment", content: "Import Kali (connect to pentest-lan). Create Windows 10 VM (disable Defender/Updates). Build Metasploitable 3 / Docker containers for DVWA." }
+        ];
+
+        const accordionContainer = document.getElementById('accordion-container');
+        buildSteps.forEach((step, idx) => {
+            const div = document.createElement('div');
+            div.className = "border rounded-lg bg-white shadow-sm overflow-hidden";
+            div.innerHTML = `
+                <button class="w-full text-left px-6 py-4 font-bold text-slate-800 bg-gray-50 hover:bg-gray-100 flex justify-between items-center" onclick="toggleAccordion(${idx})">
+                    ${step.title}
+                    <span id="icon-${idx}" class="text-gray-500">&#9660;</span>
+                </button>
+                <div id="content-${idx}" class="hidden px-6 py-4 text-gray-700 border-t bg-white">
+                    ${step.content}
+                </div>
+            `;
+            accordionContainer.appendChild(div);
+        });
+
+        window.toggleAccordion = function(idx) {
+            const content = document.getElementById(`content-${idx}`);
+            const icon = document.getElementById(`icon-${idx}`);
+            if(content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.innerHTML = '&#9650;';
+            } else {
+                content.classList.add('hidden');
+                icon.innerHTML = '&#9660;';
+            }
+        };
+
+        const threats = [
+            { name: "DNS Leak", cause: "Direct ISP queries", fix: "OPNsense Unbound DoT + FW block port 53" },
+            { name: "IPv6 Leak", cause: "IPv4-only VPNs", fix: "Disable IPv6 on Host, WAN, LAN, and VMs" },
+            { name: "WebRTC Leak", cause: "Browser APIs", fix: "Whonix Firefox / about:config block" },
+            { name: "Kill Switch Fail", cause: "VPN drops", fix: "OPNsense FW rules blocking bare WAN" }
+        ];
+
+        const threatGrid = document.getElementById('threat-grid');
+        threats.forEach(t => {
+            threatGrid.innerHTML += `
+                <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
+                    <h4 class="font-bold text-red-600 mb-2">${t.name}</h4>
+                    <p class="text-xs text-gray-500 mb-1"><strong>Cause:</strong> ${t.cause}</p>
+                    <p class="text-xs text-green-700"><strong>Prevention:</strong> ${t.fix}</p>
+                </div>
+            `;
+        });
+
+        const ctx = document.getElementById('gradingChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Theory & Foundations', 'Lab Build', 'Verification & Threats'],
+                datasets: [{
+                    data: [20, 40, 40],
+                    backgroundColor: ['#94a3b8', '#3b82f6', '#10b981'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { family: 'Inter' } } },
+                    tooltip: {
+                        callbacks: { label: function(context) { return context.label + ': ' + context.parsed + '%'; } }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+
+    </script>
+</body>
+</html>
+
+
+

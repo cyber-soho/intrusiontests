@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intrusion Test Day 01 - Study App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- KaTeX for math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    
+    <style>
+        /* 3D Flip Card Styles */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .flipped { transform: rotateY(180deg); }
+        
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="max-w-4xl mx-auto p-4 md:p-6 lg:p-8">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-slate-800 mb-2"><i class="fa-solid fa-shield-halved text-blue-600 mr-2"></i>Intrusion Test: Day 01</h1>
+            <p class="text-slate-500">Ethics, Rules of Engagement, Scoping & Methodologies</p>
+        </header>
+
+        <!-- Tabs -->
+        <div class="flex justify-center mb-6 bg-white rounded-lg shadow-sm p-1 inline-flex mx-auto w-full md:w-auto">
+            <button id="tab-flashcards" onclick="switchTab('flashcards')" class="flex-1 md:flex-none px-6 py-2.5 text-sm font-medium rounded-md bg-blue-600 text-white shadow transition-colors">
+                <i class="fa-regular fa-clone mr-2"></i>Flashcards
+            </button>
+            <button id="tab-quiz" onclick="switchTab('quiz')" class="flex-1 md:flex-none px-6 py-2.5 text-sm font-medium rounded-md text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors">
+                <i class="fa-solid fa-list-check mr-2"></i>Practice Quiz
+            </button>
+        </div>
+
+        <!-- Flashcards Section -->
+        <div id="view-flashcards" class="block">
+            <div class="bg-white rounded-2xl shadow-lg p-6 md:p-10 mb-6">
+                
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-slate-700">Concept Review</h2>
+                    <span id="flashcard-counter" class="text-sm font-medium bg-blue-100 text-blue-800 py-1 px-3 rounded-full">1 / 25</span>
+                </div>
+
+                <!-- Card -->
+                <div class="perspective-1000 w-full h-80 cursor-pointer" onclick="toggleFlip()">
+                    <div id="flashcard-inner" class="relative w-full h-full transition-transform duration-500 transform-style-3d shadow-md rounded-xl">
+                        <!-- Front -->
+                        <div class="absolute w-full h-full backface-hidden bg-slate-50 border-2 border-slate-200 rounded-xl flex flex-col items-center justify-center p-8 text-center">
+                            <span class="text-sm text-slate-400 uppercase tracking-wider font-semibold mb-4">Front</span>
+                            <div id="flashcard-front" class="text-2xl font-semibold text-slate-800">Loading...</div>
+                            <div class="absolute bottom-4 text-xs text-slate-400"><i class="fa-solid fa-hand-pointer mr-1"></i>Click to flip</div>
+                        </div>
+                        <!-- Back -->
+                        <div class="absolute w-full h-full backface-hidden rotate-y-180 bg-blue-50 border-2 border-blue-200 rounded-xl flex flex-col items-center justify-center p-8 text-center">
+                            <span class="text-sm text-blue-400 uppercase tracking-wider font-semibold mb-4">Back / Definition</span>
+                            <div id="flashcard-back" class="text-xl text-blue-900 leading-relaxed">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex justify-between items-center mt-8">
+                    <button onclick="prevCard()" class="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 transition font-medium">
+                        <i class="fa-solid fa-arrow-left mr-2"></i>Previous
+                    </button>
+                    <button onclick="toggleFlip()" class="px-5 py-2.5 rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition font-medium hidden md:block">
+                        <i class="fa-solid fa-rotate mr-2"></i>Flip Card
+                    </button>
+                    <button onclick="nextCard()" class="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 transition font-medium">
+                        Next<i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Section -->
+        <div id="view-quiz" class="hidden">
+            <div id="quiz-container" class="space-y-6">
+                <!-- Quiz questions will be injected here via JS -->
+            </div>
+            
+            <div id="quiz-results" class="hidden bg-white rounded-2xl shadow-lg p-8 text-center mt-8 border-t-4 border-blue-600">
+                <h2 class="text-2xl font-bold mb-2">Quiz Completed!</h2>
+                <p class="text-slate-600 mb-4">You have answered all the questions.</p>
+                <div class="text-4xl font-black text-blue-600 mb-6" id="final-score">0 / 10</div>
+                <button onclick="resetQuiz()" class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition">
+                    <i class="fa-solid fa-rotate-right mr-2"></i>Retake Quiz
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Data Payloads
+        const flashcardsData = [
+            { front: "Three pillars of ethical hacking", back: "Authorization, Intent, and Accountability." },
+            { front: "Purpose of a Statement of Work (SoW) or Letter of Authorization (LoA)", back: "To provide explicit, written permission from the asset owner to conduct a penetration test." },
+            { front: "CFAA", back: "Computer Fraud and Abuse Act (US law covering unauthorized computer access)." },
+            { front: "PIPEDA", back: "Personal Information Protection and Electronic Documents Act (Canadian law covering personal data handling)." },
+            { front: "Rules of Engagement (RoE)", back: "The operational contract defining exactly which rules apply to a specific penetration testing engagement." },
+            { front: "Six building blocks of an RoE", back: "Parties, Scope, Timeline, Authorized Actions, Communication & Escalation, Legal & Liability." },
+            { front: "The \"Timeline\" block of an RoE", back: "Defines start and end dates, permitted testing hours, and blackout periods." },
+            { front: "Four dimensions of Scoping", back: "Breadth, Depth, Duration, and Constraints." },
+            { front: "Breadth in penetration test scoping", back: "The specific assets that are in-scope, such as IP ranges, domains, web apps, and physical locations." },
+            { front: "Scoping depth: Light vs. Deep", back: "Light involves automated scans and validation; Deep involves full exploitation chains and lateral movement." },
+            { front: "Scoping effort estimation formula", back: "$\\text{Total Hours} = \\Sigma (\\text{Asset Count} \\times \\text{Effort-per-Asset} \\times \\text{Depth Multiplier})$" },
+            { front: "PTES", back: "Penetration Testing Execution Standard, a 7-phase ethical hacking methodology." },
+            { front: "Seven phases of PTES", back: "Pre-engagement, Intelligence Gathering, Threat Modeling, Vulnerability Analysis, Exploitation, Post-Exploitation, Reporting." },
+            { front: "Five phases of CEH methodology", back: "Reconnaissance, Scanning & Enumeration, Gaining Access, Maintaining Access, Covering Tracks / Reporting." },
+            { front: "PTES Phase 1 (Pre-engagement) equivalent in CEH", back: "Phase 1: Reconnaissance (specifically the planning portion)." },
+            { front: "The \"Golden Rule\" of AI in Pentesting", back: "The human is accountable, not the model. Every AI-generated output must be reviewed and validated." },
+            { front: "AI risk: Hallucinated CVEs", back: "The AI invents a Common Vulnerabilities and Exposures (CVE) identifier that does not actually exist." },
+            { front: "PentestGPT", back: "An AI tool functioning as an interactive exploitation co-pilot." },
+            { front: "Pentest phase with the highest immediate ROI for AI use", back: "Reporting (auto-generating executive summaries and converting raw tool output)." },
+            { front: "CVSS", back: "Common Vulnerability Scoring System." },
+            { front: "OSINT", back: "Open-Source Intelligence (passive information gathering)." },
+            { front: "E&O Insurance in the context of an RoE", back: "Errors and Omissions insurance, a requirement often defined in the Legal & Liability block." },
+            { front: "Scope-amendment process", back: "A necessary procedure to handle newly discovered assets mid-engagement that were not in the original scope document." },
+            { front: "Blackout periods", back: "Specific times (e.g., financial month-end) defined in the RoE during which penetration testing is explicitly paused." },
+            { front: "Essential condition before any technical testing begins", back: "Obtaining explicit, written authorization signed by the asset owner." }
+        ];
+
+        const quizData = [
+            {
+                question: "During a kickoff meeting, a client verbally instructs you to \"go ahead and test the new external marketing site\" alongside the initially planned internal network test. What is the most appropriate professional response?",
+                hint: "Consider the first of the three pillars of ethical hacking and how it distinguishes professionals from malicious actors.",
+                options: [
+                    { text: "Immediately begin recon on the marketing site since verbal approval from an authorized stakeholder is legally binding.", rationale: "Verbal agreements offer no legal protection and fail to satisfy the strict requirements of professional authorization.", isCorrect: false },
+                    { text: "Add the marketing site to your scanning queue, but hold off on active exploitation until the test is over.", rationale: "Even passive scanning or reconnaissance without formal documentation can be interpreted as unauthorized access under cyber-crime laws.", isCorrect: false },
+                    { text: "Politely refuse to target the marketing site until a formal Statement of Work (SoW) or Letter of Authorization (LoA) is signed to include it.", rationale: "Explicit, written permission signed by the asset owner that names specific targets is an absolute prerequisite for legal protection.", isCorrect: true },
+                    { text: "Email the client summarizing their verbal request, and begin testing as soon as the email is sent.", rationale: "An email sent by the tester does not constitute a countersigned legal document from the asset owner.", isCorrect: false }
+                ]
+            },
+            {
+                question: "You are conducting a penetration test against a healthcare provider in Toronto. During the engagement, you discover an unsecured database containing patient medical records and home addresses. Which regional law dictates how this specific type of data must be handled?",
+                hint: "Think about the Canadian legal framework specifically designed for personal information protection.",
+                options: [
+                    { text: "Computer Fraud and Abuse Act (CFAA)", rationale: "This is a United States federal law primarily focused on unauthorized computer access, not Canadian data privacy.", isCorrect: false },
+                    { text: "Criminal Code § 342.1", rationale: "While this is a Canadian law, it broadly covers unauthorized computer use rather than the specific handling of personal data.", isCorrect: false },
+                    { text: "General Data Protection Regulation (GDPR)", rationale: "This regulation applies to the European Union and the data of EU citizens, not domestic Canadian healthcare records.", isCorrect: false },
+                    { text: "Personal Information Protection and Electronic Documents Act (PIPEDA)", rationale: "This is the primary Canadian federal privacy law governing how private sector organizations handle personal information.", isCorrect: true }
+                ]
+            },
+            {
+                question: "At 2:00 AM during an authorized weekend testing window, your automated vulnerability scanner causes a legacy database server to crash. Which section of the Rules of Engagement (RoE) should you immediately consult?",
+                hint: "Look for the operational block that dictates who needs to know about emergencies and how quickly they must be informed.",
+                options: [
+                    { text: "Authorized Actions", rationale: "While this section dictates what attacks are allowed, it does not instruct you on how to handle an active incident or outage.", isCorrect: false },
+                    { text: "Communication & Escalation", rationale: "This block specifically outlines emergency contacts and severity-based procedures for reporting incidents like server crashes.", isCorrect: true },
+                    { text: "Legal & Liability", rationale: "This section covers long-term protections like NDAs and insurance, rather than immediate operational emergency protocols.", isCorrect: false },
+                    { text: "Scope", rationale: "This defines what assets are being tested, not the procedural steps for notifying the client when an asset fails.", isCorrect: false }
+                ]
+            },
+            {
+                question: "A financial client asks you to perform a \"Deep / Red Team\" assessment but explicitly mandates that no Denial of Service (DoS) attacks be executed and no real production data be exfiltrated. Where in the scoping dimensions are these restrictions formally recorded?",
+                hint: "Consider which dimension acts as the boundary defining what actions are strictly off-limits despite the overall depth of the test.",
+                options: [
+                    { text: "Breadth", rationale: "This dimension focuses on identifying the specific assets (like IPs or domains) that are in-scope, not the behavioral limits of the tester.", isCorrect: false },
+                    { text: "Constraints", rationale: "This dimension explicitly documents prohibited actions, off-limits tactics, and operational boundaries to protect client stability.", isCorrect: true },
+                    { text: "Depth", rationale: "This describes how far an exploit chain can go (e.g., lateral movement), but specific prohibitions override the general depth level.", isCorrect: false },
+                    { text: "Duration", rationale: "This relates entirely to timelines, testing windows, and blackout periods, completely separate from attack types.", isCorrect: false }
+                ]
+            },
+            {
+                question: "A client requests a \"Moderate\" depth test covering 10 External Hosts and 2 Web Applications. Using the standard scoping formula (Total Hours = $\\Sigma$ (Asset Count $\\times$ Effort-per-Asset $\\times$ Depth Multiplier)), what is the estimated effort in hours?",
+                hint: "Recall the specific hourly rates for 'Moderate' depth: External Hosts take 1.5 hours each, and Web Applications take 12.0 hours each.",
+                options: [
+                    { text: "13 hours", rationale: "This calculation uses the 'Light' depth multiplier instead of the 'Moderate' depth multiplier.", isCorrect: false },
+                    { text: "39 hours", rationale: "Applying the formula yields $(10 \\times 1.5) + (2 \\times 12.0)$, which equals $15 + 24 = 39$ total hours.", isCorrect: true },
+                    { text: "45 hours", rationale: "This calculation incorrectly blends rates or adds unnecessary padding not accounted for in the strict formula.", isCorrect: false },
+                    { text: "78 hours", rationale: "This calculation uses the 'Deep' depth multiplier instead of the 'Moderate' depth multiplier.", isCorrect: false }
+                ]
+            },
+            {
+                question: "Midway through testing a scoped web portal, you discover an undocumented backend API on a different subdomain that processes sensitive user data. The API is not listed in your scope document. What is the safest course of action?",
+                hint: "Think about the legal implications of touching an asset that hasn't been explicitly authorized, regardless of how relevant it seems.",
+                options: [
+                    { text: "Test the API lightly to confirm it is vulnerable, then include it as a high-risk finding in your report.", rationale: "Any interaction with an out-of-scope asset, even lightly, constitutes unauthorized access and violates ethical guidelines.", isCorrect: false },
+                    { text: "Assume it falls under the blanket authorization for the main web portal and proceed with full exploitation.", rationale: "Authorization is granular and specific; subdomains and separate endpoints are never inherently included unless explicitly documented.", isCorrect: false },
+                    { text: "Halt interaction with the API immediately and initiate the formal scope-amendment process with the client.", rationale: "Assets discovered mid-engagement must be formally added to the written scope before any technical testing can legally commence.", isCorrect: true },
+                    { text: "Ignore the API entirely and do not mention it to the client, as it is outside your contracted duties.", rationale: "While you cannot test it, failing to alert the client to a potentially exposed and forgotten asset provides poor security value.", isCorrect: false }
+                ]
+            },
+            {
+                question: "During an engagement, you successfully exploit a misconfigured server and transition to running tools like BloodHound and Impacket to map out the target's Active Directory environment. Which phase of the PTES methodology are you currently executing?",
+                hint: "Consider the timeline of an attack: you have already breached the perimeter and are now looking to establish a broader foothold or escalate privileges.",
+                options: [
+                    { text: "Vulnerability Analysis", rationale: "This phase involves scanning and identifying flaws before any actual breach occurs.", isCorrect: false },
+                    { text: "Exploitation", rationale: "This phase is the precise moment of gaining initial access, not the subsequent lateral movement.", isCorrect: false },
+                    { text: "Post-Exploitation", rationale: "Activities like lateral movement, privilege escalation, and mapping internal structures occur after initial access is achieved.", isCorrect: true },
+                    { text: "Threat Modeling", rationale: "This is an early planning phase used to prioritize attack paths, occurring long before active technical compromise.", isCorrect: false }
+                ]
+            },
+            {
+                question: "If you are presenting your methodology to a client who only understands the CEH framework, how would you describe the PTES phase of \"Vulnerability Analysis\"?",
+                hint: "PTES has 7 phases while CEH bundles them into 5. Look for the CEH phase that involves checking the context and validating flaws before exploiting them.",
+                options: [
+                    { text: "Reconnaissance", rationale: "This corresponds to the earlier intelligence gathering and pre-engagement phases, focusing on information collection.", isCorrect: false },
+                    { text: "Scanning & Enumeration", rationale: "In the CEH framework, this phase encompasses both threat modeling context and active vulnerability analysis before gaining access.", isCorrect: true },
+                    { text: "Gaining Access", rationale: "This is the CEH equivalent of the PTES Exploitation phase, where vulnerabilities are actively leveraged.", isCorrect: false },
+                    { text: "Maintaining Access", rationale: "This aligns with the post-exploitation activities like installing backdoors, not the initial discovery of flaws.", isCorrect: false }
+                ]
+            },
+            {
+                question: "To speed up your final deliverable, you copy raw nmap and vulnerability scan outputs—which include internal client IP schemes and proprietary server names—and paste them into a public web-based LLM to generate a summary. Which specific AI risk have you just triggered?",
+                hint: "Focus on where the information is going and who might ultimately have access to the inputs fed into public machine learning models.",
+                options: [
+                    { text: "Hallucinated CVEs", rationale: "This refers to an AI inventing fake vulnerabilities, not the mishandling of sensitive client information.", isCorrect: false },
+                    { text: "Data Leakage", rationale: "Pasting sensitive, proprietary client data into public LLMs exposes that data to the model provider and potentially future outputs.", isCorrect: true },
+                    { text: "Scope Violation", rationale: "This involves attacking assets you aren't authorized to touch, not the mishandling of data post-discovery.", isCorrect: false },
+                    { text: "Biased Recommendations", rationale: "This occurs when an AI favors familiar tools over best-fit solutions, completely unrelated to data exposure.", isCorrect: false }
+                ]
+            },
+            {
+                question: "An automated AI exploitation co-pilot flags a web vulnerability as \"Critical\" and recommends an immediate payload injection. You run the payload, but it causes severe database corruption. According to the foundational principles of AI in pentesting, who holds the liability?",
+                hint: "Consider the \"Golden Rule\" of AI usage outlined in the course, which focuses on the ultimate source of professional judgment.",
+                options: [
+                    { text: "The developer of the AI tool, due to flawed logic.", rationale: "Software vendors typically carry limited liability for how their tools are operationally deployed in live environments.", isCorrect: false },
+                    { text: "The client, for hosting a vulnerable database.", rationale: "The client hired a professional to test safely; they are not liable for the tester deploying a destructive payload.", isCorrect: false },
+                    { text: "The human penetration tester.", rationale: "AI is a force multiplier, not a replacement; the human remains entirely accountable and must validate all AI-generated outputs.", isCorrect: true },
+                    { text: "Liability is shared equally between the tester and the AI vendor.", rationale: "Professional codes of conduct place the burden of authorization and safe execution squarely on the individual tester.", isCorrect: false }
+                ]
+            }
+        ];
+
+        // App State
+        let currentFlashcardIndex = 0;
+        let isFlipped = false;
+        let quizScore = 0;
+        let questionsAnswered = 0;
+
+        // Render Math function wrapper
+        function renderMath() {
+            if (window.renderMathInElement) {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: "$$", right: "$$", display: true},
+                        {left: "$", right: "$", display: false}
+                    ],
+                    throwOnError: false
+                });
+            }
+        }
+
+        // Tab Switching Logic
+        function switchTab(tab) {
+            const btnFlashcards = document.getElementById('tab-flashcards');
+            const btnQuiz = document.getElementById('tab-quiz');
+            const viewFlashcards = document.getElementById('view-flashcards');
+            const viewQuiz = document.getElementById('view-quiz');
+
+            if (tab === 'flashcards') {
+                viewFlashcards.classList.remove('hidden');
+                viewQuiz.classList.add('hidden');
+                
+                btnFlashcards.className = "flex-1 md:flex-none px-6 py-2.5 text-sm font-medium rounded-md bg-blue-600 text-white shadow transition-colors";
+                btnQuiz.className = "flex-1 md:flex-none px-6 py-2.5 text-sm font-medium rounded-md text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors";
+            } else {
+                viewFlashcards.classList.add('hidden');
+                viewQuiz.classList.remove('hidden');
+                
+                btnQuiz.className = "flex-1 md:flex-none px-6 py-2.5 text-sm font-medium rounded-md bg-blue-600 text-white shadow transition-colors";
+                btnFlashcards.className = "flex-1 md:flex-none px-6 py-2.5 text-sm font-medium rounded-md text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors";
+            }
+        }
+
+        // Flashcard Logic
+        function updateFlashcard() {
+            const card = flashcardsData[currentFlashcardIndex];
+            document.getElementById('flashcard-front').innerHTML = card.front;
+            document.getElementById('flashcard-back').innerHTML = card.back;
+            document.getElementById('flashcard-counter').innerText = `${currentFlashcardIndex + 1} / ${flashcardsData.length}`;
+            
+            // Re-render math on update
+            setTimeout(renderMath, 50);
+        }
+
+        function toggleFlip() {
+            const inner = document.getElementById('flashcard-inner');
+            isFlipped = !isFlipped;
+            if (isFlipped) {
+                inner.classList.add('flipped');
+            } else {
+                inner.classList.remove('flipped');
+            }
+        }
+
+        function nextCard() {
+            if (isFlipped) toggleFlip();
+            setTimeout(() => {
+                currentFlashcardIndex = (currentFlashcardIndex + 1) % flashcardsData.length;
+                updateFlashcard();
+            }, isFlipped ? 300 : 0);
+        }
+
+        function prevCard() {
+            if (isFlipped) toggleFlip();
+            setTimeout(() => {
+                currentFlashcardIndex = (currentFlashcardIndex - 1 + flashcardsData.length) % flashcardsData.length;
+                updateFlashcard();
+            }, isFlipped ? 300 : 0);
+        }
+
+        // Quiz Logic
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+            
+            quizData.forEach((q, qIndex) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = "bg-white rounded-2xl shadow-lg p-6 md:p-8 relative";
+                
+                // Shuffle options
+                const shuffledOptions = [...q.options].map((opt, index) => ({...opt, originalIndex: index}))
+                                                       .sort(() => Math.random() - 0.5);
+
+                let optionsHtml = '';
+                shuffledOptions.forEach((opt, oIndex) => {
+                    optionsHtml += `
+                        <button id="btn-${qIndex}-${oIndex}" 
+                                onclick="selectAnswer(${qIndex}, ${oIndex}, ${opt.originalIndex})" 
+                                class="w-full text-left p-4 border-2 border-slate-100 rounded-xl hover:bg-slate-50 hover:border-blue-200 transition-all font-medium text-slate-700 mt-3 relative overflow-hidden">
+                            ${opt.text}
+                        </button>
+                    `;
+                });
+
+                questionDiv.innerHTML = `
+                    <div class="flex items-start mb-4">
+                        <span class="flex-shrink-0 bg-blue-100 text-blue-700 font-bold rounded-full w-8 h-8 flex items-center justify-center mr-3 mt-1">${qIndex + 1}</span>
+                        <h3 class="text-lg font-bold text-slate-800 leading-snug pt-1">${q.question}</h3>
+                    </div>
+                    
+                    <button onclick="toggleHint(${qIndex})" class="text-sm text-blue-600 hover:text-blue-800 font-medium ml-11 mb-2">
+                        <i class="fa-regular fa-lightbulb mr-1"></i> Show Hint
+                    </button>
+                    <div id="hint-${qIndex}" class="hidden ml-11 p-3 bg-yellow-50 text-yellow-800 text-sm rounded-lg mb-4 border border-yellow-200">
+                        ${q.hint}
+                    </div>
+
+                    <div class="ml-0 md:ml-11">
+                        ${optionsHtml}
+                    </div>
+
+                    <div id="rationale-${qIndex}" class="hidden ml-0 md:ml-11 mt-4 p-5 rounded-xl border"></div>
+                `;
+                
+                // Store the shuffled structure to evaluate correctly
+                q.shuffledMap = shuffledOptions;
+                container.appendChild(questionDiv);
+            });
+            
+            // Render Math for quiz
+            setTimeout(renderMath, 100);
+        }
+
+        function toggleHint(qIndex) {
+            const hintDiv = document.getElementById(`hint-${qIndex}`);
+            hintDiv.classList.toggle('hidden');
+        }
+
+        function selectAnswer(qIndex, selectedOIndex, originalOIndex) {
+            const q = quizData[qIndex];
+            
+            // Prevent multiple selections
+            if (q.answered) return;
+            q.answered = true;
+            questionsAnswered++;
+
+            const selectedOption = q.options[originalOIndex];
+            const isCorrect = selectedOption.isCorrect;
+            const rationaleDiv = document.getElementById(`rationale-${qIndex}`);
+
+            // Style all buttons in this question
+            q.shuffledMap.forEach((opt, idx) => {
+                const btn = document.getElementById(`btn-${qIndex}-${idx}`);
+                btn.disabled = true;
+                btn.classList.remove('hover:bg-slate-50', 'hover:border-blue-200', 'border-slate-100');
+                
+                if (idx === selectedOIndex) {
+                    if (isCorrect) {
+                        btn.classList.add('bg-green-50', 'border-green-500', 'text-green-800');
+                        btn.innerHTML += '<i class="fa-solid fa-circle-check absolute right-4 top-1/2 transform -translate-y-1/2 text-green-500 text-xl"></i>';
+                        quizScore++;
+                    } else {
+                        btn.classList.add('bg-red-50', 'border-red-400', 'text-red-800', 'opacity-80');
+                        btn.innerHTML += '<i class="fa-solid fa-circle-xmark absolute right-4 top-1/2 transform -translate-y-1/2 text-red-400 text-xl"></i>';
+                    }
+                } else if (opt.isCorrect) {
+                    // Highlight the correct one if the user missed it
+                    btn.classList.add('border-green-500', 'border-dashed', 'bg-green-50', 'opacity-90');
+                } else {
+                    btn.classList.add('opacity-50', 'border-slate-100', 'bg-slate-50');
+                }
+            });
+
+            // Show Rationale
+            rationaleDiv.classList.remove('hidden');
+            if (isCorrect) {
+                rationaleDiv.classList.add('bg-green-100', 'border-green-300', 'text-green-900');
+                rationaleDiv.innerHTML = `<p class="font-bold mb-1"><i class="fa-solid fa-check mr-2"></i>Correct!</p><p class="text-sm">${selectedOption.rationale}</p>`;
+            } else {
+                rationaleDiv.classList.add('bg-red-50', 'border-red-200', 'text-red-900');
+                rationaleDiv.innerHTML = `<p class="font-bold mb-1"><i class="fa-solid fa-xmark mr-2"></i>Incorrect</p><p class="text-sm">${selectedOption.rationale}</p>`;
+            }
+
+            // Check if quiz is complete
+            if (questionsAnswered === quizData.length) {
+                document.getElementById('quiz-results').classList.remove('hidden');
+                document.getElementById('final-score').innerText = `${quizScore} / ${quizData.length}`;
+            }
+            
+            // Re-render math just in case rationale has math
+            setTimeout(renderMath, 50);
+        }
+
+        function resetQuiz() {
+            quizScore = 0;
+            questionsAnswered = 0;
+            quizData.forEach(q => q.answered = false);
+            document.getElementById('quiz-results').classList.add('hidden');
+            renderQuiz();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Initialization
+        window.onload = () => {
+            updateFlashcard();
+            renderQuiz();
+        };
+
+        // Initialize KaTeX on dynamically loaded elements after CDN loads
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMath();
+        });
+    </script>
+</body>
+</html>
+
+
+

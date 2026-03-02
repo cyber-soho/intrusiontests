@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intrusion Test - Day 01: Course Introduction</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Warm Neutrals & Subtle Indigo Accent (Stone 50/100, White, Stone 800, Indigo 600) -->
+    <!-- Application Structure Plan: A dashboard-style layout with a fixed side navigation (on desktop) and a main scrollable content area. This structure was chosen because course introductions contain distinct, modular topics (Ethics, RoE, Scoping, Methodologies, AI). A dashboard allows users to quickly jump between these disconnected conceptual modules rather than forcing a linear slide-by-slide progression. Each module uses task-specific interactive UI elements (e.g., calculators, comparative maps) to reinforce the learning objective of that specific topic. -->
+    <!-- Visualization & Content Choices: 
+         1. Course Roadmap -> Interactive Timeline -> Goal: Organize/Inform -> Users can toggle between phase 1 and 2 of the course. Justification: Better spatial awareness of the 10-week layout than two static tables.
+         2. Rules of Engagement -> Expandable Grid -> Goal: Inform -> Users click to reveal details of the 6 RoE blocks. Justification: Prevents text fatigue while showing the modular nature of a contract.
+         3. Scoping Calculator -> Chart.js Bar Chart & HTML Inputs -> Goal: Compare/Change -> Users input asset counts and depth to see dynamic effort hours. Justification: Transforms a static scoping formula table into a practical, memorable tool.
+         4. PTES vs CEH -> Interactive Mapped Lists -> Goal: Relationships -> Hovering/Clicking a PTES phase highlights the equivalent CEH phase. Justification: Visually demonstrates the many-to-one relationship between the two distinct methodologies.
+         5. AI in Pentesting -> Tabbed Interface -> Goal: Compare -> Toggle between tools, phases, and guardrails. Justification: Segregates the "how-to" from the "warnings" cleanly.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 40vh;
+            max-height: 400px;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        .mapped-active {
+            background-color: #e0e7ff;
+            border-color: #4f46e5;
+            color: #312e81;
+            transition: all 0.3s ease;
+        }
+        
+        .mapped-inactive {
+            opacity: 0.5;
+            transition: all 0.3s ease;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f5f5f4;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #d6d3d1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 antialiased selection:bg-indigo-100 selection:text-indigo-900">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        
+        <nav class="md:w-64 bg-white border-r border-stone-200 p-6 md:fixed h-auto md:h-screen overflow-y-auto custom-scrollbar z-10 flex flex-col shadow-sm">
+            <div class="mb-8">
+                <h1 class="text-xl font-bold tracking-tight text-stone-900">Cyber.SoHo</h1>
+                <p class="text-xs text-stone-500 uppercase tracking-wider font-semibold mt-1">Intrusion Test</p>
+            </div>
+            <ul class="space-y-2 flex-grow">
+                <li><a href="#intro" class="nav-link block px-3 py-2 text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors" data-target="intro">&#127968; Day 01 Overview</a></li>
+                <li><a href="#roadmap" class="nav-link block px-3 py-2 text-sm font-medium rounded-md text-stone-600 hover:bg-stone-100 transition-colors" data-target="roadmap">&#128205; Course Roadmap</a></li>
+                <li><a href="#ethics" class="nav-link block px-3 py-2 text-sm font-medium rounded-md text-stone-600 hover:bg-stone-100 transition-colors" data-target="ethics">&#9888; Ethics & Law</a></li>
+                <li><a href="#roe" class="nav-link block px-3 py-2 text-sm font-medium rounded-md text-stone-600 hover:bg-stone-100 transition-colors" data-target="roe">&#128220; Rules of Engagement</a></li>
+                <li><a href="#scoping" class="nav-link block px-3 py-2 text-sm font-medium rounded-md text-stone-600 hover:bg-stone-100 transition-colors" data-target="scoping">&#128208; Scoping Estimator</a></li>
+                <li><a href="#methodology" class="nav-link block px-3 py-2 text-sm font-medium rounded-md text-stone-600 hover:bg-stone-100 transition-colors" data-target="methodology">&#128214; PTES vs CEH</a></li>
+                <li><a href="#ai" class="nav-link block px-3 py-2 text-sm font-medium rounded-md text-stone-600 hover:bg-stone-100 transition-colors" data-target="ai">&#129302; AI in Pentesting</a></li>
+                <li><a href="#reference" class="nav-link block px-3 py-2 text-sm font-medium rounded-md text-stone-600 hover:bg-stone-100 transition-colors" data-target="reference">&#128218; Reference</a></li>
+            </ul>
+            <div class="mt-8 text-xs text-stone-400 border-t border-stone-200 pt-4">
+                March 2, 2026<br>Instructor: Syber.SoHo
+            </div>
+        </nav>
+
+        <main class="flex-1 md:ml-64 p-6 md:p-12 lg:p-16 max-w-6xl w-full">
+            
+            <section id="intro" class="mb-20 pt-8 scroll-mt-24">
+                <div class="inline-block px-3 py-1 rounded-full bg-stone-200 text-stone-700 text-xs font-semibold tracking-wider mb-4">INTRODUCTION</div>
+                <h2 class="text-4xl md:text-5xl font-extrabold text-stone-900 tracking-tight leading-tight mb-6">Welcome to Intrusion Testing</h2>
+                <p class="text-lg text-stone-600 leading-relaxed mb-8 max-w-3xl">This interactive dashboard covers the critical foundational concepts required before any technical tools are deployed. As highlighted by the 2023 Iowa Courthouse Incident, understanding ethics, legal boundaries, and structured methodologies is what separates a professional penetration tester from a criminal. Explore the sections below to build your procedural foundation.</p>
+                <div class="bg-indigo-50 border-l-4 border-indigo-500 p-6 rounded-r-lg max-w-3xl shadow-sm">
+                    <h3 class="text-lg font-bold text-indigo-900 mb-2">The Golden Rule: Rules Before Tools</h3>
+                    <p class="text-indigo-800 text-sm">A signed contract is necessary but not sufficient. Communication with all stakeholders, adherence to strict scoping, and utilizing validated methodologies are equally critical to a successful and legal engagement.</p>
+                </div>
+            </section>
+
+            <section id="roadmap" class="mb-24 scroll-mt-24">
+                <h3 class="text-2xl font-bold text-stone-900 mb-4 border-b border-stone-200 pb-2">Course Roadmap</h3>
+                <p class="text-stone-600 mb-6 max-w-4xl">This section outlines our 10-week journey. The curriculum is split into two halves: foundational reconnaissance and active exploitation. Use the toggles to explore the theory and lab focus for each phase of the course.</p>
+                
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+                    <div class="flex border-b border-stone-200">
+                        <button id="btn-phase1" class="flex-1 py-4 text-center font-semibold text-indigo-700 bg-indigo-50 transition-colors">Weeks 1-5: Foundations &#8594; Recon</button>
+                        <button id="btn-phase2" class="flex-1 py-4 text-center font-semibold text-stone-500 hover:bg-stone-50 transition-colors">Weeks 5-10: Exploitation &#8594; Assessment</button>
+                    </div>
+                    
+                    <div id="phase1-content" class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="border border-stone-100 p-4 rounded-lg bg-stone-50"><span class="font-bold text-stone-800">Week 1:</span> Intro, Ethics, RoE, AI <br><span class="text-sm text-stone-500">&#128187; Lab: Setup & Project RoE</span></div>
+                            <div class="border border-stone-100 p-4 rounded-lg bg-stone-50"><span class="font-bold text-stone-800">Week 1-2:</span> Lab Build <br><span class="text-sm text-stone-500">&#128187; Lab: Architecture</span></div>
+                            <div class="border border-stone-100 p-4 rounded-lg bg-stone-50"><span class="font-bold text-stone-800">Week 2:</span> Attacker OPSEC <br><span class="text-sm text-stone-500">&#128187; Lab: Layered Anonymity</span></div>
+                            <div class="border border-stone-100 p-4 rounded-lg bg-stone-50"><span class="font-bold text-stone-800">Week 3:</span> Footprinting & OSINT <br><span class="text-sm text-stone-500">&#128187; Lab: Passive Recon</span></div>
+                            <div class="border border-stone-100 p-4 rounded-lg bg-stone-50"><span class="font-bold text-stone-800">Week 3-4:</span> Social Engineering <br><span class="text-sm text-stone-500">&#128187; Lab: Phishing Simulation</span></div>
+                            <div class="border border-stone-100 p-4 rounded-lg bg-stone-50"><span class="font-bold text-stone-800">Week 4:</span> Vuln Analysis, CVSS <br><span class="text-sm text-stone-500">&#128187; Lab: OpenVAS / Nessus</span></div>
+                            <div class="border border-stone-100 p-4 rounded-lg bg-stone-50 md:col-span-2"><span class="font-bold text-stone-800">Week 5:</span> Scanning & Enum <br><span class="text-sm text-stone-500">&#128187; Lab: Nmap, enum4linux, ldapsearch</span></div>
+                        </div>
+                    </div>
+
+                    <div id="phase2-content" class="p-6 hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="border border-stone-100 p-4 rounded-lg bg-stone-50"><span class="font-bold text-stone-800">Week 5:</span> Wi-Fi Hacking (PMKID) <br><span class="text-sm text-stone-500">&#128187; Lab: Research Exercise</span></div>
+                            <div class="border-l-4 border-indigo-500 p-4 rounded-lg bg-indigo-50 text-indigo-900 font-bold"><span class="font-bold">Week 5:</span> Mid-Term Assessment</div>
+                            <div class="border border-stone-100 p-4 rounded-lg bg-stone-50 md:col-span-2"><span class="font-bold text-stone-800">Week 6-7:</span> System Hacking: Creds, LPE, Persistence <br><span class="text-sm text-stone-500">&#128187; Lab: Metasploit, LinPEAS/WinPEAS</span></div>
+                            <div class="border border-stone-100 p-4 rounded-lg bg-stone-50"><span class="font-bold text-stone-800">Week 7:</span> Sniffing, MITM, Malware <br><span class="text-sm text-stone-500">&#128187; Lab: Wireshark, Bettercap</span></div>
+                            <div class="border border-stone-100 p-4 rounded-lg bg-stone-50"><span class="font-bold text-stone-800">Week 8:</span> Web Apps & APIs (OWASP) <br><span class="text-sm text-stone-500">&#128187; Lab: DVWA & Juice Shop</span></div>
+                            <div class="border border-stone-100 p-4 rounded-lg bg-stone-50"><span class="font-bold text-stone-800">Week 9:</span> Active Directory & Lateral Move <br><span class="text-sm text-stone-500">&#128187; Lab: BloodHound, Impacket</span></div>
+                            <div class="border border-stone-100 p-4 rounded-lg bg-stone-50"><span class="font-bold text-stone-800">Week 9-10:</span> IDS/Firewall Evasion <br><span class="text-sm text-stone-500">&#128187; Lab: Snort, Suricata, Wazuh</span></div>
+                            <div class="border-l-4 border-indigo-500 p-4 rounded-lg bg-indigo-50 text-indigo-900 font-bold md:col-span-2"><span class="font-bold">Week 10:</span> Final Assessment</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="ethics" class="mb-24 scroll-mt-24">
+                <h3 class="text-2xl font-bold text-stone-900 mb-4 border-b border-stone-200 pb-2">Ethics & Law</h3>
+                <p class="text-stone-600 mb-6 max-w-4xl">This section breaks down the three foundational pillars that differentiate ethical hacking from malicious intrusion. Understanding authorization, global legal frameworks, and professional codes of conduct is absolutely mandatory before any active testing begins.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 hover:shadow-md transition-shadow">
+                        <div class="text-3xl mb-4">&#128221;</div>
+                        <h4 class="text-lg font-bold text-stone-900 mb-2">1. Authorization</h4>
+                        <p class="text-sm text-stone-600 mb-4">Written permission is non-negotiable. Verbal agreements offer no protection.</p>
+                        <ul class="text-sm text-stone-500 space-y-2 list-disc pl-4">
+                            <li>Requires SoW or LoA.</li>
+                            <li>Must be signed by the asset owner.</li>
+                            <li>Must name specific targets.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 hover:shadow-md transition-shadow">
+                        <div class="text-3xl mb-4">&#9888;</div>
+                        <h4 class="text-lg font-bold text-stone-900 mb-2">2. Legal Compliance</h4>
+                        <p class="text-sm text-stone-600 mb-4">Rule of Thumb: If unsure of legality in a jurisdiction, do not act.</p>
+                        <ul class="text-sm text-stone-500 space-y-2 list-none">
+                            <li><span class="font-semibold text-stone-700">US:</span> CFAA</li>
+                            <li><span class="font-semibold text-stone-700">EU:</span> NIS2, GDPR</li>
+                            <li><span class="font-semibold text-stone-700">Canada:</span> Crim Code § 342.1, PIPEDA</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 hover:shadow-md transition-shadow">
+                        <div class="text-3xl mb-4">&#128100;</div>
+                        <h4 class="text-lg font-bold text-stone-900 mb-2">3. Professional Conduct</h4>
+                        <p class="text-sm text-stone-600 mb-4">Adherence to industry codes protects your reputation and certification.</p>
+                        <ul class="text-sm text-stone-500 space-y-2 list-disc pl-4">
+                            <li>EC-Council / SANS / PTES Codes.</li>
+                            <li>Violations lead to termination or criminal liability.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="roe" class="mb-24 scroll-mt-24">
+                <h3 class="text-2xl font-bold text-stone-900 mb-4 border-b border-stone-200 pb-2">Rules of Engagement (RoE)</h3>
+                <p class="text-stone-600 mb-6 max-w-4xl">The RoE is the operational contract defining exactly how the test will be conducted. Click on the 6 building blocks below to understand what must be defined to protect both the tester and the client from unintended consequences (like the "Midnight Server Crash" scenario).</p>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <button class="roe-btn text-left bg-white p-5 rounded-lg border border-stone-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all group" data-details="roe-1">
+                        <h5 class="font-bold text-stone-800 group-hover:text-indigo-700">1. Parties</h5>
+                        <p class="text-xs text-stone-500 mt-1">Who is involved?</p>
+                    </button>
+                    <button class="roe-btn text-left bg-white p-5 rounded-lg border border-stone-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all group" data-details="roe-2">
+                        <h5 class="font-bold text-stone-800 group-hover:text-indigo-700">2. Scope</h5>
+                        <p class="text-xs text-stone-500 mt-1">What is being tested?</p>
+                    </button>
+                    <button class="roe-btn text-left bg-white p-5 rounded-lg border border-stone-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all group" data-details="roe-3">
+                        <h5 class="font-bold text-stone-800 group-hover:text-indigo-700">3. Timeline</h5>
+                        <p class="text-xs text-stone-500 mt-1">When does it happen?</p>
+                    </button>
+                    <button class="roe-btn text-left bg-white p-5 rounded-lg border border-stone-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all group" data-details="roe-4">
+                        <h5 class="font-bold text-stone-800 group-hover:text-indigo-700">4. Authorized Actions</h5>
+                        <p class="text-xs text-stone-500 mt-1">What attacks are allowed?</p>
+                    </button>
+                    <button class="roe-btn text-left bg-white p-5 rounded-lg border border-stone-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all group" data-details="roe-5">
+                        <h5 class="font-bold text-stone-800 group-hover:text-indigo-700">5. Communication</h5>
+                        <p class="text-xs text-stone-500 mt-1">Who do we call?</p>
+                    </button>
+                    <button class="roe-btn text-left bg-white p-5 rounded-lg border border-stone-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all group" data-details="roe-6">
+                        <h5 class="font-bold text-stone-800 group-hover:text-indigo-700">6. Legal & Liability</h5>
+                        <p class="text-xs text-stone-500 mt-1">How is risk managed?</p>
+                    </button>
+                </div>
+
+                <div id="roe-display" class="mt-6 bg-stone-100 rounded-lg p-6 border border-stone-200 min-h-[120px] flex items-center justify-center text-center">
+                    <p class="text-stone-500 italic">Select an RoE block above to view specific requirements.</p>
+                </div>
+            </section>
+
+            <section id="scoping" class="mb-24 scroll-mt-24">
+                <h3 class="text-2xl font-bold text-stone-900 mb-4 border-b border-stone-200 pb-2">Interactive Scoping Estimator</h3>
+                <p class="text-stone-600 mb-6 max-w-4xl">Scoping prevents missing critical surfaces or blowing budgets. It involves 4 dimensions: Breadth, Depth, Duration, and Constraints. Use the interactive calculator below to apply the standard effort estimation formula: <code>Total Hours = Σ (Asset Count × Effort-per-Asset × Depth Multiplier)</code>.</p>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                    <div class="lg:col-span-4 space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-stone-700 mb-1">Testing Depth</label>
+                            <select id="scope-depth" class="w-full bg-stone-50 border border-stone-300 text-stone-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
+                                <option value="light">Light (Scans + Validation)</option>
+                                <option value="moderate" selected>Moderate (Manual Logic Paths)</option>
+                                <option value="deep">Deep / Red Team (Full Chains)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">External Hosts</label>
+                                <input type="number" id="inp-ext" value="10" min="0" class="w-full bg-stone-50 border border-stone-300 text-stone-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Internal Hosts</label>
+                                <input type="number" id="inp-int" value="50" min="0" class="w-full bg-stone-50 border border-stone-300 text-stone-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Web Apps</label>
+                                <input type="number" id="inp-web" value="2" min="0" class="w-full bg-stone-50 border border-stone-300 text-stone-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">APIs</label>
+                                <input type="number" id="inp-api" value="1" min="0" class="w-full bg-stone-50 border border-stone-300 text-stone-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Wi-Fi (SSIDs)</label>
+                                <input type="number" id="inp-wifi" value="0" min="0" class="w-full bg-stone-50 border border-stone-300 text-stone-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Social Eng.</label>
+                                <input type="number" id="inp-se" value="0" min="0" class="w-full bg-stone-50 border border-stone-300 text-stone-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2">
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-stone-200">
+                            <div class="text-sm text-stone-500 uppercase tracking-wide">Total Estimated Effort</div>
+                            <div class="text-4xl font-extrabold text-indigo-700" id="total-hours-display">0 hrs</div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-8 flex flex-col justify-center">
+                        <div class="chart-container">
+                            <canvas id="scopingChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="methodology" class="mb-24 scroll-mt-24">
+                <h3 class="text-2xl font-bold text-stone-900 mb-4 border-b border-stone-200 pb-2">Methodologies: PTES vs CEH</h3>
+                <p class="text-stone-600 mb-6 max-w-4xl">Penetration testing without methodology leads to missed surfaces and irreproducible reports. This course follows the granular 7-phase PTES, but maps to the broader 5-phase CEH methodology. Hover over or tap the PTES phases on the left to see how they map to the CEH standard on the right.</p>
+                
+                <div class="flex flex-col md:flex-row gap-8 bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                    <div class="flex-1">
+                        <h4 class="font-bold text-stone-800 mb-4 text-center">PTES (7 Phases)</h4>
+                        <div class="space-y-2 relative z-10" id="ptes-list">
+                            <div class="p-3 border border-stone-200 rounded text-sm cursor-pointer hover:bg-stone-50 transition-colors bg-white" data-map="ceh-1">1. Pre-engagement Interactions</div>
+                            <div class="p-3 border border-stone-200 rounded text-sm cursor-pointer hover:bg-stone-50 transition-colors bg-white" data-map="ceh-1">2. Intelligence Gathering</div>
+                            <div class="p-3 border border-stone-200 rounded text-sm cursor-pointer hover:bg-stone-50 transition-colors bg-white" data-map="ceh-2">3. Threat Modeling</div>
+                            <div class="p-3 border border-stone-200 rounded text-sm cursor-pointer hover:bg-stone-50 transition-colors bg-white" data-map="ceh-2">4. Vulnerability Analysis</div>
+                            <div class="p-3 border border-stone-200 rounded text-sm cursor-pointer hover:bg-stone-50 transition-colors bg-white" data-map="ceh-3">5. Exploitation</div>
+                            <div class="p-3 border border-stone-200 rounded text-sm cursor-pointer hover:bg-stone-50 transition-colors bg-white" data-map="ceh-4">6. Post-Exploitation</div>
+                            <div class="p-3 border border-stone-200 rounded text-sm cursor-pointer hover:bg-stone-50 transition-colors bg-white" data-map="ceh-5">7. Reporting</div>
+                        </div>
+                    </div>
+                    
+                    <div class="hidden md:flex flex-col justify-center items-center text-stone-300 text-2xl">
+                        &#8594;
+                    </div>
+
+                    <div class="flex-1">
+                        <h4 class="font-bold text-stone-800 mb-4 text-center">CEH (5 Phases)</h4>
+                        <div class="space-y-4" id="ceh-list">
+                            <div id="ceh-1" class="p-4 border border-stone-200 rounded bg-stone-50 text-sm transition-all duration-300">
+                                <span class="font-bold">1. Reconnaissance</span><br><span class="text-xs text-stone-500">Planning & Info Gathering</span>
+                            </div>
+                            <div id="ceh-2" class="p-4 border border-stone-200 rounded bg-stone-50 text-sm transition-all duration-300">
+                                <span class="font-bold">2. Scanning & Enumeration</span><br><span class="text-xs text-stone-500">Context & Vulnerability check</span>
+                            </div>
+                            <div id="ceh-3" class="p-4 border border-stone-200 rounded bg-stone-50 text-sm transition-all duration-300">
+                                <span class="font-bold">3. Gaining Access</span><br><span class="text-xs text-stone-500">Exploit delivery</span>
+                            </div>
+                            <div id="ceh-4" class="p-4 border border-stone-200 rounded bg-stone-50 text-sm transition-all duration-300">
+                                <span class="font-bold">4. Maintaining Access</span><br><span class="text-xs text-stone-500">Persistence, Backdoors</span>
+                            </div>
+                            <div id="ceh-5" class="p-4 border border-stone-200 rounded bg-stone-50 text-sm transition-all duration-300">
+                                <span class="font-bold">5. Covering Tracks / Reporting</span><br><span class="text-xs text-stone-500">Cleanup & Deliverable</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="ai" class="mb-24 scroll-mt-24">
+                <h3 class="text-2xl font-bold text-stone-900 mb-4 border-b border-stone-200 pb-2">AI for Ethical Hacking</h3>
+                <p class="text-stone-600 mb-6 max-w-4xl">AI and LLMs are transforming pentesting by accelerating recon, reducing noise, and drafting reports. However, AI is a force multiplier, not a replacement. The human tester remains entirely accountable. Use the tabs to explore AI applications and critical guardrails.</p>
+                
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+                    <div class="flex border-b border-stone-200 overflow-x-auto custom-scrollbar">
+                        <button class="ai-tab-btn flex-1 py-3 px-4 min-w-[120px] text-sm font-semibold text-indigo-700 border-b-2 border-indigo-700 bg-stone-50" data-target="ai-phases">Across Phases</button>
+                        <button class="ai-tab-btn flex-1 py-3 px-4 min-w-[120px] text-sm font-semibold text-stone-500 hover:text-stone-700 hover:bg-stone-50 border-b-2 border-transparent" data-target="ai-tools">Current Tools</button>
+                        <button class="ai-tab-btn flex-1 py-3 px-4 min-w-[120px] text-sm font-semibold text-stone-500 hover:text-stone-700 hover:bg-stone-50 border-b-2 border-transparent" data-target="ai-risks">Risks & Guardrails</button>
+                    </div>
+                    
+                    <div class="p-6 h-64 overflow-y-auto">
+                        <div id="ai-phases" class="ai-content grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h5 class="font-bold text-stone-800 mb-2 border-b border-stone-100 pb-1">Recon & Scanning</h5>
+                                <ul class="text-sm text-stone-600 list-disc pl-4 space-y-1">
+                                    <li>Correlate vast unstructured data (DNS, DBs).</li>
+                                    <li>Subdomain prediction & mapping.</li>
+                                    <li>Reduce false positives via context.</li>
+                                    <li>Smart template selection & CVSS re-scoring.</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h5 class="font-bold text-stone-800 mb-2 border-b border-stone-100 pb-1">Exploitation & Reporting</h5>
+                                <ul class="text-sm text-stone-600 list-disc pl-4 space-y-1">
+                                    <li>PoC payload generation.</li>
+                                    <li>Automated priv-esc path suggestions.</li>
+                                    <li><span class="font-semibold text-indigo-700">Reporting:</span> Highest ROI. Auto-generate executive summaries.</li>
+                                    <li>Saves 30–40% of typical engagement time.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div id="ai-tools" class="ai-content hidden">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div class="bg-stone-50 p-3 rounded border border-stone-200"><span class="font-bold text-stone-800">PentestGPT</span><br><span class="text-xs text-stone-500">Interactive exploitation co-pilot</span></div>
+                                <div class="bg-stone-50 p-3 rounded border border-stone-200"><span class="font-bold text-stone-800">ReconAIzer</span><br><span class="text-xs text-stone-500">Burp Suite recon analysis via LLM</span></div>
+                                <div class="bg-stone-50 p-3 rounded border border-stone-200"><span class="font-bold text-stone-800">BurpGPT</span><br><span class="text-xs text-stone-500">AI-enhanced web-app testing</span></div>
+                                <div class="bg-stone-50 p-3 rounded border border-stone-200"><span class="font-bold text-stone-800">Nuclei AI</span><br><span class="text-xs text-stone-500">Intelligent template selection</span></div>
+                                <div class="bg-stone-50 p-3 rounded border border-stone-200"><span class="font-bold text-stone-800">GitHub Copilot</span><br><span class="text-xs text-stone-500">Exploit development assistance</span></div>
+                                <div class="bg-stone-50 p-3 rounded border border-stone-200"><span class="font-bold text-stone-800">ChatGPT/Claude</span><br><span class="text-xs text-stone-500">Workflow prompt engineering</span></div>
+                            </div>
+                        </div>
+
+                        <div id="ai-risks" class="ai-content hidden">
+                            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-r">
+                                <p class="text-sm text-red-800 font-bold mb-1">The Golden Rule</p>
+                                <p class="text-xs text-red-700">The human is accountable — not the model. Every AI-generated output must be reviewed, validated, and approved by a qualified tester.</p>
+                            </div>
+                            <ul class="text-sm text-stone-600 space-y-2">
+                                <li><span class="font-bold text-stone-800">Hallucinated CVEs:</span> AI invents CVEs that do not exist.</li>
+                                <li><span class="font-bold text-stone-800">Scope Violation:</span> AI suggests testing an out-of-scope asset.</li>
+                                <li><span class="font-bold text-stone-800">False Confidence:</span> Rating non-exploitable findings as "Critical".</li>
+                                <li><span class="font-bold text-stone-800">Data Leakage:</span> Pasting sensitive client findings into public LLMs.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="reference" class="mb-12 scroll-mt-24">
+                <h3 class="text-2xl font-bold text-stone-900 mb-4 border-b border-stone-200 pb-2">Reference</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="font-bold text-stone-800 mb-3 text-sm uppercase tracking-wide">Key Abbreviations</h4>
+                        <div class="bg-white border border-stone-200 rounded-lg shadow-sm overflow-hidden text-sm">
+                            <table class="w-full text-left">
+                                <tbody class="divide-y divide-stone-200">
+                                    <tr><td class="px-3 py-2 font-semibold bg-stone-50 w-1/4">RoE</td><td class="px-3 py-2">Rules of Engagement</td></tr>
+                                    <tr><td class="px-3 py-2 font-semibold bg-stone-50">PTES</td><td class="px-3 py-2">Penetration Testing Execution Standard</td></tr>
+                                    <tr><td class="px-3 py-2 font-semibold bg-stone-50">CEH</td><td class="px-3 py-2">Certified Ethical Hacker</td></tr>
+                                    <tr><td class="px-3 py-2 font-semibold bg-stone-50">CFAA</td><td class="px-3 py-2">Computer Fraud and Abuse Act</td></tr>
+                                    <tr><td class="px-3 py-2 font-semibold bg-stone-50">OSINT</td><td class="px-3 py-2">Open-Source Intelligence</td></tr>
+                                    <tr><td class="px-3 py-2 font-semibold bg-stone-50">CVSS</td><td class="px-3 py-2">Common Vulnerability Scoring System</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-stone-800 mb-3 text-sm uppercase tracking-wide">Essential Resources</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li class="bg-white p-2 rounded border border-stone-200 flex justify-between items-center"><span class="font-semibold text-stone-700">PTES Standard</span> <span class="text-xs text-stone-400">pentest-standard.org</span></li>
+                            <li class="bg-white p-2 rounded border border-stone-200 flex justify-between items-center"><span class="font-semibold text-stone-700">MITRE ATT&CK</span> <span class="text-xs text-stone-400">attack.mitre.org</span></li>
+                            <li class="bg-white p-2 rounded border border-stone-200 flex justify-between items-center"><span class="font-semibold text-stone-700">CVSS (FIRST)</span> <span class="text-xs text-stone-400">first.org/cvss</span></li>
+                            <li class="bg-white p-2 rounded border border-stone-200 flex justify-between items-center"><span class="font-semibold text-stone-700">CVE Database</span> <span class="text-xs text-stone-400">cve.mitre.org</span></li>
+                        </ul>
+                        <div class="mt-4 text-xs text-stone-500 italic">
+                            Disclaimer: Techniques are for authorized, legal, ethical testing only. No authorization = No testing.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('section');
+            
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    if (scrollY >= (sectionTop - 100)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('bg-indigo-50', 'text-indigo-700');
+                    link.classList.add('text-stone-600');
+                    if (link.getAttribute('data-target') === current) {
+                        link.classList.remove('text-stone-600', 'hover:bg-stone-100');
+                        link.classList.add('bg-indigo-50', 'text-indigo-700');
+                    }
+                });
+            });
+
+            const btnPhase1 = document.getElementById('btn-phase1');
+            const btnPhase2 = document.getElementById('btn-phase2');
+            const contentPhase1 = document.getElementById('phase1-content');
+            const contentPhase2 = document.getElementById('phase2-content');
+
+            btnPhase1.addEventListener('click', () => {
+                contentPhase1.classList.remove('hidden');
+                contentPhase2.classList.add('hidden');
+                btnPhase1.className = "flex-1 py-4 text-center font-semibold text-indigo-700 bg-indigo-50 transition-colors";
+                btnPhase2.className = "flex-1 py-4 text-center font-semibold text-stone-500 hover:bg-stone-50 transition-colors";
+            });
+
+            btnPhase2.addEventListener('click', () => {
+                contentPhase2.classList.remove('hidden');
+                contentPhase1.classList.add('hidden');
+                btnPhase2.className = "flex-1 py-4 text-center font-semibold text-indigo-700 bg-indigo-50 transition-colors";
+                btnPhase1.className = "flex-1 py-4 text-center font-semibold text-stone-500 hover:bg-stone-50 transition-colors";
+            });
+
+            const roeData = {
+                'roe-1': '<div class="text-left"><h4 class="font-bold text-stone-900 mb-2">1. Parties</h4><p class="text-sm text-stone-600">Client (asset owner) and tester (authorized agent) must be explicitly named and signatures collected.</p></div>',
+                'roe-2': '<div class="text-left"><h4 class="font-bold text-stone-900 mb-2">2. Scope</h4><p class="text-sm text-stone-600"><strong>In-scope:</strong> IP ranges, domains, apps, locations.<br><strong>Out-of-scope:</strong> Explicitly listed exclusions.</p></div>',
+                'roe-3': '<div class="text-left"><h4 class="font-bold text-stone-900 mb-2">3. Timeline</h4><p class="text-sm text-stone-600">Start/end dates, permitted testing hours (e.g., 08:00–22:00 weekdays), and blackout periods (e.g., financial month-end).</p></div>',
+                'roe-4': '<div class="text-left"><h4 class="font-bold text-stone-900 mb-2">4. Authorized Actions</h4><p class="text-sm text-stone-600">Allowed test types (network, web, physical). Prohibited actions (DoS, production data exfiltration).</p></div>',
+                'roe-5': '<div class="text-left"><h4 class="font-bold text-stone-900 mb-2">5. Communication & Escalation</h4><p class="text-sm text-stone-600">Emergency contacts and severity-based escalation paths (e.g., Critical finding &rarr; phone call within 1 hour).</p></div>',
+                'roe-6': '<div class="text-left"><h4 class="font-bold text-stone-900 mb-2">6. Legal & Liability</h4><p class="text-sm text-stone-600">NDA terms, E&O insurance requirements, and data handling/disposal procedures.</p></div>'
+            };
+
+            const roeBtns = document.querySelectorAll('.roe-btn');
+            const roeDisplay = document.getElementById('roe-display');
+
+            roeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    roeBtns.forEach(b => b.classList.remove('bg-indigo-50', 'border-indigo-400'));
+                    btn.classList.add('bg-indigo-50', 'border-indigo-400');
+                    const target = btn.getAttribute('data-details');
+                    roeDisplay.innerHTML = roeData[target];
+                    roeDisplay.classList.add('bg-white');
+                    roeDisplay.classList.remove('bg-stone-100');
+                });
+            });
+
+            const effortRates = {
+                light: { ext: 0.5, int: 0.3, web: 4.0, api: 1.0, wifi: 2.0, se: 3.0 },
+                moderate: { ext: 1.5, int: 1.0, web: 12.0, api: 3.0, wifi: 5.0, se: 6.0 },
+                deep: { ext: 3.0, int: 2.5, web: 24.0, api: 6.0, wifi: 8.0, se: 10.0 }
+            };
+
+            const inputs = ['ext', 'int', 'web', 'api', 'wifi', 'se'].map(id => document.getElementById(`inp-${id}`));
+            const depthSelect = document.getElementById('scope-depth');
+            const totalDisplay = document.getElementById('total-hours-display');
+            
+            const ctx = document.getElementById('scopingChart').getContext('2d');
+            let scopingChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['External', 'Internal', 'Web Apps', 'APIs', 'Wi-Fi', 'Social Eng.'],
+                    datasets: [{
+                        label: 'Estimated Hours',
+                        data: [0, 0, 0, 0, 0, 0],
+                        backgroundColor: 'rgba(79, 70, 229, 0.8)',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) { return context.parsed.y.toFixed(1) + ' hrs'; }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Hours' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            function updateCalculator() {
+                const depth = depthSelect.value;
+                const rates = effortRates[depth];
+                
+                let totalHours = 0;
+                let chartData = [];
+
+                inputs.forEach((input, index) => {
+                    const count = parseFloat(input.value) || 0;
+                    const type = input.id.replace('inp-', '');
+                    const rate = rates[type];
+                    const hours = count * rate;
+                    
+                    chartData.push(hours);
+                    totalHours += hours;
+                });
+
+                totalDisplay.innerText = totalHours.toFixed(1) + ' hrs';
+                scopingChart.data.datasets[0].data = chartData;
+                scopingChart.update();
+            }
+
+            inputs.forEach(input => input.addEventListener('input', updateCalculator));
+            depthSelect.addEventListener('change', updateCalculator);
+            updateCalculator(); 
+
+            const ptesItems = document.querySelectorAll('#ptes-list > div');
+            const cehItems = document.querySelectorAll('#ceh-list > div');
+
+            ptesItems.forEach(item => {
+                item.addEventListener('mouseenter', () => {
+                    const targetCehId = item.getAttribute('data-map');
+                    
+                    cehItems.forEach(ceh => {
+                        if (ceh.id === targetCehId) {
+                            ceh.classList.add('mapped-active');
+                            ceh.classList.remove('bg-stone-50');
+                        } else {
+                            ceh.classList.add('mapped-inactive');
+                        }
+                    });
+                    item.classList.add('bg-indigo-50', 'border-indigo-300');
+                });
+
+                item.addEventListener('mouseleave', () => {
+                    cehItems.forEach(ceh => {
+                        ceh.classList.remove('mapped-active', 'mapped-inactive');
+                        ceh.classList.add('bg-stone-50');
+                    });
+                    item.classList.remove('bg-indigo-50', 'border-indigo-300');
+                });
+            });
+
+            const aiTabBtns = document.querySelectorAll('.ai-tab-btn');
+            const aiContents = document.querySelectorAll('.ai-content');
+
+            aiTabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    aiTabBtns.forEach(b => {
+                        b.classList.remove('text-indigo-700', 'border-indigo-700', 'bg-stone-50');
+                        b.classList.add('text-stone-500', 'border-transparent');
+                    });
+                    
+                    btn.classList.add('text-indigo-700', 'border-indigo-700', 'bg-stone-50');
+                    btn.classList.remove('text-stone-500', 'border-transparent');
+
+                    const target = btn.getAttribute('data-target');
+                    aiContents.forEach(content => {
+                        if (content.id === target) {
+                            content.classList.remove('hidden');
+                        } else {
+                            content.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+

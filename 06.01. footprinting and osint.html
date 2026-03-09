@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 06 — Footprinting & OSINT | Cyber.SoHo</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #080b12;
+  --bg-secondary: #0d1117;
+  --bg-card: #161b22;
+  --bg-elevated: #1c2333;
+  --border: #2a3142;
+  --accent: #00c9a7;
+  --accent-dim: #00c9a720;
+  --accent2: #5ce0d8;
+  --cyan: #58a6ff;
+  --orange: #f0883e;
+  --red: #f85149;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  --text: #e2e8f0;
+  --text-dim: #8b949e;
+  --text-muted: #484f58;
+  --font-display: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-display);
+  background: var(--bg-primary);
+  color: var(--text);
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* Noise texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============ HERO ============ */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  width: 800px; height: 800px;
+  background: radial-gradient(circle, var(--accent-dim) 0%, transparent 70%);
+  top: -200px; right: -200px;
+  animation: pulse 8s ease-in-out infinite alternate;
+}
+
+@keyframes pulse { 0% { opacity: 0.3; transform: scale(1); } 100% { opacity: 0.6; transform: scale(1.2); } }
+
+.hero-content { position: relative; z-index: 1; max-width: 900px; padding: 40px 20px; }
+
+.hero-badge {
+  display: inline-block;
+  padding: 6px 20px;
+  border: 1px solid var(--accent);
+  border-radius: 30px;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 30px;
+  animation: fadeUp 0.8s ease-out;
+}
+
+.hero h1 {
+  font-size: clamp(2.8rem, 7vw, 5.5rem);
+  font-weight: 800;
+  line-height: 1.05;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #ffffff 0%, var(--accent2) 50%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: fadeUp 0.8s ease-out 0.1s both;
+}
+
+.hero .subtitle {
+  font-size: 1.3rem;
+  color: var(--text-dim);
+  font-weight: 300;
+  margin-bottom: 40px;
+  animation: fadeUp 0.8s ease-out 0.2s both;
+}
+
+.hero-meta {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+  animation: fadeUp 0.8s ease-out 0.3s both;
+}
+
+.hero-meta span {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-meta .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Scroll indicator */
+.scroll-hint {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: bob 2s ease-in-out infinite;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.scroll-hint::after {
+  content: '';
+  display: block;
+  width: 1px; height: 40px;
+  background: linear-gradient(to bottom, var(--accent), transparent);
+  margin: 10px auto 0;
+}
+
+@keyframes bob { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(8px); } }
+
+/* ============ NAV ============ */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.nav-inner {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  height: 56px;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.nav-inner::-webkit-scrollbar { display: none; }
+
+.nav-link {
+  white-space: nowrap;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.nav-link:hover { color: var(--accent); background: var(--accent-dim); }
+.nav-link.active { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
+
+/* ============ CONTENT ============ */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ============ COURSE CONTEXT ============ */
+.context-section {
+  padding: 80px 0 60px;
+}
+
+.context-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.context-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--cyan), var(--purple));
+}
+
+.context-card h2 {
+  font-size: 1.6rem;
+  color: var(--cyan);
+  margin-bottom: 20px;
+}
+
+.context-card p {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+  line-height: 1.8;
+}
+
+/* ============ LESSON SECTIONS ============ */
+.lesson {
+  padding: 80px 0 40px;
+}
+
+.lesson-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.lesson-number {
+  width: 80px; height: 80px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  color: var(--bg-primary);
+}
+
+.lesson-header-text h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.lesson-header-text .tagline {
+  color: var(--text-dim);
+  font-size: 1rem;
+}
+
+/* Color themes per lesson */
+.lesson-1 .lesson-number { background: var(--cyan); }
+.lesson-1 .lesson-header-text h2 { color: var(--cyan); }
+.lesson-2 .lesson-number { background: var(--green); }
+.lesson-2 .lesson-header-text h2 { color: var(--green); }
+.lesson-3 .lesson-number { background: var(--red); }
+.lesson-3 .lesson-header-text h2 { color: var(--red); }
+.lesson-4 .lesson-number { background: var(--orange); }
+.lesson-4 .lesson-header-text h2 { color: var(--orange); }
+.lesson-5 .lesson-number { background: var(--accent); }
+.lesson-5 .lesson-header-text h2 { color: var(--accent); }
+.lesson-6 .lesson-number { background: var(--purple); }
+.lesson-6 .lesson-header-text h2 { color: var(--purple); }
+
+/* ============ CONTENT BLOCKS ============ */
+.content-block {
+  margin-bottom: 32px;
+}
+
+.content-block h3 {
+  font-size: 1.2rem;
+  color: var(--text);
+  margin-bottom: 12px;
+  padding-left: 16px;
+  border-left: 3px solid var(--accent);
+}
+
+.content-block p {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+  line-height: 1.8;
+}
+
+.content-block a {
+  color: var(--cyan);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.content-block a:hover { border-bottom-color: var(--cyan); }
+
+/* ============ TABLES ============ */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0 30px;
+  font-size: 0.9rem;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.data-table th {
+  background: var(--accent);
+  color: var(--bg-primary);
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.data-table td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+.data-table tr:nth-child(even) td { background: var(--bg-card); }
+.data-table tr:hover td { background: var(--bg-elevated); color: var(--text); }
+.data-table td:first-child { color: var(--text); font-weight: 600; font-family: var(--font-mono); font-size: 0.85rem; }
+
+/* ============ CODE BLOCKS ============ */
+.code-wrapper {
+  margin: 24px 0 32px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.code-header {
+  background: var(--bg-elevated);
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.code-lang {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.code-task {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  max-width: 70%;
+  text-align: right;
+}
+
+.code-body {
+  background: var(--bg-secondary);
+  padding: 20px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.code-body pre {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: var(--text-dim);
+  white-space: pre;
+  tab-size: 4;
+}
+
+.code-body .comment { color: #6a9955; }
+.code-body .keyword { color: #c586c0; }
+.code-body .string { color: #ce9178; }
+.code-body .function { color: #dcdcaa; }
+.code-body .builtin { color: var(--cyan); }
+
+.code-explanation {
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  padding: 20px;
+}
+
+.code-explanation h4 {
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.code-explanation ol {
+  padding-left: 20px;
+  color: var(--text-dim);
+  font-size: 0.88rem;
+}
+
+.code-explanation li { margin-bottom: 6px; }
+
+/* ============ TAKEAWAY BOX ============ */
+.takeaway {
+  background: linear-gradient(135deg, var(--accent-dim), transparent);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin: 32px 0;
+  position: relative;
+}
+
+.takeaway::before {
+  content: 'KEY TAKEAWAY';
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.takeaway p {
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* ============ SCENARIO BOX ============ */
+.scenario {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin: 24px 0;
+  border-left: 4px solid var(--orange);
+}
+
+.scenario-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.scenario p { color: var(--text-dim); font-size: 0.92rem; line-height: 1.7; margin-bottom: 8px; }
+
+/* ============ DIAGRAM EMBED ============ */
+.diagram-container {
+  margin: 24px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.diagram-container svg { width: 100%; height: auto; display: block; }
+
+.diagram-label {
+  padding: 10px 16px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-align: center;
+  border-top: 1px solid var(--border);
+}
+
+/* ============ STRIDE GRID ============ */
+.stride-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.stride-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: transform 0.2s, border-color 0.2s;
+  cursor: default;
+}
+
+.stride-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+
+.stride-letter {
+  font-size: 2.5rem;
+  font-weight: 800;
+  font-family: var(--font-display);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stride-card h4 { font-size: 1rem; margin-bottom: 6px; }
+.stride-card p { font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; }
+
+/* ============ LINKS SECTION ============ */
+.links-section {
+  padding: 60px 0;
+}
+
+.links-section h2 {
+  font-size: 1.8rem;
+  color: var(--cyan);
+  margin-bottom: 32px;
+}
+
+.links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+}
+
+.link-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.link-card:hover { border-color: var(--accent); background: var(--bg-elevated); transform: translateX(4px); }
+
+.link-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  background: var(--accent-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.link-info .link-name { color: var(--text); font-weight: 600; font-size: 0.9rem; }
+.link-info .link-desc { color: var(--text-dim); font-size: 0.78rem; }
+
+/* ============ DISCLAIMER ============ */
+.disclaimer {
+  padding: 60px 0;
+  border-top: 1px solid var(--border);
+}
+
+.disclaimer h2 { font-size: 1.4rem; color: var(--red); margin-bottom: 24px; }
+
+.disclaimer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.disclaimer-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.disclaimer-card h3 { color: var(--text); font-size: 0.95rem; margin-bottom: 8px; }
+.disclaimer-card p { color: var(--text-dim); font-size: 0.82rem; line-height: 1.6; }
+
+/* ============ FOOTER ============ */
+footer {
+  padding: 40px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ============ PROGRESS BAR ============ */
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--cyan));
+  z-index: 200;
+  transition: width 0.1s;
+}
+
+/* ============ BACK TO TOP ============ */
+.back-top {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--bg-primary);
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  z-index: 50;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-top.visible { opacity: 1; transform: translateY(0); }
+.back-top:hover { transform: translateY(-3px); box-shadow: 0 8px 25px var(--accent-dim); }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+  .hero h1 { font-size: 2.5rem; }
+  .lesson-header { flex-direction: column; text-align: center; }
+  .lesson-number { width: 60px; height: 60px; font-size: 1.5rem; }
+  .stride-grid { grid-template-columns: 1fr; }
+  .hero-meta { flex-direction: column; align-items: center; }
+  .nav-inner { padding: 0 12px; }
+}
+
+/* ============ COLLAPSIBLE ============ */
+.collapsible-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 2px;
+  transition: all 0.2s;
+  font-family: var(--font-display);
+}
+
+.collapsible-trigger:hover { border-color: var(--accent); }
+
+.collapsible-trigger .arrow {
+  transition: transform 0.3s;
+  color: var(--accent);
+}
+
+.collapsible-trigger.open .arrow { transform: rotate(180deg); }
+
+.collapsible-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease-out;
+  margin-bottom: 12px;
+}
+
+.collapsible-content.open {
+  max-height: 3000px;
+}
+
+.collapsible-inner {
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+}
+
+/* Stats bar */
+.stats-bar {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 24px 0;
+}
+
+.stat-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 28px;
+  text-align: center;
+  flex: 1;
+  min-width: 140px;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* Divider */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  margin: 40px 0;
+}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="top">
+  <div class="hero-content">
+    <div class="hero-badge">Intrusion Testing Course — Day 06</div>
+    <h1>Footprinting & OSINT</h1>
+    <p class="subtitle">Passive Reconnaissance — The Art of Seeing Without Being Seen</p>
+    <div class="hero-meta">
+      <span><span class="dot"></span>Monday, 9 March 2026</span>
+      <span><span class="dot"></span>Class 1 — 1 Hour Lecture</span>
+      <span><span class="dot"></span>6 Lessons</span>
+      <span><span class="dot"></span>Cyber.SoHo</span>
+    </div>
+  </div>
+  <div class="scroll-hint">Scroll to begin</div>
+</section>
+
+<!-- ============ NAV ============ -->
+<nav class="nav" id="mainNav">
+  <div class="nav-inner">
+    <a href="#context" class="nav-link">Overview</a>
+    <a href="#lesson1" class="nav-link">1. DNS/WHOIS</a>
+    <a href="#lesson2" class="nav-link">2. Subdomains</a>
+    <a href="#lesson3" class="nav-link">3. Breach Data</a>
+    <a href="#lesson4" class="nav-link">4. Metadata</a>
+    <a href="#lesson5" class="nav-link">5. Attack Surface</a>
+    <a href="#lesson6" class="nav-link">6. Threat Modeling</a>
+    <a href="#resources" class="nav-link">Resources</a>
+  </div>
+</nav>
+
+<!-- ============ COURSE CONTEXT ============ -->
+<section class="context-section" id="context">
+  <div class="container">
+    <div class="context-card">
+      <h2>Where We Are Today</h2>
+      <p>Over the past five days we built a solid foundation: course ethics and law, Rules of Engagement (RoE), scoping, the <a href="http://www.pentest-standard.org/" target="_blank">PTES (Penetration Testing Execution Standard)</a> and <a href="https://www.eccouncil.org/programs/certified-ethical-hacker-ceh/" target="_blank">CEH (Certified Ethical Hacker)</a> phases, set up isolated labs with <a href="https://www.whonix.org/" target="_blank">Whonix</a>, <a href="https://www.kali.org/" target="_blank">Kali Linux</a>, and <a href="https://docs.rapid7.com/metasploit/metasploitable-2/" target="_blank">Metasploitable</a>, and mastered Attacker OPSEC (Operations Security) with <a href="https://opnsense.org/" target="_blank">OPNsense</a>, dual VPN (Virtual Private Network) chains, and <a href="https://www.qubes-os.org/" target="_blank">Qubes OS</a>.</p>
+      <p>Today we transition from <strong>defence of the tester</strong> to <strong>understanding the target</strong>. Every technique in this lecture works by querying public databases, search engines, certificate logs, and breach repositories. <em>The target never knows you are looking.</em></p>
+
+      <div class="stats-bar">
+        <div class="stat-item"><div class="stat-value">6</div><div class="stat-label">Lessons Today</div></div>
+        <div class="stat-item"><div class="stat-value">0</div><div class="stat-label">Packets to Target</div></div>
+        <div class="stat-item"><div class="stat-value">100%</div><div class="stat-label">Passive</div></div>
+        <div class="stat-item"><div class="stat-value">20+</div><div class="stat-label">Tools Covered</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LESSON 1: DNS / WHOIS ============ -->
+<section class="lesson lesson-1" id="lesson1">
+  <div class="container">
+    <div class="lesson-header">
+      <div class="lesson-number">01</div>
+      <div class="lesson-header-text">
+        <h2>DNS / WHOIS</h2>
+        <div class="tagline">The Internet's Public Phone Book</div>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h3>What Is DNS (Domain Name System)?</h3>
+      <p>DNS translates human-readable domain names into machine-readable IP (Internet Protocol) addresses. When you type <code>example.com</code> into a browser, a DNS resolver returns <code>93.184.216.34</code>. But DNS stores far more than IP addresses — each record type reveals a different piece of the target's infrastructure.</p>
+    </div>
+
+    <table class="data-table">
+      <thead><tr><th>Record</th><th>What It Reveals</th><th>Intel Value</th></tr></thead>
+      <tbody>
+        <tr><td>A / AAAA</td><td>IPv4 / IPv6 address</td><td>Hosting provider, CDN (Content Delivery Network)</td></tr>
+        <tr><td>MX</td><td>Mail Exchanger server</td><td>Email infrastructure</td></tr>
+        <tr><td>NS</td><td>Name Server</td><td>DNS hosting provider</td></tr>
+        <tr><td>TXT</td><td>SPF (Sender Policy Framework), DKIM (DomainKeys Identified Mail), DMARC (Domain-based Message Authentication)</td><td>Third-party services in use</td></tr>
+        <tr><td>CNAME</td><td>Alias to another domain</td><td>Cloud services, CDNs</td></tr>
+        <tr><td>SOA</td><td>Zone admin email, serial number</td><td>Admin contact, update frequency</td></tr>
+      </tbody>
+    </table>
+
+    <div class="content-block">
+      <h3>What Is WHOIS?</h3>
+      <p>WHOIS is a query-and-response protocol defined in <a href="https://www.rfc-editor.org/rfc/rfc3912" target="_blank">RFC 3912</a> that lets anyone look up who registered a domain, when it was registered, when it expires, which registrar was used, and what name servers are authoritative. The data is maintained by Regional Internet Registries (RIRs) such as <a href="https://www.arin.net/" target="_blank">ARIN (American Registry for Internet Numbers)</a> for North America, <a href="https://www.ripe.net/" target="_blank">RIPE NCC</a> for Europe, and <a href="https://www.apnic.net/" target="_blank">APNIC</a> for Asia-Pacific.</p>
+      <p>Since the introduction of GDPR (General Data Protection Regulation) in 2018, many registrars redact personal details, but corporate registrations still frequently expose the company name, technical contact, and registrar abuse contact.</p>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-title">Real-Life Example — The Coffee-Shop Recon</div>
+      <p>You are sitting in a coffee shop with your laptop. Your client, "BeanBrew Coffee," has authorised a penetration test. Your first step — before touching any scanner — is to run <code>whois beanbrew.com</code> and <code>dig beanbrew.com ANY</code>. Within seconds you discover their hosting provider (AWS), mail server (Google Workspace via MX records), and that their WHOIS record reveals the CTO's email address. Zero packets sent to the target.</p>
+    </div>
+
+    <!-- Collapsible code example -->
+    <button class="collapsible-trigger" onclick="toggleCollapsible(this)">
+      <span>View Code Example — DNS/WHOIS Passive Recon Script (Python)</span>
+      <span class="arrow">&#9660;</span>
+    </button>
+    <div class="collapsible-content">
+      <div class="collapsible-inner">
+        <div class="code-wrapper">
+          <div class="code-header">
+            <span class="code-lang">Python 3</span>
+            <span class="code-task">Automates DNS record queries and WHOIS lookups</span>
+          </div>
+          <div class="code-body"><pre><span class="comment"># Import socket for DNS resolution via the OS resolver</span>
+<span class="keyword">import</span> socket
+<span class="comment"># Import subprocess to run external commands (whois, nslookup)</span>
+<span class="keyword">import</span> subprocess
+<span class="comment"># Import sys for command-line argument parsing</span>
+<span class="keyword">import</span> sys
+<span class="comment"># Import datetime to timestamp the recon report</span>
+<span class="keyword">from</span> datetime <span class="keyword">import</span> datetime
+
+<span class="keyword">def</span> <span class="function">resolve_domain</span>(domain):
+    <span class="comment"># Query the A record via the default DNS resolver</span>
+    <span class="keyword">try</span>:
+        ip = socket.<span class="builtin">gethostbyname</span>(domain)
+        <span class="builtin">print</span>(<span class="string">f"[+] A Record: {domain} → {ip}"</span>)
+        <span class="keyword">return</span> ip
+    <span class="keyword">except</span> socket.gaierror:
+        <span class="builtin">print</span>(<span class="string">f"[-] Could not resolve {domain}"</span>)
+        <span class="keyword">return</span> <span class="keyword">None</span>
+
+<span class="keyword">def</span> <span class="function">whois_lookup</span>(domain):
+    <span class="comment"># Execute the system 'whois' command and capture output</span>
+    result = subprocess.<span class="builtin">run</span>(
+        [<span class="string">"whois"</span>, domain],
+        capture_output=<span class="keyword">True</span>, text=<span class="keyword">True</span>, timeout=15
+    )
+    <span class="builtin">print</span>(result.stdout)
+
+<span class="keyword">def</span> <span class="function">dns_records</span>(domain):
+    <span class="comment"># Query A, MX, NS, and TXT record types</span>
+    <span class="keyword">for</span> rtype <span class="keyword">in</span> [<span class="string">"A"</span>, <span class="string">"MX"</span>, <span class="string">"NS"</span>, <span class="string">"TXT"</span>]:
+        result = subprocess.<span class="builtin">run</span>(
+            [<span class="string">"nslookup"</span>, <span class="string">f"-type={rtype}"</span>, domain],
+            capture_output=<span class="keyword">True</span>, text=<span class="keyword">True</span>, timeout=10
+        )
+        <span class="builtin">print</span>(<span class="string">f"--- {rtype} Records ---"</span>)
+        <span class="builtin">print</span>(result.stdout)
+
+<span class="comment"># Main: parse target, run all recon modules</span>
+target = sys.argv[1]
+resolve_domain(target)
+whois_lookup(target)
+dns_records(target)</pre></div>
+          <div class="code-explanation">
+            <h4>Step-by-Step Explanation</h4>
+            <ol>
+              <li><strong>resolve_domain()</strong> — Uses <code>socket.gethostbyname()</code> to look up the A record via the OS resolver.</li>
+              <li><strong>whois_lookup()</strong> — Spawns the <code>whois</code> command, captures registrant data, name servers, and dates.</li>
+              <li><strong>dns_records()</strong> — Loops through A, MX, NS, TXT record types using <code>nslookup</code>.</li>
+              <li>MX records reveal mail servers; NS records reveal DNS hosting; TXT records contain SPF and verification tokens.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="takeaway"><p>DNS and WHOIS are your absolute first move — they cost nothing, leave no trace on the target, and immediately reveal domain ownership, hosting providers, and mail infrastructure.</p></div>
+  </div>
+</section>
+
+<div class="container"><div class="section-divider"></div></div>
+
+<!-- ============ LESSON 2: SUBDOMAINS ============ -->
+<section class="lesson lesson-2" id="lesson2">
+  <div class="container">
+    <div class="lesson-header">
+      <div class="lesson-number">02</div>
+      <div class="lesson-header-text">
+        <h2>Subdomains</h2>
+        <div class="tagline">Finding the Forgotten Doors</div>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h3>Why Subdomains Are the Skeleton Keys of Passive Recon</h3>
+      <p>Large enterprises can have thousands of subdomains — many created for temporary projects, staging environments, or internal tools, then forgotten. These "shadow" subdomains often run outdated software, lack WAF (Web Application Firewall) protection, and sit on the public internet with default credentials. Each subdomain is a potential entry point.</p>
+    </div>
+
+    <div class="content-block">
+      <h3>Passive Discovery Sources</h3>
+      <p><strong>CT (Certificate Transparency) logs</strong> are the single most powerful passive source. Since 2018, all major CAs (Certificate Authorities) publish every TLS (Transport Layer Security) certificate to publicly auditable logs. If <code>staging.secret.acme.com</code> ever had a certificate — it is permanently searchable via <a href="https://crt.sh/" target="_blank">crt.sh</a>.</p>
+      <p>Other sources include search-engine dorking (<code>site:target.com</code>), DNS aggregation APIs (<a href="https://securitytrails.com/" target="_blank">SecurityTrails</a>, <a href="https://www.virustotal.com/" target="_blank">VirusTotal</a>), and the <a href="https://web.archive.org/" target="_blank">Wayback Machine</a>.</p>
+    </div>
+
+    <table class="data-table">
+      <thead><tr><th>Tool</th><th>Method</th><th>Key Feature</th></tr></thead>
+      <tbody>
+        <tr><td>crt.sh</td><td>CT log search</td><td>Free, comprehensive, API available</td></tr>
+        <tr><td>OWASP Amass</td><td>Multi-source aggregation</td><td>Combines 50+ data sources</td></tr>
+        <tr><td>Subfinder</td><td>Passive API queries</td><td>Very fast, minimal footprint</td></tr>
+        <tr><td>theHarvester</td><td>Multi-purpose OSINT</td><td>Emails + subdomains + IPs in one tool</td></tr>
+      </tbody>
+    </table>
+
+    <div class="scenario">
+      <div class="scenario-title">Real-Life Example — The Forgotten Staging Server</div>
+      <p>Your client mentions "about five public subdomains." You run a CT log search and discover 47 — including <code>staging.client.com</code>, <code>jenkins.client.com</code>, and <code>old-api.client.com</code>. The staging server runs a two-year-old version with debug mode enabled and a default admin password.</p>
+    </div>
+
+    <button class="collapsible-trigger" onclick="toggleCollapsible(this)">
+      <span>View Code Example — Passive Subdomain Enumeration (Bash)</span>
+      <span class="arrow">&#9660;</span>
+    </button>
+    <div class="collapsible-content">
+      <div class="collapsible-inner">
+        <div class="code-wrapper">
+          <div class="code-header">
+            <span class="code-lang">Bash</span>
+            <span class="code-task">Queries crt.sh CT logs and resolves discovered subdomains</span>
+          </div>
+          <div class="code-body"><pre><span class="comment">#!/usr/bin/env bash</span>
+<span class="comment"># Read target domain from argument; default to example.com</span>
+TARGET=<span class="string">"${1:-example.com}"</span>
+
+<span class="comment"># Query crt.sh Certificate Transparency logs</span>
+<span class="comment"># curl -s: silent mode; jq: extract domain names; sort -u: deduplicate</span>
+curl -s <span class="string">"https://crt.sh/?q=%25.${TARGET}&output=json"</span> \
+  | jq -r <span class="string">'.[].name_value'</span> 2>/dev/null \
+  | sort -u > <span class="string">"subdomains_${TARGET}.txt"</span>
+
+<span class="comment"># Count unique subdomains found</span>
+COUNT=$(wc -l < <span class="string">"subdomains_${TARGET}.txt"</span> | tr -d <span class="string">' '</span>)
+echo <span class="string">"[+] Found ${COUNT} unique subdomain(s)"</span>
+
+<span class="comment"># Resolve each subdomain to check if it's live</span>
+<span class="keyword">while</span> IFS= read -r sub; <span class="keyword">do</span>
+    <span class="comment"># dig +short returns only the IP address</span>
+    IP=$(dig +short <span class="string">"$sub"</span> 2>/dev/null | head -1)
+    <span class="keyword">if</span> [ -n <span class="string">"$IP"</span> ]; <span class="keyword">then</span>
+        echo <span class="string">"  ${sub}  →  ${IP}"</span>
+    <span class="keyword">fi</span>
+<span class="keyword">done</span> < <span class="string">"subdomains_${TARGET}.txt"</span></pre></div>
+          <div class="code-explanation">
+            <h4>Step-by-Step Explanation</h4>
+            <ol>
+              <li><strong>crt.sh query</strong> — Uses <code>curl</code> to fetch JSON from crt.sh with a wildcard query. <code>jq</code> extracts domain names.</li>
+              <li><strong>Deduplication</strong> — <code>sort -u</code> removes duplicate entries and alphabetises.</li>
+              <li><strong>Resolution loop</strong> — For each subdomain, <code>dig +short</code> checks if it has a live A record.</li>
+              <li>Two output files are produced: all discovered subdomains, and only the live ones with IPs.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="takeaway"><p>Organisations routinely underestimate their own attack surface. Certificate Transparency logs reveal subdomains the target doesn't even know they have — including forgotten staging, dev, and admin servers.</p></div>
+  </div>
+</section>
+
+<div class="container"><div class="section-divider"></div></div>
+
+<!-- ============ LESSON 3: BREACH DATA ============ -->
+<section class="lesson lesson-3" id="lesson3">
+  <div class="container">
+    <div class="lesson-header">
+      <div class="lesson-number">03</div>
+      <div class="lesson-header-text">
+        <h2>Breach Data</h2>
+        <div class="tagline">When Someone Else Does the Hacking for You</div>
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-item"><div class="stat-value" style="color:var(--red)">80%+</div><div class="stat-label">Breaches involving stolen credentials — Verizon 2024 DBIR</div></div>
+      <div class="stat-item"><div class="stat-value">13B+</div><div class="stat-label">Accounts indexed by HIBP</div></div>
+      <div class="stat-item"><div class="stat-value">800+</div><div class="stat-label">Known data breaches catalogued</div></div>
+    </div>
+
+    <div class="content-block">
+      <h3>The Credential Reuse Chain</h3>
+      <p>When employees reuse their corporate email and password on third-party services that later get breached, those credentials end up in publicly searchable databases. A penetration tester can find them passively and legally. The most well-known aggregator is <a href="https://haveibeenpwned.com/" target="_blank">Have I Been Pwned (HIBP)</a>, created by Troy Hunt. Other sources include <a href="https://dehashed.com/" target="_blank">DeHashed</a> and <a href="https://intelx.io/" target="_blank">IntelligenceX (IntelX)</a>.</p>
+    </div>
+
+    <table class="data-table">
+      <thead><tr><th>Source</th><th>Indexes</th><th>Access</th></tr></thead>
+      <tbody>
+        <tr><td>HIBP</td><td>13+ billion accounts, 800+ breaches</td><td>Free / API key</td></tr>
+        <tr><td>DeHashed</td><td>Searchable breach database</td><td>Subscription</td></tr>
+        <tr><td>IntelligenceX</td><td>Paste sites, breach archives</td><td>Freemium</td></tr>
+      </tbody>
+    </table>
+
+    <div class="scenario">
+      <div class="scenario-title">Real-Life Example — The Recycled Password</div>
+      <p>You query HIBP and discover the CFO (Chief Financial Officer)'s corporate email appeared in the 2021 LinkedIn breach with leaked passwords. During the active phase, you find the same password on the corporate VPN — instant remote access from a single reused credential.</p>
+    </div>
+
+    <button class="collapsible-trigger" onclick="toggleCollapsible(this)">
+      <span>View Code Example — Breach-Data Exposure Checker (Python)</span>
+      <span class="arrow">&#9660;</span>
+    </button>
+    <div class="collapsible-content">
+      <div class="collapsible-inner">
+        <div class="code-wrapper">
+          <div class="code-header"><span class="code-lang">Python 3</span><span class="code-task">Queries HIBP API for breach exposure</span></div>
+          <div class="code-body"><pre><span class="keyword">import</span> requests, sys, time
+
+HIBP_URL = <span class="string">"https://haveibeenpwned.com/api/v3/breachedaccount/"</span>
+HEADERS = {<span class="string">"User-Agent"</span>: <span class="string">"CyberSoHo-BreachChecker/1.0"</span>}
+
+<span class="keyword">def</span> <span class="function">check_breach</span>(email):
+    <span class="comment"># Send GET request to HIBP API with target email</span>
+    resp = requests.<span class="builtin">get</span>(f<span class="string">"{HIBP_URL}{email}?truncateResponse=false"</span>, headers=HEADERS)
+    <span class="keyword">if</span> resp.status_code == 200:
+        <span class="keyword">return</span> resp.json()  <span class="comment"># Email found in breach(es)</span>
+    <span class="keyword">elif</span> resp.status_code == 404:
+        <span class="keyword">return</span> <span class="keyword">None</span>         <span class="comment"># Not in any known breach</span>
+    <span class="keyword">elif</span> resp.status_code == 429:
+        time.<span class="builtin">sleep</span>(2)        <span class="comment"># Rate-limited, pause and retry</span>
+        <span class="keyword">return</span> <span class="string">"RATE_LIMITED"</span>
+
+<span class="comment"># Display breach results with name, date, and leaked data classes</span>
+result = check_breach(sys.argv[1])
+<span class="keyword">if</span> result:
+    <span class="keyword">for</span> b <span class="keyword">in</span> result:
+        <span class="builtin">print</span>(f<span class="string">"Breach: {b['Name']} | Date: {b['BreachDate']}"</span>)
+        <span class="builtin">print</span>(f<span class="string">"  Leaked: {', '.join(b['DataClasses'])}"</span>)</pre></div>
+          <div class="code-explanation">
+            <h4>Step-by-Step Explanation</h4>
+            <ol>
+              <li>Sends an HTTP GET to HIBP's v3 API with the email address appended to the URL.</li>
+              <li>HTTP 200 = email found in breach (returns JSON). HTTP 404 = clean. HTTP 429 = rate-limited.</li>
+              <li>Displays breach names, dates, affected account counts, and leaked data classes (passwords, IPs, etc.).</li>
+              <li>Note: HIBP API now requires an API key — obtain one at <a href="https://haveibeenpwned.com/API/Key" target="_blank">haveibeenpwned.com/API/Key</a>.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="takeaway"><p>Breach data is the highest-value passive OSINT source. The most dangerous vulnerability is often a human one — password reuse. Always check HIBP before active testing begins.</p></div>
+  </div>
+</section>
+
+<div class="container"><div class="section-divider"></div></div>
+
+<!-- ============ LESSON 4: METADATA ============ -->
+<section class="lesson lesson-4" id="lesson4">
+  <div class="container">
+    <div class="lesson-header">
+      <div class="lesson-number">04</div>
+      <div class="lesson-header-text">
+        <h2>Metadata</h2>
+        <div class="tagline">The Invisible Fingerprints in Every File</div>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h3>What Is Metadata?</h3>
+      <p>Every document, image, and presentation carries invisible passengers — data <em>about</em> the data. A PDF (Portable Document Format) might reveal the author's Windows username and an internal file path (<code>\\CORPFS01\Finance\Reports\</code>). A photograph could contain GPS (Global Positioning System) coordinates. This is completely passive — download a public file, run <a href="https://exiftool.org/" target="_blank">ExifTool</a>, and the intelligence flows.</p>
+    </div>
+
+    <table class="data-table">
+      <thead><tr><th>Metadata Field</th><th>Intelligence Value</th></tr></thead>
+      <tbody>
+        <tr><td>Author / Creator</td><td>Usernames → potential login credentials</td></tr>
+        <tr><td>Company</td><td>Confirms organisation name as configured in Office</td></tr>
+        <tr><td>Application & Version</td><td>Software version → matching CVEs (Common Vulnerabilities and Exposures)</td></tr>
+        <tr><td>File Path</td><td>Internal server names and folder structure</td></tr>
+        <tr><td>GPS Coordinates</td><td>Physical office locations from photos</td></tr>
+        <tr><td>Last Modified By</td><td>Additional user accounts beyond the creator</td></tr>
+      </tbody>
+    </table>
+
+    <div class="scenario">
+      <div class="scenario-title">Real-Life Example — The CEO's Photo Reveals the HQ</div>
+      <p>You download the CEO's headshot from the company's "About Us" page. Running <code>exiftool ceo_photo.jpg</code> reveals EXIF (Exchangeable Image File Format) data with GPS coordinates pointing to an undisclosed secondary office in Arlington, Virginia, the camera model (iPhone 14 Pro), and the exact date the photo was taken.</p>
+    </div>
+
+    <button class="collapsible-trigger" onclick="toggleCollapsible(this)">
+      <span>View Code Example — Metadata Extractor (Python)</span>
+      <span class="arrow">&#9660;</span>
+    </button>
+    <div class="collapsible-content">
+      <div class="collapsible-inner">
+        <div class="code-wrapper">
+          <div class="code-header"><span class="code-lang">Python 3</span><span class="code-task">Extracts metadata from PDF, DOCX, and images</span></div>
+          <div class="code-body"><pre><span class="keyword">import</span> os, sys, subprocess, zipfile
+<span class="keyword">import</span> xml.etree.ElementTree <span class="keyword">as</span> ET
+
+<span class="keyword">def</span> <span class="function">extract_with_exiftool</span>(filepath):
+    <span class="comment"># Run ExifTool — industry standard for metadata extraction</span>
+    result = subprocess.<span class="builtin">run</span>(
+        [<span class="string">"exiftool"</span>, filepath],
+        capture_output=<span class="keyword">True</span>, text=<span class="keyword">True</span>, timeout=30
+    )
+    <span class="builtin">print</span>(result.stdout)
+
+<span class="keyword">def</span> <span class="function">extract_office_metadata</span>(filepath):
+    <span class="comment"># DOCX/PPTX/XLSX are ZIP archives with XML metadata</span>
+    <span class="keyword">with</span> zipfile.ZipFile(filepath, <span class="string">'r'</span>) <span class="keyword">as</span> zf:
+        <span class="comment"># Parse docProps/core.xml for author, dates</span>
+        <span class="keyword">if</span> <span class="string">'docProps/core.xml'</span> <span class="keyword">in</span> zf.namelist():
+            root = ET.<span class="builtin">fromstring</span>(zf.read(<span class="string">'docProps/core.xml'</span>))
+            <span class="comment"># Extract dc:creator, cp:lastModifiedBy, etc.</span>
+        <span class="comment"># Parse docProps/app.xml for Application, Company, Version</span>
+        <span class="keyword">if</span> <span class="string">'docProps/app.xml'</span> <span class="keyword">in</span> zf.namelist():
+            root = ET.<span class="builtin">fromstring</span>(zf.read(<span class="string">'docProps/app.xml'</span>))
+
+<span class="comment"># Detect file type and run appropriate extraction</span>
+ext = os.path.<span class="builtin">splitext</span>(sys.argv[1])[1].lower()
+<span class="keyword">if</span> ext <span class="keyword">in</span> [<span class="string">'.docx'</span>, <span class="string">'.pptx'</span>, <span class="string">'.xlsx'</span>]:
+    extract_office_metadata(sys.argv[1])
+extract_with_exiftool(sys.argv[1])</pre></div>
+          <div class="code-explanation">
+            <h4>Step-by-Step Explanation</h4>
+            <ol>
+              <li><strong>ExifTool</strong> handles 400+ file formats and is the industry standard for forensic metadata work.</li>
+              <li><strong>Office XML parsing</strong> — opens DOCX/PPTX/XLSX as ZIP archives and reads the XML metadata files directly.</li>
+              <li>The script extracts author, company, application version, creation dates, and file paths.</li>
+              <li>Look for: usernames, network paths, GPS coordinates, software versions.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="takeaway"><p>Every published file is a potential intelligence source. A single PDF can reveal usernames, software versions, internal server names, and physical locations — all without the target knowing.</p></div>
+  </div>
+</section>
+
+<div class="container"><div class="section-divider"></div></div>
+
+<!-- ============ LESSON 5: ATTACK SURFACE MAPPING ============ -->
+<section class="lesson lesson-5" id="lesson5">
+  <div class="container">
+    <div class="lesson-header">
+      <div class="lesson-number">05</div>
+      <div class="lesson-header-text">
+        <h2>Attack Surface Mapping</h2>
+        <div class="tagline">Connecting All the Dots Into a Single Picture</div>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h3>What Is an Attack Surface?</h3>
+      <p>The attack surface is the totality of every digital asset an organisation exposes — every system, service, port, API (Application Programming Interface) endpoint, employee email, cloud storage bucket, and third-party integration. The wider the attack surface, the more opportunities an adversary has. Attack surface mapping combines all data from Lessons 1–4 into a structured inventory.</p>
+    </div>
+
+    <div class="content-block">
+      <h3>The Mapping Process</h3>
+      <p><strong>1. Collect</strong> — DNS records, subdomains, breach data, metadata.
+      <strong>2. Catalogue</strong> — Organise every asset by type and risk.
+      <strong>3. Resolve</strong> — Map subdomains to IPs, identify hosting providers.
+      <strong>4. Enrich</strong> — Cross-reference with <a href="https://www.shodan.io/" target="_blank">Shodan</a> and <a href="https://censys.io/" target="_blank">Censys</a> for open ports and service banners.
+      <strong>5. Visualise</strong> — Create a unified map with <a href="https://www.maltego.com/" target="_blank">Maltego</a> or a custom tool.
+      <strong>6. Prioritise</strong> — Rank by risk to guide active testing.</p>
+    </div>
+
+    <table class="data-table">
+      <thead><tr><th>Tool</th><th>Function</th><th>Best For</th></tr></thead>
+      <tbody>
+        <tr><td>Shodan</td><td>Internet-wide device & service search</td><td>Open ports, banners, IoT devices</td></tr>
+        <tr><td>Censys</td><td>Host and certificate search</td><td>TLS certificate analysis</td></tr>
+        <tr><td>Maltego</td><td>Visual link-analysis graph</td><td>Connecting entities visually</td></tr>
+        <tr><td>SpiderFoot</td><td>Automated OSINT collection</td><td>Comprehensive automation</td></tr>
+        <tr><td>Recon-ng</td><td>Modular OSINT framework</td><td>Custom recon workflows</td></tr>
+      </tbody>
+    </table>
+
+    <div class="scenario">
+      <div class="scenario-title">Real-Life Example — The Forgotten S3 Bucket</div>
+      <p>Mapping a healthcare startup, you discover an open Elasticsearch instance on port 9200 via Shodan with no authentication — containing patient appointment logs. A DNS TXT record reveals an AWS S3 verification token. You find <code>healthcorp-backups.s3.amazonaws.com</code> is publicly readable — containing database exports with PHI (Protected Health Information) that violates <a href="https://www.hhs.gov/hipaa/index.html" target="_blank">HIPAA</a>.</p>
+    </div>
+
+    <div class="takeaway"><p>Attack surface mapping is not about finding one vulnerability — it is about understanding the shape of the target's total digital exposure so you can prioritise where to focus active testing.</p></div>
+  </div>
+</section>
+
+<div class="container"><div class="section-divider"></div></div>
+
+<!-- ============ LESSON 6: THREAT MODELING ============ -->
+<section class="lesson lesson-6" id="lesson6">
+  <div class="container">
+    <div class="lesson-header">
+      <div class="lesson-number">06</div>
+      <div class="lesson-header-text">
+        <h2>Threat Modeling</h2>
+        <div class="tagline">From Data Collection to Strategic Thinking</div>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h3>The STRIDE Framework</h3>
+      <p>Created by Microsoft engineers Loren Kohnfelder and Praerit Garg in 1999, STRIDE provides a systematic checklist ensuring no major threat category is overlooked. For each component in a Data Flow Diagram (DFD), you ask all six questions.</p>
+    </div>
+
+    <div class="stride-grid">
+      <div class="stride-card"><div class="stride-letter" style="color:var(--red)">S</div><h4 style="color:var(--red)">Spoofing</h4><p>Can an attacker pretend to be someone or something else? (e.g., forging email headers to impersonate the CEO)</p></div>
+      <div class="stride-card"><div class="stride-letter" style="color:var(--orange)">T</div><h4 style="color:var(--orange)">Tampering</h4><p>Can data be modified without authorisation? (e.g., altering a price field in an HTTP request)</p></div>
+      <div class="stride-card"><div class="stride-letter" style="color:var(--purple)">R</div><h4 style="color:var(--purple)">Repudiation</h4><p>Can an actor deny having performed an action? (e.g., deleting audit logs after unauthorised access)</p></div>
+      <div class="stride-card"><div class="stride-letter" style="color:var(--cyan)">I</div><h4 style="color:var(--cyan)">Information Disclosure</h4><p>Can sensitive data leak to unauthorised parties? (e.g., error messages revealing database table names)</p></div>
+      <div class="stride-card"><div class="stride-letter" style="color:var(--green)">D</div><h4 style="color:var(--green)">Denial of Service</h4><p>Can an attacker disrupt availability? (e.g., flooding a login page with requests)</p></div>
+      <div class="stride-card"><div class="stride-letter" style="color:var(--orange)">E</div><h4 style="color:var(--orange)">Elevation of Privilege</h4><p>Can an attacker gain higher access than allowed? (e.g., a regular user reaching admin endpoints)</p></div>
+    </div>
+
+    <div class="content-block">
+      <h3>The Four-Step Process</h3>
+      <p><strong>1. Identify Assets</strong> — What are we protecting?
+      <strong>2. Map Components</strong> — Draw a DFD (Data Flow Diagram) with trust boundaries.
+      <strong>3. Apply STRIDE</strong> — Ask all six questions per component.
+      <strong>4. Prioritise & Mitigate</strong> — Rate risks and propose countermeasures.</p>
+      <p>Other methodologies: <strong>PASTA</strong> (Process for Attack Simulation and Threat Analysis), <strong>DREAD</strong> (Damage, Reproducibility, Exploitability, Affected Users, Discoverability), and <strong>LINDDUN</strong> (privacy-focused). Free tools include <a href="https://owasp.org/www-project-threat-dragon/" target="_blank">OWASP Threat Dragon</a> and the <a href="https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool" target="_blank">Microsoft Threat Modeling Tool</a>.</p>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-title">Real-Life Example — Banking STRIDE Analysis</div>
+      <p>Testing an online banking portal, you STRIDE-model four components: web app, REST API, MySQL database, and payment processor. The API analysis immediately reveals: (S) tokens can be spoofed without proper signing, (T) transaction amounts are vulnerable to tampering, (I) verbose errors disclose stack traces, and (E) horizontal privilege escalation lets one customer view another's account.</p>
+    </div>
+
+    <button class="collapsible-trigger" onclick="toggleCollapsible(this)">
+      <span>View Code Example — STRIDE Threat Model Generator (Python)</span>
+      <span class="arrow">&#9660;</span>
+    </button>
+    <div class="collapsible-content">
+      <div class="collapsible-inner">
+        <div class="code-wrapper">
+          <div class="code-header"><span class="code-lang">Python 3</span><span class="code-task">Interactive STRIDE assessment with JSON report output</span></div>
+          <div class="code-body"><pre><span class="keyword">import</span> json
+<span class="keyword">from</span> datetime <span class="keyword">import</span> datetime
+
+<span class="comment"># Define the six STRIDE categories</span>
+STRIDE = {
+    <span class="string">"S"</span>: {<span class="string">"name"</span>: <span class="string">"Spoofing"</span>,
+          <span class="string">"question"</span>: <span class="string">"Can an attacker impersonate a user or system?"</span>},
+    <span class="string">"T"</span>: {<span class="string">"name"</span>: <span class="string">"Tampering"</span>,
+          <span class="string">"question"</span>: <span class="string">"Can data be modified without authorisation?"</span>},
+    <span class="string">"R"</span>: {<span class="string">"name"</span>: <span class="string">"Repudiation"</span>,
+          <span class="string">"question"</span>: <span class="string">"Can an actor deny their actions?"</span>},
+    <span class="string">"I"</span>: {<span class="string">"name"</span>: <span class="string">"Information Disclosure"</span>,
+          <span class="string">"question"</span>: <span class="string">"Can sensitive data leak?"</span>},
+    <span class="string">"D"</span>: {<span class="string">"name"</span>: <span class="string">"Denial of Service"</span>,
+          <span class="string">"question"</span>: <span class="string">"Can availability be disrupted?"</span>},
+    <span class="string">"E"</span>: {<span class="string">"name"</span>: <span class="string">"Elevation of Privilege"</span>,
+          <span class="string">"question"</span>: <span class="string">"Can an attacker gain higher access?"</span>},
+}
+
+<span class="comment"># Collect components, assess each against all 6 categories</span>
+<span class="comment"># For each "yes", collect threat detail and mitigation</span>
+<span class="comment"># Generate JSON report: threat_model_AppName.json</span></pre></div>
+          <div class="code-explanation">
+            <h4>Step-by-Step Explanation</h4>
+            <ol>
+              <li>The STRIDE dictionary stores all six categories with guiding questions.</li>
+              <li>The script interactively collects application components from the analyst.</li>
+              <li>For each component, all six STRIDE questions are asked. "Yes" triggers collection of threat details and mitigations.</li>
+              <li>A JSON report is generated with all findings, timestamped for audit trail.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="takeaway"><p>Threat modeling ensures no major threat category is overlooked. It is the strategic bridge between passive recon (gathering data) and active exploitation (testing vulnerabilities).</p></div>
+  </div>
+</section>
+
+<div class="container"><div class="section-divider"></div></div>
+
+<!-- ============ RESOURCES ============ -->
+<section class="links-section" id="resources">
+  <div class="container">
+    <h2>Resources & Tools</h2>
+    <div class="links-grid">
+      <a href="https://crt.sh/" target="_blank" class="link-card"><div class="link-icon">CT</div><div class="link-info"><div class="link-name">crt.sh</div><div class="link-desc">Certificate Transparency log search</div></div></a>
+      <a href="https://haveibeenpwned.com/" target="_blank" class="link-card"><div class="link-icon">HI</div><div class="link-info"><div class="link-name">Have I Been Pwned</div><div class="link-desc">Breach data lookup (13B+ accounts)</div></div></a>
+      <a href="https://www.shodan.io/" target="_blank" class="link-card"><div class="link-icon">SH</div><div class="link-info"><div class="link-name">Shodan</div><div class="link-desc">Internet-wide device &amp; service search</div></div></a>
+      <a href="https://censys.io/" target="_blank" class="link-card"><div class="link-icon">CY</div><div class="link-info"><div class="link-name">Censys</div><div class="link-desc">Host and certificate search engine</div></div></a>
+      <a href="https://www.maltego.com/" target="_blank" class="link-card"><div class="link-icon">MA</div><div class="link-info"><div class="link-name">Maltego</div><div class="link-desc">Visual OSINT link analysis</div></div></a>
+      <a href="https://owasp.org/www-project-amass/" target="_blank" class="link-card"><div class="link-icon">AM</div><div class="link-info"><div class="link-name">OWASP Amass</div><div class="link-desc">Advanced subdomain enumeration</div></div></a>
+      <a href="https://github.com/laramies/theHarvester" target="_blank" class="link-card"><div class="link-icon">TH</div><div class="link-info"><div class="link-name">theHarvester</div><div class="link-desc">Email, subdomain &amp; IP harvesting</div></div></a>
+      <a href="https://exiftool.org/" target="_blank" class="link-card"><div class="link-icon">EX</div><div class="link-info"><div class="link-name">ExifTool</div><div class="link-desc">Metadata extraction (400+ formats)</div></div></a>
+      <a href="https://owasp.org/www-project-threat-dragon/" target="_blank" class="link-card"><div class="link-icon">TD</div><div class="link-info"><div class="link-name">OWASP Threat Dragon</div><div class="link-desc">Open-source threat modelling tool</div></div></a>
+      <a href="https://dnsdumpster.com/" target="_blank" class="link-card"><div class="link-icon">DD</div><div class="link-info"><div class="link-name">DNSDumpster</div><div class="link-desc">Visual DNS mapping</div></div></a>
+      <a href="http://www.pentest-standard.org/" target="_blank" class="link-card"><div class="link-icon">PT</div><div class="link-info"><div class="link-name">PTES</div><div class="link-desc">Penetration Testing Execution Standard</div></div></a>
+      <a href="https://attack.mitre.org/" target="_blank" class="link-card"><div class="link-icon">MI</div><div class="link-info"><div class="link-name">MITRE ATT&CK</div><div class="link-desc">Adversary tactics &amp; techniques</div></div></a>
+      <a href="https://www.virustotal.com/gui/home/url" target="_blank" class="link-card"><div class="link-icon">VT</div><div class="link-info"><div class="link-name">VirusTotal</div><div class="link-desc">Verify URLs before visiting</div></div></a>
+      <a href="https://www.verizon.com/business/resources/reports/dbir/" target="_blank" class="link-card"><div class="link-icon">DB</div><div class="link-info"><div class="link-name">Verizon DBIR</div><div class="link-desc">Annual breach statistics report</div></div></a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DISCLAIMER ============ -->
+<section class="disclaimer">
+  <div class="container">
+    <h2>Disclaimer</h2>
+    <div class="disclaimer-grid">
+      <div class="disclaimer-card">
+        <h3>Intellectual Property</h3>
+        <p>This material is the intellectual property of <strong>Cyber.SoHo</strong>. All rights reserved. Reproduction or redistribution without explicit written permission is prohibited.</p>
+      </div>
+      <div class="disclaimer-card">
+        <h3>Copyright & Non-Affiliation</h3>
+        <p>Cyber.SoHo is <strong>not affiliated with, endorsed by, or sponsored by</strong> any organisations, vendors, or open-source projects referenced herein. All trademarks belong to their respective owners. Any resemblance to other educational materials arises from the common body of cybersecurity knowledge.</p>
+      </div>
+      <div class="disclaimer-card">
+        <h3>External Links</h3>
+        <p>All links were verified at the time of publication (March 2026). Students are advised to verify URLs before visiting at <a href="https://www.virustotal.com/gui/home/url" target="_blank" style="color:var(--cyan)">virustotal.com</a>.</p>
+      </div>
+      <div class="disclaimer-card">
+        <h3>Liability & Ethics</h3>
+        <p>Techniques are for <strong>authorised educational use only</strong>. Performing these activities without explicit written authorisation is illegal under the CFAA (US), Computer Misuse Act (UK), and equivalent laws. Cyber.SoHo disclaims all liability for misuse.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    Cyber.SoHo — Intrusion Testing Course — Day 06 — Footprinting & OSINT (Passive Reconnaissance)<br>
+    Lecture prepared for the Spring 2026 semester.
+  </div>
+</footer>
+
+<button class="back-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#8593;</button>
+
+<script>
+// Collapsible sections
+function toggleCollapsible(btn) {
+  btn.classList.toggle('open');
+  const content = btn.nextElementSibling;
+  content.classList.toggle('open');
+}
+
+// Progress bar
+window.addEventListener('scroll', () => {
+  const h = document.documentElement;
+  const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+  document.getElementById('progressBar').style.width = pct + '%';
+
+  // Back to top button
+  const btn = document.getElementById('backTop');
+  btn.classList.toggle('visible', h.scrollTop > 600);
+});
+
+// Active nav link tracking
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-link');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const id = entry.target.id;
+      const match = document.querySelector(`.nav-link[href="#${id}"]`);
+      if (match) match.classList.add('active');
+    }
+  });
+}, { rootMargin: '-30% 0px -70% 0px' });
+
+sections.forEach(s => observer.observe(s));
+
+// Animate elements on scroll
+const animateOnScroll = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.lesson-header, .content-block, .takeaway, .scenario, .stride-card, .stat-item').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+  animateOnScroll.observe(el);
+});
+</script>
+
+</body>
+</html>

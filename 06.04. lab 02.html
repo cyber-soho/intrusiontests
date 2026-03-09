@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 06 — Lab 02 : Passive Reconnaissance | Intrusion Testing Course</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:ital,wght@0,300;0,400;0,600;0,700;1,300&display=swap');
+
+  :root {
+    --black: #020408;
+    --deep: #060d14;
+    --panel: #0a1520;
+    --surface: #0e1f2e;
+    --border: #1a3a50;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --accent3: #39ff14;
+    --warn: #ffc107;
+    --danger: #ff3b3b;
+    --text: #c8dde8;
+    --muted: #5a7a8a;
+    --mono: 'Share Tech Mono', monospace;
+    --head: 'Rajdhani', sans-serif;
+    --body: 'Exo 2', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: var(--body);
+    font-weight: 300;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ─── SCANLINE OVERLAY ──────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,229,255,0.012) 2px, rgba(0,229,255,0.012) 4px);
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ─── NOISE TEXTURE ─────────────────────────────────── */
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  /* ─── GRID BG ────────────────────────────────────────── */
+  .grid-bg {
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── HEADER ─────────────────────────────────────────── */
+  .site-header {
+    position: relative;
+    padding: 3rem 2rem 2rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+    z-index: 10;
+  }
+
+  .site-header::before {
+    content: '';
+    position: absolute;
+    top: -100px; left: 50%;
+    transform: translateX(-50%);
+    width: 800px; height: 300px;
+    background: radial-gradient(ellipse, rgba(0,229,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .course-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 0.25rem 0.8rem;
+    letter-spacing: 0.15em;
+    margin-bottom: 1.2rem;
+    animation: pulse-border 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,255,0.3); }
+    50% { box-shadow: 0 0 12px 4px rgba(0,229,255,0.15); }
+  }
+
+  .main-title {
+    font-family: var(--head);
+    font-size: clamp(1.8rem, 5vw, 3.2rem);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #fff;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 40px rgba(0,229,255,0.25);
+  }
+
+  .main-title span { color: var(--accent); }
+
+  .subtitle {
+    font-family: var(--body);
+    font-size: 1.1rem;
+    color: var(--muted);
+    font-weight: 300;
+    margin-bottom: 1.5rem;
+  }
+
+  .meta-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .meta-bar span { display: flex; align-items: center; gap: 0.4rem; }
+  .meta-bar .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); display: inline-block; }
+  .meta-bar .dot.orange { background: var(--accent2); }
+  .meta-bar .dot.green { background: var(--accent3); }
+
+  /* ─── LAYOUT ─────────────────────────────────────────── */
+  .layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    max-width: 1400px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 10;
+    min-height: 100vh;
+  }
+
+  /* ─── SIDEBAR ────────────────────────────────────────── */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 2rem 1rem;
+    border-right: 1px solid var(--border);
+    background: rgba(6,13,20,0.9);
+    backdrop-filter: blur(8px);
+  }
+
+  .sidebar::-webkit-scrollbar { width: 3px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .sidebar-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-group { margin-bottom: 1.5rem; }
+
+  .nav-group-title {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    margin-bottom: 0.5rem;
+    padding-left: 0.5rem;
+  }
+
+  .nav-item {
+    display: block;
+    padding: 0.45rem 0.75rem;
+    font-family: var(--body);
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all 0.2s;
+    cursor: pointer;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .nav-item:hover, .nav-item.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(0,229,255,0.05);
+  }
+
+  /* ─── MAIN CONTENT ───────────────────────────────────── */
+  .main-content {
+    padding: 2rem 2.5rem;
+    max-width: 900px;
+  }
+
+  /* ─── SECTION ────────────────────────────────────────── */
+  .section {
+    margin-bottom: 4rem;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.5s forwards;
+  }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section:nth-child(1)  { animation-delay: 0.05s; }
+  .section:nth-child(2)  { animation-delay: 0.10s; }
+  .section:nth-child(3)  { animation-delay: 0.15s; }
+  .section:nth-child(4)  { animation-delay: 0.20s; }
+  .section:nth-child(5)  { animation-delay: 0.25s; }
+  .section:nth-child(6)  { animation-delay: 0.30s; }
+  .section:nth-child(7)  { animation-delay: 0.35s; }
+  .section:nth-child(8)  { animation-delay: 0.40s; }
+  .section:nth-child(9)  { animation-delay: 0.45s; }
+  .section:nth-child(10) { animation-delay: 0.50s; }
+  .section:nth-child(11) { animation-delay: 0.55s; }
+  .section:nth-child(12) { animation-delay: 0.60s; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-number {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    min-width: 40px;
+    opacity: 0.7;
+  }
+
+  .section-title {
+    font-family: var(--head);
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.04em;
+  }
+
+  .section-title .highlight { color: var(--accent); }
+  .section-title .warn-hl { color: var(--warn); }
+
+  h3 {
+    font-family: var(--head);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 1.8rem 0 0.75rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  h3::before {
+    content: '//';
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    opacity: 0.5;
+  }
+
+  p {
+    margin-bottom: 1rem;
+    font-weight: 300;
+    color: var(--text);
+  }
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(0,229,255,0.3);
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  a:hover {
+    color: #fff;
+    border-bottom-color: #fff;
+  }
+
+  /* ─── DISCLAIMER BOX ─────────────────────────────────── */
+  .disclaimer-box {
+    background: linear-gradient(135deg, rgba(255,59,59,0.08), rgba(255,107,53,0.05));
+    border: 1px solid rgba(255,59,59,0.4);
+    border-left: 4px solid var(--danger);
+    border-radius: 4px;
+    padding: 1.5rem 1.75rem;
+    margin: 1.5rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .disclaimer-box::before {
+    content: '⚠';
+    position: absolute;
+    right: 1rem; top: 0.75rem;
+    font-size: 4rem;
+    opacity: 0.06;
+  }
+
+  .disclaimer-box .disc-title {
+    font-family: var(--head);
+    font-weight: 700;
+    color: var(--danger);
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .disclaimer-box ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .disclaimer-box ul li {
+    padding: 0.25rem 0 0.25rem 1.25rem;
+    position: relative;
+    font-size: 0.9rem;
+    color: #e0c0c0;
+  }
+
+  .disclaimer-box ul li::before {
+    content: '▶';
+    position: absolute;
+    left: 0;
+    color: var(--danger);
+    font-size: 0.5rem;
+    top: 0.55rem;
+  }
+
+  /* ─── INFO BOX ───────────────────────────────────────── */
+  .info-box {
+    background: rgba(0,229,255,0.04);
+    border: 1px solid rgba(0,229,255,0.2);
+    border-left: 4px solid var(--accent);
+    border-radius: 4px;
+    padding: 1rem 1.25rem;
+    margin: 1.25rem 0;
+    font-size: 0.9rem;
+  }
+
+  .info-box .info-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    margin-bottom: 0.4rem;
+  }
+
+  /* ─── WARNING BOX ─────────────────────────────────────── */
+  .warn-box {
+    background: rgba(255,193,7,0.06);
+    border: 1px solid rgba(255,193,7,0.3);
+    border-left: 4px solid var(--warn);
+    border-radius: 4px;
+    padding: 1rem 1.25rem;
+    margin: 1.25rem 0;
+    font-size: 0.9rem;
+    color: #e8d898;
+  }
+
+  /* ─── CODE BLOCKS ────────────────────────────────────── */
+  .code-block {
+    background: var(--deep);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin: 1.25rem 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--panel);
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .code-lang {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .copy-btn {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--border);
+    padding: 0.2rem 0.6rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 2px;
+  }
+
+  .copy-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .copy-btn.copied {
+    color: var(--accent3);
+    border-color: var(--accent3);
+  }
+
+  pre {
+    padding: 1.25rem 1rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: #b8f0c0;
+  }
+
+  pre::-webkit-scrollbar { height: 4px; }
+  pre::-webkit-scrollbar-track { background: var(--deep); }
+  pre::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .comment { color: var(--muted); }
+  .cmd { color: var(--accent3); }
+  .flag { color: var(--accent2); }
+  .str { color: #ffd580; }
+  .var { color: var(--accent); }
+
+  /* ─── TABLES ─────────────────────────────────────────── */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 1.25rem 0;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  thead tr {
+    background: var(--panel);
+  }
+
+  th {
+    font-family: var(--head);
+    font-weight: 600;
+    color: var(--accent);
+    text-align: left;
+    padding: 0.7rem 1rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid rgba(26,58,80,0.5);
+    color: var(--text);
+    font-weight: 300;
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(0,229,255,0.02); }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.82em;
+    color: var(--accent3);
+    background: rgba(57,255,20,0.08);
+    padding: 0.1em 0.4em;
+    border-radius: 2px;
+  }
+
+  /* ─── CHECKLIST ──────────────────────────────────────── */
+  .checklist {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+  }
+
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    transition: background 0.2s;
+    cursor: pointer;
+  }
+
+  .checklist li:hover { background: rgba(0,229,255,0.03); }
+
+  .checklist li.checked { opacity: 0.5; }
+  .checklist li.checked .check-text { text-decoration: line-through; }
+
+  .check-box {
+    width: 18px; height: 18px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    flex-shrink: 0;
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 0.7rem;
+    color: var(--accent3);
+  }
+
+  .checklist li.checked .check-box {
+    background: rgba(57,255,20,0.15);
+    border-color: var(--accent3);
+  }
+
+  .check-text {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  /* ─── PHASE CARDS ────────────────────────────────────── */
+  .phase-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .phase-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.25rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.2s;
+  }
+
+  .phase-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .phase-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .phase-card.p1::before { background: var(--accent); }
+  .phase-card.p2::before { background: var(--accent2); }
+  .phase-card.p3::before { background: var(--accent3); }
+  .phase-card.p4::before { background: var(--warn); }
+
+  .phase-card .phase-num {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    margin-bottom: 0.5rem;
+  }
+
+  .phase-card .phase-title {
+    font-family: var(--head);
+    font-weight: 700;
+    font-size: 1rem;
+    color: #fff;
+    margin-bottom: 0.5rem;
+  }
+
+  .phase-card .phase-time {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+
+  .phase-card .phase-tools {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .phase-card .phase-tools code {
+    background: rgba(0,229,255,0.07);
+    color: var(--accent);
+  }
+
+  /* ─── SCREENSHOT REQUIREMENT ─────────────────────────── */
+  .screenshot-req {
+    background: rgba(255,107,53,0.06);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-left: 4px solid var(--accent2);
+    border-radius: 4px;
+    padding: 1rem 1.25rem;
+    margin: 1.25rem 0;
+    font-size: 0.88rem;
+  }
+
+  .screenshot-req .sr-title {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--accent2);
+    letter-spacing: 0.12em;
+    margin-bottom: 0.5rem;
+  }
+
+  /* ─── RUBRIC ─────────────────────────────────────────── */
+  .rubric-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgba(26,58,80,0.4);
+  }
+
+  .rubric-label {
+    font-size: 0.85rem;
+    flex: 1;
+    color: var(--text);
+  }
+
+  .rubric-pct {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--accent);
+    min-width: 40px;
+    text-align: right;
+  }
+
+  .rubric-fill-track {
+    width: 120px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .rubric-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 1s ease;
+  }
+
+  /* ─── OBJECTIVE TAGS ─────────────────────────────────── */
+  .obj-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin: 1.25rem 0;
+  }
+
+  .obj-tag {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    font-size: 0.82rem;
+    color: var(--text);
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    transition: border-color 0.2s;
+  }
+
+  .obj-tag:hover { border-color: var(--accent); }
+
+  .obj-tag .obj-num {
+    font-family: var(--mono);
+    color: var(--accent);
+    font-size: 0.7rem;
+    min-width: 22px;
+    margin-top: 1px;
+  }
+
+  /* ─── COMPARISON TABLE HIGHLIGHT ────────────────────── */
+  .passive { color: var(--accent3); font-weight: 400; }
+  .active { color: var(--accent2); font-weight: 400; }
+  .risk-crit { color: #ff3b3b; font-family: var(--mono); font-size: 0.8rem; }
+  .risk-high { color: var(--accent2); font-family: var(--mono); font-size: 0.8rem; }
+  .risk-med { color: var(--warn); font-family: var(--mono); font-size: 0.8rem; }
+  .risk-low { color: var(--accent3); font-family: var(--mono); font-size: 0.8rem; }
+  .risk-info { color: var(--muted); font-family: var(--mono); font-size: 0.8rem; }
+
+  /* ─── PROGRESS TRACKER ───────────────────────────────── */
+  .progress-strip {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--border);
+    z-index: 10000;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    width: 0%;
+    transition: width 0.1s linear;
+  }
+
+  /* ─── TOOL GRID ──────────────────────────────────────── */
+  .tool-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin: 1.25rem 0;
+  }
+
+  .tool-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1rem;
+    transition: all 0.2s;
+  }
+
+  .tool-card:hover {
+    border-color: var(--accent);
+    background: rgba(0,229,255,0.04);
+  }
+
+  .tool-card .tc-name {
+    font-family: var(--mono);
+    color: var(--accent3);
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .tool-card .tc-purpose {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .tool-card .tc-install {
+    margin-top: 0.6rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: rgba(0,229,255,0.6);
+  }
+
+  /* ─── FOOTER ─────────────────────────────────────────── */
+  .site-footer {
+    border-top: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    position: relative;
+    z-index: 10;
+  }
+
+  /* ─── TABS ───────────────────────────────────────────── */
+  .tab-container { margin: 1.25rem 0; }
+
+  .tab-headers {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    gap: 0;
+  }
+
+  .tab-btn {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    padding: 0.5rem 1.2rem;
+    cursor: pointer;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .tab-panel { display: none; padding: 1rem 0; }
+  .tab-panel.active { display: block; }
+
+  /* ─── DUE DATE BADGE ─────────────────────────────────── */
+  .due-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(255,193,7,0.08);
+    border: 1px solid rgba(255,193,7,0.4);
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--warn);
+    margin: 1rem 0;
+  }
+
+  /* ─── MOBILE RESPONSIVE ──────────────────────────────── */
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    .main-content { padding: 1.5rem 1rem; }
+  }
+
+  /* ─── ANIMATED TERMINAL PROMPT ───────────────────────── */
+  .terminal-prompt::after {
+    content: '█';
+    animation: blink 1s step-end infinite;
+    color: var(--accent);
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* ─── SCROLL-TO-TOP ──────────────────────────────────── */
+  .scroll-top {
+    position: fixed;
+    bottom: 2rem; right: 2rem;
+    width: 40px; height: 40px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--muted);
+    transition: all 0.2s;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .scroll-top.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .scroll-top:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="progress-strip"><div class="progress-fill" id="progressBar"></div></div>
+
+<!-- ══════════════════════ HEADER ══════════════════════ -->
+<header class="site-header">
+  <div class="course-tag">INTRUSION TESTING — WEEK 02</div>
+  <h1 class="main-title">Day 06 — Lab 02<br><span>Passive Reconnaissance &amp; OSINT</span></h1>
+  <p class="subtitle">Intelligence gathering on a controlled mock domain without touching the target</p>
+  <div class="meta-bar">
+    <span><span class="dot"></span> Ponderation 1-2-2</span>
+    <span><span class="dot orange"></span> ≥ 6 Hours of Hands-On Work</span>
+    <span><span class="dot green"></span> Due : March 22, 2026 — 23:59 EST</span>
+  </div>
+</header>
+
+<!-- ══════════════════════ LAYOUT ═════════════════════ -->
+<div class="layout">
+
+  <!-- ─── SIDEBAR ──────────────────────────────────────── -->
+  <nav class="sidebar">
+    <div class="sidebar-label">// NAVIGATION</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">OVERVIEW</div>
+      <a class="nav-item" onclick="navScrollTo('disclaimer', this)">⚠ Legal Disclaimer</a>
+      <a class="nav-item" onclick="navScrollTo('intro', this)">01 — Introduction</a>
+      <a class="nav-item" onclick="navScrollTo('objectives', this)">02 — Objectives</a>
+      <a class="nav-item" onclick="navScrollTo('background', this)">03 — Background</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">PHASES</div>
+      <a class="nav-item" onclick="navScrollTo('setup', this)">00 — Pre-Lab Setup</a>
+      <a class="nav-item" onclick="navScrollTo('whois', this)">P1A — WHOIS</a>
+      <a class="nav-item" onclick="navScrollTo('dns', this)">P1B — DNS (dig / nslookup)</a>
+      <a class="nav-item" onclick="navScrollTo('harvester', this)">P2A — theHarvester</a>
+      <a class="nav-item" onclick="navScrollTo('amass', this)">P2B — Amass</a>
+      <a class="nav-item" onclick="navScrollTo('shodan', this)">P3A — Shodan</a>
+      <a class="nav-item" onclick="navScrollTo('maltego', this)">P3B — Maltego</a>
+      <a class="nav-item" onclick="navScrollTo('report', this)">P4 — Report &amp; OSINT Map</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">REFERENCE</div>
+      <a class="nav-item" onclick="navScrollTo('alternatives', this)">Alt. Tools</a>
+      <a class="nav-item" onclick="navScrollTo('bonus', this)">Bonus Challenges</a>
+      <a class="nav-item" onclick="navScrollTo('rubric', this)">Grading Rubric</a>
+      <a class="nav-item" onclick="navScrollTo('submission', this)">Submission</a>
+    </div>
+  </nav>
+
+  <!-- ─── MAIN CONTENT ─────────────────────────────────── -->
+  <main class="main-content">
+
+    <!-- ─── DISCLAIMER ──────────────────────────── -->
+    <div class="section" id="disclaimer">
+      <div class="section-header">
+        <span class="section-number">00</span>
+        <h2 class="section-title"><span class="warn-hl">⚠ Legal &amp; Ethical Disclaimer</span> — Read First</h2>
+      </div>
+
+      <div class="disclaimer-box">
+        <div class="disc-title">⚠ Mandatory — This Is Not Optional</div>
+        <p style="margin-bottom:0.75rem; color:#e0c0c0; font-size:0.9rem;">Every tool, technique, and query in this lab is to be performed <strong>exclusively</strong> against the mock domain and infrastructure provisioned by your instructor. Using these methods against any unauthorized target — even one you personally own unless fully isolated — is a criminal offence under:</p>
+        <ul>
+          <li><a href="https://www.law.cornell.edu/uscode/text/18/1030" target="_blank">Computer Fraud and Abuse Act (CFAA), 18 U.S.C. § 1030</a> — United States</li>
+          <li><a href="https://laws-lois.justice.gc.ca/eng/acts/C-46/section-342.1.html" target="_blank">Criminal Code of Canada, Section 342.1 — Unauthorized Use of a Computer</a></li>
+          <li><a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32013L0040" target="_blank">EU Directive 2013/40/EU — Attacks Against Information Systems</a></li>
+          <li><a href="https://www.coe.int/en/web/cybercrime/the-budapest-convention" target="_blank">Budapest Convention on Cybercrime — Council of Europe</a></li>
+        </ul>
+        <p style="margin-top:0.75rem; color:#ff9999; font-size:0.85rem; margin-bottom:0;"><strong>The instructor and institution bear no legal responsibility for misuse. You bear full, personal, and sole legal and ethical responsibility for your actions.</strong></p>
+      </div>
+
+      <div class="warn-box">
+        <strong>Tool Freedom :</strong> All tools listed are <em>suggestions only</em>. You are actively encouraged to discover alternatives, compare tools critically, or build your own. The security field rewards the independently creative and the rigorously self-directed. <strong>Be that professional.</strong>
+      </div>
+
+      <div class="due-badge">
+        📅 &nbsp; Due Date : Sunday, March 22, 2026 — 23:59 EST &nbsp; | &nbsp; Late penalty : −10% per 24 hrs
+      </div>
+    </div>
+
+    <!-- ─── INTRO ─────────────────────────────────── -->
+    <div class="section" id="intro">
+      <div class="section-header">
+        <span class="section-number">01</span>
+        <h2 class="section-title">Introduction — <span class="highlight">What Is Passive Reconnaissance?</span></h2>
+      </div>
+
+      <p>Passive reconnaissance — commonly called <strong>OSINT (Open-Source Intelligence)</strong> gathering — is the art of accumulating intelligence about a target using only publicly available, legally accessible data sources, without ever directly contacting or probing the target's infrastructure.</p>
+
+      <p>Think of it this way: before a skilled detective ever approaches a suspect, they spend hours in archives cross-referencing public records, analyzing documents, and building a mental map of everything already known. You send nothing. You touch nothing. You leave no trace on the target's systems. Yet by the time you finish, you may know more about the target's digital surface than their own IT department does.</p>
+
+      <p>This phase maps directly to <strong>Phase 1 (Intelligence Gathering)</strong> of the <a href="http://www.pentest-standard.org/index.php/Intelligence_Gathering" target="_blank">PTES (Penetration Testing Execution Standard)</a> and the reconnaissance stage in the <a href="https://www.eccouncil.org/train-certify/certified-ethical-hacker-ceh/" target="_blank">CEH (Certified Ethical Hacker)</a> methodology. Understanding it thoroughly is non-negotiable for every security professional.</p>
+
+      <div class="phase-grid">
+        <div class="phase-card p1">
+          <div class="phase-num">PHASE 1 — PART A+B</div>
+          <div class="phase-title">WHOIS &amp; DNS Enumeration</div>
+          <div class="phase-time">~105 minutes</div>
+          <div class="phase-tools">Tools: <code>whois</code>, <code>dig</code>, <code>nslookup</code></div>
+        </div>
+        <div class="phase-card p2">
+          <div class="phase-num">PHASE 2 — PART A+B</div>
+          <div class="phase-title">Multi-Source Harvesting</div>
+          <div class="phase-time">~105 minutes</div>
+          <div class="phase-tools">Tools: <code>theHarvester</code>, <code>amass</code></div>
+        </div>
+        <div class="phase-card p3">
+          <div class="phase-num">PHASE 3 — PART A+B</div>
+          <div class="phase-title">Shodan &amp; Maltego</div>
+          <div class="phase-time">~105 minutes</div>
+          <div class="phase-tools">Tools: <code>shodan</code> CLI, <code>maltego</code> CE</div>
+        </div>
+        <div class="phase-card p4">
+          <div class="phase-num">PHASE 4</div>
+          <div class="phase-title">OSINT Findings Map &amp; Report</div>
+          <div class="phase-time">~90 minutes</div>
+          <div class="phase-tools">Deliverable: Full PDF report with annotated evidence</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── OBJECTIVES ────────────────────────────── -->
+    <div class="section" id="objectives">
+      <div class="section-header">
+        <span class="section-number">02</span>
+        <h2 class="section-title">Learning <span class="highlight">Objectives</span></h2>
+      </div>
+      <div class="obj-grid">
+        <div class="obj-tag"><span class="obj-num">01</span>Understand passive recon's strategic role in the pentest lifecycle</div>
+        <div class="obj-tag"><span class="obj-num">02</span>Perform WHOIS lookups to extract registrant data and domain history</div>
+        <div class="obj-tag"><span class="obj-num">03</span>Enumerate DNS (Domain Name System) records (A, MX, NS, TXT, SOA, CNAME) with dig &amp; nslookup</div>
+        <div class="obj-tag"><span class="obj-num">04</span>Deploy theHarvester to aggregate emails and subdomains from multiple OSINT engines</div>
+        <div class="obj-tag"><span class="obj-num">05</span>Run Amass for deep subdomain enumeration via CT (Certificate Transparency) logs</div>
+        <div class="obj-tag"><span class="obj-num">06</span>Query Shodan for exposed services, banners, and device fingerprints</div>
+        <div class="obj-tag"><span class="obj-num">07</span>Build a visual intelligence graph in Maltego CE (Community Edition)</div>
+        <div class="obj-tag"><span class="obj-num">08</span>Produce a professional OSINT findings map and report that teaches a newcomer</div>
+      </div>
+    </div>
+
+    <!-- ─── BACKGROUND ────────────────────────────── -->
+    <div class="section" id="background">
+      <div class="section-header">
+        <span class="section-number">03</span>
+        <h2 class="section-title">Background — <span class="highlight">Passive vs. Active Recon</span></h2>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Characteristic</th>
+              <th>Passive Reconnaissance</th>
+              <th>Active Reconnaissance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Target contact</td>
+              <td class="passive">None</td>
+              <td class="active">Direct</td>
+            </tr>
+            <tr>
+              <td>Detection risk</td>
+              <td class="passive">Near-zero</td>
+              <td class="active">Moderate to High</td>
+            </tr>
+            <tr>
+              <td>Data sources</td>
+              <td class="passive">Public registries, DNS caches, search engines, CT logs, social media</td>
+              <td class="active">Port scanners, banner grabbers, vulnerability scanners</td>
+            </tr>
+            <tr>
+              <td>Legal sensitivity</td>
+              <td class="passive">Low (public data)</td>
+              <td class="active">High (network contact)</td>
+            </tr>
+            <tr>
+              <td>Examples</td>
+              <td class="passive">WHOIS, dig, theHarvester, Shodan</td>
+              <td class="active">Nmap, Nikto, Netcat</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>OSINT Data Categories</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Category</th><th>What It Reveals</th><th>Primary Tools</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Registrant Data</strong></td><td>Domain ownership, creation/expiry dates, registrar</td><td><code>whois</code></td></tr>
+            <tr><td><strong>DNS Infrastructure</strong></td><td>Name servers, mail servers, IP addresses, subdomains</td><td><code>dig</code>, <code>nslookup</code></td></tr>
+            <tr><td><strong>CT (Certificate Transparency) Logs</strong></td><td>Every TLS cert ever issued — enumerates subdomains</td><td>Amass, crt.sh</td></tr>
+            <tr><td><strong>Email Harvesting</strong></td><td>Employee emails, naming conventions, breach exposure</td><td>theHarvester</td></tr>
+            <tr><td><strong>Technology Fingerprinting</strong></td><td>Service banners, software versions, open ports</td><td>Shodan</td></tr>
+            <tr><td><strong>Visual Link Analysis</strong></td><td>Relationships between domains, IPs, people, orgs</td><td>Maltego</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── SETUP ──────────────────────────────────── -->
+    <div class="section" id="setup">
+      <div class="section-header">
+        <span class="section-number">00</span>
+        <h2 class="section-title">Pre-Lab <span class="highlight">Setup &amp; Verification</span> <small style="font-size:0.8rem; color:var(--muted); font-weight:300;"> — ~30 min</small></h2>
+      </div>
+
+      <div class="info-box">
+        <div class="info-label">// ENVIRONMENT</div>
+        <strong>OS :</strong> Kali Linux 2024.x or Parrot OS Security Edition &nbsp;|&nbsp;
+        <strong>Mock Target :</strong> <code>acmecorplab.xyz</code> (confirm with your instructor) &nbsp;|&nbsp;
+        <strong>Network :</strong> Isolated lab network only
+      </div>
+
+      <h3>Install &amp; Verify All Tools</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <pre><span class="comment"># Step 1: Update your Kali system first</span>
+<span class="cmd">sudo apt-get update</span> && <span class="cmd">sudo apt-get upgrade</span> -y
+
+<span class="comment"># Step 2: Verify pre-installed tools</span>
+<span class="cmd">whois</span> --version
+<span class="cmd">dig</span> -v
+<span class="cmd">nslookup</span> -version
+
+<span class="comment"># Step 3: Install theHarvester (OSINT — Open-Source Intelligence aggregator)</span>
+<span class="cmd">sudo apt-get install</span> theharvester -y
+<span class="cmd">theHarvester</span> -h
+
+<span class="comment"># Step 4: Install Amass (subdomain enumeration by OWASP)</span>
+<span class="cmd">sudo apt-get install</span> amass -y
+<span class="cmd">amass</span> version
+
+<span class="comment"># Step 5: Install Shodan CLI (Command Line Interface)</span>
+<span class="comment">#   → First register a free account at https://www.shodan.io</span>
+<span class="cmd">pip3</span> install shodan
+<span class="cmd">shodan</span> init <span class="str">YOUR_API_KEY_HERE</span>
+
+<span class="comment"># Step 6: Install Maltego CE (Community Edition)</span>
+<span class="comment">#   → Register free at https://www.maltego.com/get-started/</span>
+<span class="cmd">sudo apt-get install</span> maltego -y</pre>
+      </div>
+
+      <h3>Create Your Organized Working Directory</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <pre><span class="comment"># Create lab directory structure — mirrors your report sections</span>
+<span class="cmd">mkdir</span> -p ~/labs/day06-lab02/{whois,dns,harvester,amass,shodan,maltego,report,screenshots}
+<span class="cmd">cd</span> ~/labs/day06-lab02
+
+<span class="comment"># Set the target variable — CONFIRM WITH INSTRUCTOR BEFORE PROCEEDING</span>
+<span class="cmd">export</span> <span class="var">TARGET</span>=<span class="str">"acmecorplab.xyz"</span>
+<span class="cmd">echo</span> <span class="str">"Target confirmed: $TARGET"</span></pre>
+      </div>
+
+      <div class="warn-box">
+        <strong>⚡ Pro Tip :</strong> Take a VM (Virtual Machine) snapshot RIGHT NOW. It takes 30 seconds and saves hours. This is professional habit #1.
+      </div>
+    </div>
+
+    <!-- ─── WHOIS ──────────────────────────────────── -->
+    <div class="section" id="whois">
+      <div class="section-header">
+        <span class="section-number">P1A</span>
+        <h2 class="section-title">WHOIS <span class="highlight">Enumeration</span> <small style="font-size:0.8rem; color:var(--muted); font-weight:300;"> — ~45 min</small></h2>
+      </div>
+
+      <p><strong>WHOIS</strong> is a query-and-response protocol standardized in <a href="https://www.rfc-editor.org/rfc/rfc3912" target="_blank">RFC 3912</a> — the internet's public land registry. A WHOIS record for a poorly-managed domain can reveal a registrant's full name, email address, phone number, physical address, domain creation and expiry dates, registrar identity, name servers, and DNSSEC (DNS Security Extensions) status.</p>
+
+      <h3>Basic WHOIS Queries</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <pre><span class="comment"># Basic WHOIS lookup — save full output</span>
+<span class="cmd">whois</span> <span class="var">$TARGET</span> | <span class="cmd">tee</span> ~/labs/day06-lab02/whois/whois_basic.txt
+
+<span class="comment"># Query a specific WHOIS server directly (Verisign handles .com / .net)</span>
+<span class="cmd">whois</span> -h whois.verisign-grs.com <span class="var">$TARGET</span> | <span class="cmd">tee</span> ~/labs/day06-lab02/whois/whois_verisign.txt
+
+<span class="comment"># Resolve the IP address first, then WHOIS the IP</span>
+<span class="var">TARGET_IP</span>=$(<span class="cmd">dig</span> +short A <span class="var">$TARGET</span> | <span class="cmd">head</span> -1)
+<span class="cmd">echo</span> <span class="str">"Resolved IP: $TARGET_IP"</span>
+<span class="cmd">whois</span> <span class="var">$TARGET_IP</span> | <span class="cmd">tee</span> ~/labs/day06-lab02/whois/whois_ip.txt</pre>
+      </div>
+
+      <h3>Analysis Table — Fill in Your Report</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>WHOIS Field</th><th>Value Found</th><th>Intelligence Value</th></tr></thead>
+          <tbody>
+            <tr><td>Registrant Name / Org</td><td style="color:var(--muted);font-style:italic;">Fill in your findings</td><td>Organization identification, social engineering target</td></tr>
+            <tr><td>Registrant Email</td><td style="color:var(--muted);font-style:italic;">Fill in your findings</td><td>Phishing entry point; breach check target</td></tr>
+            <tr><td>Registration Date</td><td style="color:var(--muted);font-style:italic;">Fill in your findings</td><td>Domain age — young domains are phishing risk</td></tr>
+            <tr><td>Expiration Date</td><td style="color:var(--muted);font-style:italic;">Fill in your findings</td><td>Expiring domains can be hijacked</td></tr>
+            <tr><td>Registrar</td><td style="color:var(--muted);font-style:italic;">Fill in your findings</td><td>Registrar-specific attack vectors</td></tr>
+            <tr><td>Name Servers</td><td style="color:var(--muted);font-style:italic;">Fill in your findings</td><td>Self-hosted vs. third-party DNS (Domain Name System)</td></tr>
+            <tr><td>WHOIS Privacy Enabled</td><td style="color:var(--muted);font-style:italic;">Yes / No</td><td>Security awareness indicator</td></tr>
+            <tr><td>DNSSEC Status</td><td style="color:var(--muted);font-style:italic;">Fill in your findings</td><td>DNS spoofing protection level</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Critical Analysis Questions (Answer in Your Report)</h3>
+      <ul class="checklist" id="whois-questions">
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Is WHOIS privacy enabled? What does this tell you about the organization's security posture?</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">What is the domain's expiration date? An expiring domain is a significant attack vector — explain why.</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">How old is the domain? Domains under two years old are red flags in phishing contexts — why?</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">What do the Name Server (NS) records reveal about DNS infrastructure — self-hosted or third-party?</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Check WHOIS history at DomainTools or ViewDNS.info — any ownership changes? What do they mean?</div></li>
+      </ul>
+
+      <div class="screenshot-req">
+        <div class="sr-title">📸 SCREENSHOT REQUIREMENT</div>
+        Full terminal output of <code>whois $TARGET</code> — annotated to highlight the three most intelligence-rich fields. Your hostname must be visible in the terminal prompt.
+      </div>
+    </div>
+
+    <!-- ─── DNS ───────────────────────────────────── -->
+    <div class="section" id="dns">
+      <div class="section-header">
+        <span class="section-number">P1B</span>
+        <h2 class="section-title">DNS Enumeration — <span class="highlight">dig &amp; nslookup</span> <small style="font-size:0.8rem; color:var(--muted); font-weight:300;"> — ~60 min</small></h2>
+      </div>
+
+      <p>DNS (Domain Name System) is the internet's distributed phonebook. For a penetration tester, DNS records are a treasure map — they reveal mail servers (MX), name servers (NS), IP addresses (A/AAAA), email authentication policies (TXT — SPF, DMARC, DKIM), service declarations (SRV), and canonical aliases (CNAME) that expose third-party services.</p>
+
+      <div class="tab-container">
+        <div class="tab-headers">
+          <button class="tab-btn active" onclick="switchTab(this, 'dns-records')">RECORD TYPES</button>
+          <button class="tab-btn" onclick="switchTab(this, 'dns-commands')">COMMANDS</button>
+          <button class="tab-btn" onclick="switchTab(this, 'dns-zone')">ZONE TRANSFER</button>
+        </div>
+
+        <div class="tab-panel active" id="dns-records">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Type</th><th>Full Name</th><th>What It Reveals</th></tr></thead>
+              <tbody>
+                <tr><td><code>A</code></td><td>Address Record</td><td>IPv4 (Internet Protocol version 4) address</td></tr>
+                <tr><td><code>AAAA</code></td><td>Quad-A Record</td><td>IPv6 (Internet Protocol version 6) address</td></tr>
+                <tr><td><code>MX</code></td><td>Mail Exchanger</td><td>Mail servers — critical for email phishing recon</td></tr>
+                <tr><td><code>NS</code></td><td>Name Server</td><td>Who controls DNS for this domain</td></tr>
+                <tr><td><code>TXT</code></td><td>Text Record</td><td>SPF, DKIM, DMARC, verification tokens — gold mine</td></tr>
+                <tr><td><code>SOA</code></td><td>Start of Authority</td><td>Primary NS, admin email, serial, refresh intervals</td></tr>
+                <tr><td><code>CNAME</code></td><td>Canonical Name</td><td>Aliases — reveals CDN usage, third-party services</td></tr>
+                <tr><td><code>SRV</code></td><td>Service Record</td><td>Exposes internal services (SIP, XMPP, Lync)</td></tr>
+                <tr><td><code>PTR</code></td><td>Pointer Record</td><td>Reverse DNS — maps IP back to hostname</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="dns-commands">
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">bash — Systematic DNS Enumeration</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+            <pre><span class="var">OUTPUT_DIR</span>=~/labs/day06-lab02/dns
+
+<span class="comment"># A record (IPv4 — Internet Protocol version 4)</span>
+<span class="cmd">dig</span> A <span class="var">$TARGET</span> +short | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/a_records.txt
+<span class="cmd">dig</span> A <span class="var">$TARGET</span> | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/a_records_full.txt
+
+<span class="comment"># AAAA record (IPv6 — Internet Protocol version 6)</span>
+<span class="cmd">dig</span> AAAA <span class="var">$TARGET</span> +short | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/aaaa_records.txt
+
+<span class="comment"># MX records (Mail Exchanger — critical for phishing intelligence)</span>
+<span class="cmd">dig</span> MX <span class="var">$TARGET</span> | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/mx_records.txt
+
+<span class="comment"># TXT records (Text — SPF / DMARC / DKIM / verification tokens)</span>
+<span class="cmd">dig</span> TXT <span class="var">$TARGET</span> | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/txt_records.txt
+
+<span class="comment"># NS records (Name Server)</span>
+<span class="cmd">dig</span> NS <span class="var">$TARGET</span> +short | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/ns_records.txt
+
+<span class="comment"># SOA record (Start of Authority — admin email often here)</span>
+<span class="cmd">dig</span> SOA <span class="var">$TARGET</span> | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/soa_record.txt
+
+<span class="comment"># Common subdomain CNAME sweep</span>
+for sub in www mail remote vpn api dev staging ftp blog admin; do
+    echo <span class="str">"--- $sub.$TARGET ---"</span>
+    <span class="cmd">dig</span> CNAME <span class="var">$sub.$TARGET</span> +short
+done | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/cname_sweep.txt
+
+<span class="comment"># Compare two different public resolvers</span>
+<span class="cmd">dig</span> A <span class="var">$TARGET</span> @8.8.8.8 +short | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/google_resolver.txt
+<span class="cmd">dig</span> A <span class="var">$TARGET</span> @1.1.1.1 +short | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/cloudflare_resolver.txt</pre>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="dns-zone">
+          <div class="info-box">
+            <div class="info-label">// DNS ZONE TRANSFER (AXFR — Authoritative Transfer) — VULNERABILITY TEST</div>
+            <p style="margin:0.5rem 0 0.5rem;">A Zone Transfer is a legitimate DNS replication mechanism. If the primary NS is not restricted to trusted secondary servers only, <em>any</em> host can request a full dump of ALL DNS records. This is a critical misconfiguration that hands an attacker your entire DNS infrastructure on a silver platter.</p>
+          </div>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">bash — Zone Transfer Attempt</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+            <pre><span class="comment"># Get the authoritative name server first</span>
+<span class="var">NS_SERVER</span>=$(<span class="cmd">dig</span> NS <span class="var">$TARGET</span> +short | <span class="cmd">head</span> -1)
+<span class="cmd">echo</span> <span class="str">"Testing zone transfer against: $NS_SERVER"</span>
+
+<span class="comment"># Attempt AXFR (Authoritative Transfer) — zone transfer</span>
+<span class="cmd">dig</span> AXFR <span class="var">$TARGET</span> @<span class="var">$NS_SERVER</span> | <span class="cmd">tee</span> ~/labs/day06-lab02/dns/zone_transfer.txt
+
+<span class="comment"># If successful → CRITICAL finding. Document fully.</span>
+<span class="comment"># If blocked  → Expected behavior. Still document the test.</span></pre>
+          </div>
+          <div class="warn-box" style="margin-top:1rem;">
+            <strong>Expected Outcomes :</strong> Success → <span class="risk-crit">CRITICAL</span> misconfiguration. Document all records received. Blocked → Normal secure behavior; document that the control is in place.
+          </div>
+        </div>
+      </div>
+
+      <div class="screenshot-req">
+        <div class="sr-title">📸 SCREENSHOT REQUIREMENTS (minimum 4)</div>
+        1. Full <code>dig MX $TARGET</code> output — annotate the mail provider.<br>
+        2. Full <code>dig TXT $TARGET</code> output — annotate SPF (Sender Policy Framework) and DMARC (Domain-based Message Authentication) policies.<br>
+        3. Zone transfer attempt — mark SUCCESS or BLOCKED with explanation.<br>
+        4. Side-by-side resolver comparison (Google 8.8.8.8 vs Cloudflare 1.1.1.1).
+      </div>
+    </div>
+
+    <!-- ─── THEHARVESTER ──────────────────────────── -->
+    <div class="section" id="harvester">
+      <div class="section-header">
+        <span class="section-number">P2A</span>
+        <h2 class="section-title">theHarvester — <span class="highlight">Multi-Source Email &amp; Subdomain Harvesting</span> <small style="font-size:0.8rem; color:var(--muted); font-weight:300;"> — ~60 min</small></h2>
+      </div>
+
+      <p><a href="https://github.com/laramies/theHarvester" target="_blank">theHarvester</a> — developed by Christian Martorella — queries multiple data sources simultaneously: search engines, certificate transparency databases, DNS reverse lookup services, and data aggregators. A single well-targeted run can surface an entire organization's email naming convention, subdomain list, and IP infrastructure.</p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">bash — Search Engine Sources</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <pre><span class="var">OUTPUT_DIR</span>=~/labs/day06-lab02/harvester
+
+<span class="comment"># Run across search engines (-l = limit results per source)</span>
+<span class="cmd">theHarvester</span> <span class="flag">-d</span> <span class="var">$TARGET</span> <span class="flag">-b</span> google,bing,duckduckgo <span class="flag">-l</span> 500 \
+    <span class="flag">-f</span> <span class="var">$OUTPUT_DIR</span>/harvester_search.html \
+    | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/harvester_search.txt
+
+<span class="comment"># Certificate Transparency (CT) sources — often the richest for subdomains</span>
+<span class="cmd">theHarvester</span> <span class="flag">-d</span> <span class="var">$TARGET</span> <span class="flag">-b</span> crtsh,certspotter,dnsdumpster,rapiddns \
+    <span class="flag">-f</span> <span class="var">$OUTPUT_DIR</span>/harvester_ct.html \
+    | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/harvester_ct.txt
+
+<span class="comment"># FULL comprehensive multi-source run (may take 10-15 minutes — document the wait)</span>
+<span class="cmd">theHarvester</span> <span class="flag">-d</span> <span class="var">$TARGET</span> \
+    <span class="flag">-b</span> google,bing,duckduckgo,crtsh,certspotter,dnsdumpster,hackertarget,rapiddns,urlscan,virustotal \
+    <span class="flag">-l</span> 1000 \
+    <span class="flag">-f</span> <span class="var">$OUTPUT_DIR</span>/harvester_full.html \
+    | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/harvester_full.txt
+
+<span class="comment"># Open the HTML (HyperText Markup Language) report in a browser</span>
+<span class="cmd">firefox</span> <span class="var">$OUTPUT_DIR</span>/harvester_full.html &</pre>
+      </div>
+
+      <h3>What to Extract &amp; Document</h3>
+      <ul class="checklist">
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">List every email address discovered. Identify the naming convention (e.g. firstname.lastname@domain.com)</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">List all subdomains. Run <code>dig A</code> on each to see which resolve.</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Map IP addresses to cloud providers (AWS — Amazon Web Services, Azure, GCP — Google Cloud Platform)</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Note any hosts with open ports returned by Shodan-enabled sources</div></li>
+      </ul>
+
+      <div class="screenshot-req">
+        <div class="sr-title">📸 SCREENSHOT REQUIREMENTS (minimum 3)</div>
+        1. Terminal showing theHarvester running with source names visible.<br>
+        2. HTML (HyperText Markup Language) report in browser — emails and subdomains sections.<br>
+        3. Your consolidated analysis table with all unique findings.
+      </div>
+    </div>
+
+    <!-- ─── AMASS ──────────────────────────────────── -->
+    <div class="section" id="amass">
+      <div class="section-header">
+        <span class="section-number">P2B</span>
+        <h2 class="section-title">Amass — <span class="highlight">Deep Subdomain Enumeration</span> <small style="font-size:0.8rem; color:var(--muted); font-weight:300;"> — ~45 min</small></h2>
+      </div>
+
+      <p><a href="https://github.com/owasp-amass/amass" target="_blank">Amass</a> — an <a href="https://owasp.org" target="_blank">OWASP (Open Web Application Security Project)</a> project — is a depth specialist for DNS and subdomain data. It queries certificate transparency logs, DNS datasets, scrapes search engines, and cross-references threat intelligence sources. <strong>Use passive mode only for this lab.</strong></p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">bash — Passive Subdomain Enumeration</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <pre><span class="var">OUTPUT_DIR</span>=~/labs/day06-lab02/amass
+
+<span class="comment"># PASSIVE mode only — no direct contact with target</span>
+<span class="comment"># This can take 15-30 minutes. Let it run. Document the duration.</span>
+<span class="cmd">amass</span> enum <span class="flag">-passive</span> <span class="flag">-d</span> <span class="var">$TARGET</span> \
+    <span class="flag">-o</span> <span class="var">$OUTPUT_DIR</span>/amass_subdomains.txt \
+    <span class="flag">-json</span> <span class="var">$OUTPUT_DIR</span>/amass_output.json \
+    | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/amass_terminal.txt
+
+<span class="cmd">echo</span> <span class="str">"Unique subdomains found:"</span>
+<span class="cmd">wc</span> -l <span class="var">$OUTPUT_DIR</span>/amass_subdomains.txt
+
+<span class="comment"># Parse JSON (JavaScript Object Notation) — extract unique names and data sources</span>
+<span class="cmd">cat</span> <span class="var">$OUTPUT_DIR</span>/amass_output.json | python3 -c <span class="str">"
+import sys, json
+names = set()
+sources = set()
+for line in sys.stdin:
+    try:
+        e = json.loads(line.strip())
+        names.add(e.get('name',''))
+        for s in e.get('sources',[]): sources.add(s)
+    except: pass
+print('=== UNIQUE SUBDOMAINS ===')
+for n in sorted(names): print(n)
+print(f'\n=== SOURCES USED ({len(sources)}) ===')
+for s in sorted(sources): print(s)
+"</span>
+
+<span class="comment"># Cross-reference: what did Amass find that theHarvester missed ?</span>
+<span class="cmd">grep</span> -oP <span class="str">"[a-zA-Z0-9._-]+\.$TARGET"</span> ~/labs/day06-lab02/harvester/harvester_full.txt \
+    | <span class="cmd">sort</span> -u > ~/labs/day06-lab02/harvester_subs_only.txt
+
+<span class="cmd">comm</span> -23 \
+    &lt;(<span class="cmd">sort</span> <span class="var">$OUTPUT_DIR</span>/amass_subdomains.txt) \
+    &lt;(<span class="cmd">sort</span> ~/labs/day06-lab02/harvester_subs_only.txt) \
+    | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/amass_exclusive.txt
+
+<span class="cmd">echo</span> <span class="str">"Subdomains ONLY in Amass (missed by theHarvester):"</span>
+<span class="cmd">cat</span> <span class="var">$OUTPUT_DIR</span>/amass_exclusive.txt</pre>
+      </div>
+
+      <div class="screenshot-req">
+        <div class="sr-title">📸 SCREENSHOT REQUIREMENTS (minimum 2)</div>
+        1. Amass running in terminal — passive data sources being queried must be visible.<br>
+        2. Cross-reference output showing tool-exclusive findings with analysis annotation.
+      </div>
+    </div>
+
+    <!-- ─── SHODAN ────────────────────────────────── -->
+    <div class="section" id="shodan">
+      <div class="section-header">
+        <span class="section-number">P3A</span>
+        <h2 class="section-title">Shodan — <span class="highlight">Intelligence on Exposed Services</span> <small style="font-size:0.8rem; color:var(--muted); font-weight:300;"> — ~45 min</small></h2>
+      </div>
+
+      <p><a href="https://www.shodan.io" target="_blank">Shodan</a> is the world's first search engine for Internet-connected devices, created by John Matherly in 2009. Unlike Google, Shodan continuously scans the entire public IPv4 (Internet Protocol version 4) address space and indexes <em>banners</em> — raw service responses — of every open port it discovers. This reveals software versions, operating systems, SSL certificate details, and even default credential warnings — without you touching the target directly.</p>
+
+      <h3>Shodan Web Interface Queries</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">shodan search syntax — web UI at shodan.io</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <pre><span class="comment"># Search by hostname</span>
+hostname:acmecorplab.xyz
+
+<span class="comment"># Search by SSL (Secure Sockets Layer) certificate — excellent subdomain discovery</span>
+ssl.cert.subject.cn:acmecorplab.xyz
+
+<span class="comment"># Filter by port — look for exposed admin panels, SSH (Secure Shell), etc.</span>
+hostname:acmecorplab.xyz port:22
+hostname:acmecorplab.xyz port:443
+hostname:acmecorplab.xyz port:8080
+hostname:acmecorplab.xyz port:3389
+
+<span class="comment"># Search for vulnerable software versions (example)</span>
+hostname:acmecorplab.xyz product:Apache http.component.version:2.4.49</pre>
+      </div>
+
+      <h3>Shodan CLI (Command Line Interface) — Programmatic Queries</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">bash — Shodan CLI</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <pre><span class="var">OUTPUT_DIR</span>=~/labs/day06-lab02/shodan
+
+<span class="comment"># Verify API (Application Programming Interface) access and credits</span>
+<span class="cmd">shodan</span> info | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/shodan_account.txt
+
+<span class="comment"># Get target IP then query Shodan host database</span>
+<span class="var">TARGET_IP</span>=$(<span class="cmd">dig</span> +short A <span class="var">$TARGET</span> | <span class="cmd">head</span> -1)
+<span class="cmd">shodan</span> host <span class="var">$TARGET_IP</span> | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/shodan_host.txt
+
+<span class="comment"># Search by hostname — structured output</span>
+<span class="cmd">shodan</span> search --fields ip_str,port,org,os hostname:<span class="var">$TARGET</span> \
+    | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/shodan_hostname.txt
+
+<span class="comment"># Search by SSL certificate — finds additional subdomains !</span>
+<span class="cmd">shodan</span> search --fields ip_str,port,org ssl.cert.subject.cn:<span class="var">$TARGET</span> \
+    | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/shodan_ssl.txt
+
+<span class="comment"># Download full JSON (JavaScript Object Notation) results for deep analysis</span>
+<span class="cmd">shodan</span> download <span class="var">$OUTPUT_DIR</span>/shodan_results hostname:<span class="var">$TARGET</span>
+<span class="cmd">shodan</span> parse --fields ip_str,port,org,data <span class="var">$OUTPUT_DIR</span>/shodan_results.json.gz \
+    | <span class="cmd">tee</span> <span class="var">$OUTPUT_DIR</span>/shodan_parsed.txt</pre>
+      </div>
+
+      <h3>Red Flag Checklist — Complete This in Your Report</h3>
+      <ul class="checklist">
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Default credentials warning found</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Outdated software with known CVEs (Common Vulnerabilities and Exposures)</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Admin panels exposed to the public Internet</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Development or staging servers accessible publicly</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Non-standard ports with interesting services</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Self-signed SSL (Secure Sockets Layer) certificates suggesting misconfiguration</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Servers on port 80 with sensitive-looking paths, not redirecting to HTTPS</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">SSL certificate Subject Alternative Names revealing unknown subdomains</div></li>
+      </ul>
+
+      <div class="screenshot-req">
+        <div class="sr-title">📸 SCREENSHOT REQUIREMENTS (minimum 3)</div>
+        1. Shodan web interface — <code>hostname:$TARGET</code> results with annotations.<br>
+        2. <code>shodan host TARGET_IP</code> CLI output showing ports, banners, OS fingerprint.<br>
+        3. SSL certificate search results with Subject Alternative Names highlighted.
+      </div>
+    </div>
+
+    <!-- ─── MALTEGO ───────────────────────────────── -->
+    <div class="section" id="maltego">
+      <div class="section-header">
+        <span class="section-number">P3B</span>
+        <h2 class="section-title">Maltego CE — <span class="highlight">Visual Intelligence Mapping</span> <small style="font-size:0.8rem; color:var(--muted); font-weight:300;"> — ~60 min</small></h2>
+      </div>
+
+      <p><a href="https://www.maltego.com" target="_blank">Maltego</a> is the de-facto standard for visual link analysis in OSINT (Open-Source Intelligence) and cyber threat intelligence. It uses <strong>entities</strong> (domains, IPs, email addresses, people, organizations) and <strong>transforms</strong> (automated data-retrieval operations) to build interactive relationship graphs. The Community Edition (CE) is free and fully functional for this lab.</p>
+
+      <div class="info-box">
+        <div class="info-label">// SAFETY NOTE</div>
+        Transforms in Maltego CE query external third-party databases — this remains passive (you are not contacting the target). Do NOT run active transforms. Do NOT target real external organizations. Register free at <a href="https://www.maltego.com/get-started/" target="_blank">maltego.com/get-started</a>.
+      </div>
+
+      <h3>Step-by-Step Graph Build</h3>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Action</th><th>Transform / Method</th><th>Expected Result</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Add Domain entity to canvas</td><td>Drag from Entity Palette</td><td>Single domain node visible</td></tr>
+            <tr><td>2</td><td>Run DNS transforms</td><td>Right-click → DNS from Domain → To DNS Name</td><td>Subdomains appear as new nodes</td></tr>
+            <tr><td>3</td><td>Resolve to IP addresses</td><td>To IP Address [DNS]</td><td>IP address nodes connected to domain</td></tr>
+            <tr><td>4</td><td>Enumerate MX records</td><td>To MX record [DNS]</td><td>Mail server nodes appear</td></tr>
+            <tr><td>5</td><td>Enumerate NS records</td><td>To NS record [DNS]</td><td>Name server nodes appear</td></tr>
+            <tr><td>6</td><td>WHOIS enrichment</td><td>Domain owner details → To Person</td><td>Person/org entities (or privacy shield)</td></tr>
+            <tr><td>7</td><td>Certificate transparency</td><td>Search for CT / crt.sh transforms</td><td>Additional subdomain nodes</td></tr>
+            <tr><td>8</td><td>IP enrichment</td><td>To Autonomous System (owner)</td><td>Hosting provider nodes</td></tr>
+            <tr><td>9</td><td>Geographic location</td><td>To Location [city, country]</td><td>Geographic location entities</td></tr>
+            <tr><td>10</td><td>Export graph</td><td>File → Export Graph → PNG + .mtgx</td><td>Image and graph file saved</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Report Narrative — Answer These Questions</h3>
+      <ul class="checklist">
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">How many unique hosts are associated with this domain?</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">What third-party providers (CDN, email, DNS) does the organization use?</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Are there relationships between entities that suggest potential attack paths?</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">What would an attacker learn from this graph that no single tool revealed alone?</div></li>
+      </ul>
+
+      <div class="screenshot-req">
+        <div class="sr-title">📸 SCREENSHOT REQUIREMENTS (minimum 3)</div>
+        1. Initial Maltego graph after DNS transforms — entities clearly labeled.<br>
+        2. Enriched graph after all transforms — full relationship map.<br>
+        3. Zoomed-in section highlighting the most interesting relationship discovered.
+      </div>
+    </div>
+
+    <!-- ─── REPORT ────────────────────────────────── -->
+    <div class="section" id="report">
+      <div class="section-header">
+        <span class="section-number">P4</span>
+        <h2 class="section-title">OSINT Findings Map &amp; <span class="highlight">Comprehensive Report</span> <small style="font-size:0.8rem; color:var(--muted); font-weight:300;"> — ~90 min</small></h2>
+      </div>
+
+      <div class="warn-box">
+        <strong>The Standard :</strong> Your report must be thorough enough that a person with <em>zero knowledge</em> of cybersecurity — but who is genuinely interested in learning — could read it and understand exactly what you did, why you did it, what you found, and what it means. If a newcomer could not follow your report step-by-step to reach the same conclusions, the report is incomplete.
+      </div>
+
+      <h3>Required Report Sections</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Section</th><th>Content Required</th></tr></thead>
+          <tbody>
+            <tr><td><strong>A — Executive Summary</strong></td><td>1-2 paragraphs, non-technical, C-level audience. Focus on risk and business impact — not tool names.</td></tr>
+            <tr><td><strong>B — Target Profile</strong></td><td>Structured table: domain, IPs, hosting provider, mail provider, DNS provider, subdomain count, email count, WHOIS privacy status, DMARC policy, zone transfer result, Shodan exposed services count.</td></tr>
+            <tr><td><strong>C — Detailed Technical Findings</strong></td><td>Per tool: exact commands, key output (summarized), interpretation, risk level (Critical/High/Medium/Low/Info), remediation recommendation.</td></tr>
+            <tr><td><strong>D — Attack Surface Summary</strong></td><td>Consolidated findings ranked by risk. This is what a real attacker would prioritize.</td></tr>
+            <tr><td><strong>E — Visual Intelligence Map</strong></td><td>Annotated Maltego graph export. Explain each entity cluster and what it represents.</td></tr>
+            <tr><td><strong>F — Recommendations</strong></td><td>Specific, actionable remediation for every Critical and High finding. "Improve security" is not acceptable.</td></tr>
+            <tr><td><strong>G — Tool Comparison Table</strong></td><td>All 7 tools: data type, unique findings, difficulty rating 1-5, free/paid status.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Report Format Requirements</h3>
+      <ul class="checklist">
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Submitted as PDF (Portable Document Format) only</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Cover page: course name, lab name, full name, student ID, date, instructor name</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Table of contents with page numbers</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Professional section headers and sub-headers</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Inline screenshots — annotated, numbered, captioned, referenced in text</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Code blocks for all commands (exact commands, exact flags)</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Bibliography citing all external tools and references</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Minimum 20 pages (no maximum)</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text">Every screenshot includes your terminal hostname/prompt as authenticity proof</div></li>
+      </ul>
+    </div>
+
+    <!-- ─── ALTERNATIVES ──────────────────────────── -->
+    <div class="section" id="alternatives">
+      <div class="section-header">
+        <span class="section-number">REF</span>
+        <h2 class="section-title">Alternative &amp; <span class="highlight">Open-Source Tools</span></h2>
+      </div>
+
+      <p>The security field evolves faster than any curriculum. The tools listed throughout this lab are well-established starting points — not gospel. Research alternatives, compare them critically, and consider building your own. Below are tools worth investigating in each category:</p>
+
+      <div class="tab-container">
+        <div class="tab-headers">
+          <button class="tab-btn active" onclick="switchTab(this, 'alt-whois')">WHOIS</button>
+          <button class="tab-btn" onclick="switchTab(this, 'alt-dns')">DNS</button>
+          <button class="tab-btn" onclick="switchTab(this, 'alt-osint')">OSINT</button>
+          <button class="tab-btn" onclick="switchTab(this, 'alt-shodan')">SHODAN ALTS</button>
+          <button class="tab-btn" onclick="switchTab(this, 'alt-maltego')">MALTEGO ALTS</button>
+        </div>
+
+        <div class="tab-panel active" id="alt-whois">
+          <div class="tool-grid">
+            <div class="tool-card"><div class="tc-name">DomainTools</div><div class="tc-purpose">Commercial with free tier. Exceptional historical WHOIS data. Tracks changes over time.</div><div class="tc-install">→ domaintools.com</div></div>
+            <div class="tool-card"><div class="tc-name">SecurityTrails</div><div class="tc-purpose">Historical DNS + WHOIS. API access on free tier. Excellent for tracking infrastructure changes.</div><div class="tc-install">→ securitytrails.com</div></div>
+            <div class="tool-card"><div class="tc-name">ICANN Lookup</div><div class="tc-purpose">Official, authoritative WHOIS by ICANN (Internet Corporation for Assigned Names and Numbers).</div><div class="tc-install">→ lookup.icann.org</div></div>
+            <div class="tool-card"><div class="tc-name">ViewDNS.info</div><div class="tc-purpose">Historical WHOIS + multiple DNS tools in one interface. Free and fast.</div><div class="tc-install">→ viewdns.info</div></div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="alt-dns">
+          <div class="tool-grid">
+            <div class="tool-card"><div class="tc-name">DNSrecon</div><div class="tc-purpose">Python-based; attack-focused DNS enumeration with zone walk and brute force.</div><div class="tc-install">apt install dnsrecon</div></div>
+            <div class="tool-card"><div class="tc-name">subfinder</div><div class="tc-purpose">Fast passive subdomain enumeration by ProjectDiscovery. Excellent for large-scale recon.</div><div class="tc-install">apt install subfinder</div></div>
+            <div class="tool-card"><div class="tc-name">fierce</div><div class="tc-purpose">DNS scanner to locate non-contiguous IP space and hostnames via zone walking.</div><div class="tc-install">apt install fierce</div></div>
+            <div class="tool-card"><div class="tc-name">dnsx</div><div class="tc-purpose">Fast multi-purpose DNS toolkit by ProjectDiscovery. Pairs excellently with subfinder.</div><div class="tc-install">go install dnsx</div></div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="alt-osint">
+          <div class="tool-grid">
+            <div class="tool-card"><div class="tc-name">Recon-ng</div><div class="tc-purpose">Full-featured web recon framework with a modular architecture. Similar to Metasploit for OSINT.</div><div class="tc-install">apt install recon-ng</div></div>
+            <div class="tool-card"><div class="tc-name">SpiderFoot</div><div class="tc-purpose">Automated OSINT collection with 200+ modules and built-in web UI. Excellent for automation.</div><div class="tc-install">pip3 install spiderfoot</div></div>
+            <div class="tool-card"><div class="tc-name">OSINT Framework</div><div class="tc-purpose">Curated directory of hundreds of OSINT tools by category. Not a tool — a navigation resource.</div><div class="tc-install">→ osintframework.com</div></div>
+            <div class="tool-card"><div class="tc-name">Hunter.io</div><div class="tc-purpose">Specializes in email discovery and verification. Strong API for automation.</div><div class="tc-install">→ hunter.io</div></div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="alt-shodan">
+          <div class="tool-grid">
+            <div class="tool-card"><div class="tc-name">Censys</div><div class="tc-purpose">Similar to Shodan; strong research-grade API. Excellent certificate and host data.</div><div class="tc-install">→ search.censys.io</div></div>
+            <div class="tool-card"><div class="tc-name">ZoomEye</div><div class="tc-purpose">Chinese equivalent of Shodan by Knownsec. Sometimes surfaces different hosts.</div><div class="tc-install">→ zoomeye.org</div></div>
+            <div class="tool-card"><div class="tc-name">GreyNoise</div><div class="tc-purpose">Focuses on mass-scanner traffic. Helps distinguish legitimate activity from background noise.</div><div class="tc-install">→ greynoise.io</div></div>
+            <div class="tool-card"><div class="tc-name">BinaryEdge</div><div class="tc-purpose">Real-time threat intelligence with internet scanning data and risk scoring.</div><div class="tc-install">→ binaryedge.io</div></div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="alt-maltego">
+          <div class="tool-grid">
+            <div class="tool-card"><div class="tc-name">SpiderFoot HX</div><div class="tc-purpose">Cloud-based OSINT automation with visual graph output. Easy to deploy.</div><div class="tc-install">→ spiderfoot.net/hx</div></div>
+            <div class="tool-card"><div class="tc-name">Gephi</div><div class="tc-purpose">Open-source network visualization. Can render Amass JSON output as an interactive graph.</div><div class="tc-install">→ gephi.org</div></div>
+            <div class="tool-card"><div class="tc-name">Neo4j</div><div class="tc-purpose">Graph database. Used by BloodHound for AD attack paths; adaptable for OSINT graphs.</div><div class="tc-install">→ neo4j.com</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── BONUS ──────────────────────────────────── -->
+    <div class="section" id="bonus">
+      <div class="section-header">
+        <span class="section-number">+</span>
+        <h2 class="section-title">Bonus <span class="highlight">Challenges</span> <small style="font-size:0.8rem; color:var(--muted); font-weight:300;"> — Optional, +5% each</small></h2>
+      </div>
+
+      <h3>Challenge 1 — Certificate Transparency API Query</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">bash — crt.sh API</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <pre><span class="comment"># Query crt.sh (Certificate Transparency log) directly via API</span>
+<span class="cmd">curl</span> -s <span class="str">"https://crt.sh/?q=%.$TARGET&output=json"</span> \
+    | python3 -m json.tool \
+    | <span class="cmd">grep</span> <span class="str">"name_value"</span> \
+    | <span class="cmd">sort</span> -u \
+    | <span class="cmd">tee</span> ~/labs/day06-lab02/ct_log_findings.txt</pre>
+      </div>
+
+      <h3>Challenge 2 — Google Dorking</h3>
+      <p>Use advanced <a href="https://support.google.com/websearch/answer/2466433" target="_blank">Google search operators</a> to find exposed files, admin pages, and indexed sensitive content associated with the mock domain:</p>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">google dork syntax — paste into Google search</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <pre>site:acmecorplab.xyz filetype:pdf
+site:acmecorplab.xyz inurl:admin
+site:acmecorplab.xyz ext:log
+site:acmecorplab.xyz ext:sql
+<span class="str">"acmecorplab.xyz"</span> <span class="str">"password"</span>
+<span class="str">"acmecorplab.xyz"</span> <span class="str">"confidential"</span></pre>
+      </div>
+
+      <h3>Challenge 3 — Metadata Extraction</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">bash — ExifTool metadata extraction</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <pre><span class="comment"># If instructor placed documents on the mock web server — extract metadata</span>
+<span class="cmd">wget</span> http://<span class="var">$TARGET</span>/sample.pdf
+<span class="cmd">exiftool</span> sample.pdf
+
+<span class="comment"># Look for: author names, software versions, GPS coordinates, creation dates</span>
+<span class="comment"># These are frequently overlooked OSINT (Open-Source Intelligence) vectors in real engagements</span></pre>
+      </div>
+
+      <h3>Challenge 4 — Build Your Own Recon Script</h3>
+      <p>Write a Bash or Python script that automates all Phase 1 and Phase 2 tasks, saves all output to organized directories, and generates a plain-text summary report at the end. This demonstrates professional-level initiative and automation thinking.</p>
+    </div>
+
+    <!-- ─── RUBRIC ────────────────────────────────── -->
+    <div class="section" id="rubric">
+      <div class="section-header">
+        <span class="section-number">GRD</span>
+        <h2 class="section-title">Grading <span class="highlight">Rubric</span></h2>
+      </div>
+
+      <div id="rubric-bars">
+        <div class="rubric-bar"><div class="rubric-label">Pre-Lab Setup &amp; Tool Verification</div><div class="rubric-fill-track"><div class="rubric-fill" style="width:5%"></div></div><div class="rubric-pct">5%</div></div>
+        <div class="rubric-bar"><div class="rubric-label">WHOIS Analysis</div><div class="rubric-fill-track"><div class="rubric-fill" style="width:10%"></div></div><div class="rubric-pct">10%</div></div>
+        <div class="rubric-bar"><div class="rubric-label">DNS Enumeration (dig / nslookup)</div><div class="rubric-fill-track"><div class="rubric-fill" style="width:15%"></div></div><div class="rubric-pct">15%</div></div>
+        <div class="rubric-bar"><div class="rubric-label">theHarvester</div><div class="rubric-fill-track"><div class="rubric-fill" style="width:15%"></div></div><div class="rubric-pct">15%</div></div>
+        <div class="rubric-bar"><div class="rubric-label">Amass</div><div class="rubric-fill-track"><div class="rubric-fill" style="width:15%"></div></div><div class="rubric-pct">15%</div></div>
+        <div class="rubric-bar"><div class="rubric-label">Shodan</div><div class="rubric-fill-track"><div class="rubric-fill" style="width:15%"></div></div><div class="rubric-pct">15%</div></div>
+        <div class="rubric-bar"><div class="rubric-label">Maltego Graph</div><div class="rubric-fill-track"><div class="rubric-fill" style="width:15%"></div></div><div class="rubric-pct">15%</div></div>
+        <div class="rubric-bar"><div class="rubric-label">OSINT Findings Map &amp; Report Quality</div><div class="rubric-fill-track"><div class="rubric-fill" style="width:10%"></div></div><div class="rubric-pct">10%</div></div>
+        <div class="rubric-bar" style="border-bottom:none;"><div class="rubric-label">Alternative Tools Comparison</div><div class="rubric-fill-track"><div class="rubric-fill" style="width:5%"></div></div><div class="rubric-pct">5%</div></div>
+      </div>
+
+      <div class="info-box" style="margin-top:1.25rem;">
+        <div class="info-label">// BONUS</div>
+        Each completed bonus challenge adds <strong>+5%</strong> to your final lab grade (up to +20%).
+      </div>
+    </div>
+
+    <!-- ─── SUBMISSION ────────────────────────────── -->
+    <div class="section" id="submission">
+      <div class="section-header">
+        <span class="section-number">SUB</span>
+        <h2 class="section-title">Submission <span class="highlight">Instructions</span></h2>
+      </div>
+
+      <div class="due-badge">
+        📅 &nbsp; Submit via LMS (Learning Management System) by : Sunday, March 22, 2026 — 23:59 EST<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Late penalty : −10% per 24-hour period after deadline
+      </div>
+
+      <h3>Required Files</h3>
+      <ul class="checklist">
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text"><strong>Lab02_FirstName_LastName_Report.pdf</strong> — Complete written report (≥ 20 pages)</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text"><strong>Lab02_FirstName_LastName_Evidence.zip</strong> — All raw tool outputs + screenshots folder + Maltego .mtgx file</div></li>
+        <li onclick="toggleCheck(this)"><div class="check-box"></div><div class="check-text"><strong>Lab02_FirstName_LastName_ToolsUsed.txt</strong> — Plain text: every tool name + version + any substitutions made</div></li>
+      </ul>
+
+      <div class="disclaimer-box" style="margin-top:1.5rem;">
+        <div class="disc-title">⚠ Academic Integrity Warnings</div>
+        <ul>
+          <li>Submissions without screenshots receive a maximum grade of 50%</li>
+          <li>Evidence of work performed on unauthorized targets → immediate course failure + academic integrity referral</li>
+          <li>Uncaptioned or unreadable screenshots receive zero marks</li>
+          <li>Plagiarism in the written report → course failure</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ─── COURSE STRUCTURE ──────────────────────── -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-number">CTX</span>
+        <h2 class="section-title">Where This Lab Fits — <span class="highlight">Full 7-Week Course</span></h2>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Day</th><th>Date</th><th>Topic / Lab</th></tr></thead>
+          <tbody>
+            <tr><td>1–2</td><td>Mar 2–3</td><td>Course Intro, Ethics, RoE, PTES/CEH phases, Lab Build (VM setup)</td></tr>
+            <tr><td>3–5</td><td>Mar 6–7</td><td>Attacker OPSEC — Layered Anonymity, VPNs, Whonix, OPNSense</td></tr>
+            <tr style="background:rgba(0,229,255,0.04)"><td><strong>6–7</strong></td><td><strong>Mar 9–10</strong></td><td><strong>← YOU ARE HERE : Passive Recon / OSINT (Lab 02)</strong></td></tr>
+            <tr><td>8–9</td><td>Mar 13–14</td><td>Social Engineering, Phishing Simulation Design</td></tr>
+            <tr><td>10</td><td>Mar 14</td><td>Vulnerability Analysis — OpenVAS/Nessus, CVSS, MITRE ATT&amp;CK</td></tr>
+            <tr><td>11–12</td><td>Mar 23–24</td><td>Scanning &amp; Active Enumeration — Nmap, enum4linux, SNMP</td></tr>
+            <tr><td>13</td><td>Mar 26</td><td>Wi-Fi Hacking — PMKID Attack</td></tr>
+            <tr><td>14–15</td><td>Mar 28</td><td>Mid-Term Review &amp; Midterm Assessment</td></tr>
+            <tr><td>16–18</td><td>Mar 30–Apr 1</td><td>System Hacking — Metasploit, LinPEAS/WinPEAS, Privilege Escalation</td></tr>
+            <tr><td>19–20</td><td>Apr 2–7</td><td>Sniffing &amp; MITM — Wireshark, ARP Spoofing, PCAP Analysis</td></tr>
+            <tr><td>21–23</td><td>Apr 9–11</td><td>Web Apps &amp; APIs — OWASP Top 10, Burp Suite, DVWA, Juice Shop</td></tr>
+            <tr><td>24–25</td><td>Apr 11–13</td><td>Active Directory &amp; Lateral Movement — BloodHound, Kerberoasting</td></tr>
+            <tr><td>26–27</td><td>Apr 14–16</td><td>IDS/Firewall Evasion, Tunneling, Snort/Suricata</td></tr>
+            <tr><td>28–29</td><td>Apr 18</td><td>Final Theory Review &amp; Final Assessment</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── REFERENCES ────────────────────────────── -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-number">REF</span>
+        <h2 class="section-title">References &amp; <span class="highlight">Further Reading</span></h2>
+      </div>
+      <ul style="list-style:none; padding:0;">
+        <li style="padding:0.4rem 0; border-bottom:1px solid var(--border); font-size:0.88rem;">🔗 <a href="http://www.pentest-standard.org/index.php/Intelligence_Gathering" target="_blank">PTES (Penetration Testing Execution Standard) — Intelligence Gathering</a></li>
+        <li style="padding:0.4rem 0; border-bottom:1px solid var(--border); font-size:0.88rem;">🔗 <a href="https://owasp.org/www-project-web-security-testing-guide/" target="_blank">OWASP (Open Web Application Security Project) Testing Guide v4.2 — Information Gathering</a></li>
+        <li style="padding:0.4rem 0; border-bottom:1px solid var(--border); font-size:0.88rem;">🔗 <a href="https://www.nist.gov/publications/technical-guide-information-security-testing-and-assessment" target="_blank">NIST (National Institute of Standards and Technology) SP 800-115 — Technical Guide to Information Security Testing</a></li>
+        <li style="padding:0.4rem 0; border-bottom:1px solid var(--border); font-size:0.88rem;">🔗 <a href="https://attack.mitre.org/tactics/TA0043/" target="_blank">MITRE ATT&amp;CK (Adversarial Tactics, Techniques and Common Knowledge) — Reconnaissance Tactic TA0043</a></li>
+        <li style="padding:0.4rem 0; border-bottom:1px solid var(--border); font-size:0.88rem;">🔗 <a href="https://www.rfc-editor.org/rfc/rfc3912" target="_blank">RFC 3912 — WHOIS Protocol Specification</a></li>
+        <li style="padding:0.4rem 0; border-bottom:1px solid var(--border); font-size:0.88rem;">🔗 <a href="https://www.rfc-editor.org/rfc/rfc1034" target="_blank">RFC 1034/1035 — Domain Names Concepts and Facilities</a></li>
+        <li style="padding:0.4rem 0; border-bottom:1px solid var(--border); font-size:0.88rem;">🔗 <a href="https://www.rfc-editor.org/rfc/rfc9162" target="_blank">RFC 9162 — Certificate Transparency Version 2.0</a></li>
+        <li style="padding:0.4rem 0; border-bottom:1px solid var(--border); font-size:0.88rem;">🔗 <a href="https://github.com/laramies/theHarvester" target="_blank">theHarvester — GitHub Repository</a></li>
+        <li style="padding:0.4rem 0; border-bottom:1px solid var(--border); font-size:0.88rem;">🔗 <a href="https://github.com/owasp-amass/amass" target="_blank">Amass (OWASP) — GitHub Repository</a></li>
+        <li style="padding:0.4rem 0; border-bottom:1px solid var(--border); font-size:0.88rem;">🔗 <a href="https://developer.shodan.io/" target="_blank">Shodan Developer Documentation</a></li>
+        <li style="padding:0.4rem 0; font-size:0.88rem;">🔗 <a href="https://docs.maltego.com/" target="_blank">Maltego Documentation</a></li>
+      </ul>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════════════════ FOOTER ═════════════════════ -->
+<footer class="site-footer">
+  <span>INTRUSION TESTING — WEEK 02 — DAY 06 — LAB 02</span> &nbsp;|&nbsp;
+  <span>ALL TOOLS AND TECHNIQUES ARE PROVIDED AS OPEN SUGGESTIONS ONLY</span> &nbsp;|&nbsp;
+  <span>AUTHORIZED USE ONLY — CONTROLLED EDUCATIONAL ENVIRONMENT</span>
+</footer>
+
+<div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
+
+<script>
+  // ─── NAV SCROLL ─────────────────────────────────────
+  function navScrollTo(id, clickedEl) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const headerH = document.querySelector('.site-header')
+      ? document.querySelector('.site-header').offsetHeight : 0;
+    const top = el.getBoundingClientRect().top + window.pageYOffset - headerH - 16;
+    window.scrollTo({ top: top, behavior: 'smooth' });
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (clickedEl) clickedEl.classList.add('active');
+  }
+
+  // ─── PROGRESS BAR ────────────────────────────────────
+  window.addEventListener('scroll', () => {
+    const doc = document.documentElement;
+    const progress = (doc.scrollTop / (doc.scrollHeight - doc.clientHeight)) * 100;
+    document.getElementById('progressBar').style.width = progress + '%';
+
+    const scrollTop = document.getElementById('scrollTop');
+    if (doc.scrollTop > 300) scrollTop.classList.add('visible');
+    else scrollTop.classList.remove('visible');
+  });
+
+  // ─── COPY CODE ───────────────────────────────────────
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    const text = pre.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'COPIED ✓';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 2000);
+    }).catch(() => {
+      btn.textContent = 'FAILED';
+      setTimeout(() => btn.textContent = 'COPY', 2000);
+    });
+  }
+
+  // ─── CHECKLIST TOGGLE ────────────────────────────────
+  function toggleCheck(li) {
+    li.classList.toggle('checked');
+    const box = li.querySelector('.check-box');
+    if (li.classList.contains('checked')) {
+      box.innerHTML = '✓';
+    } else {
+      box.innerHTML = '';
+    }
+  }
+
+  // ─── TAB SWITCHER ────────────────────────────────────
+  function switchTab(btn, panelId) {
+    const container = btn.closest('.tab-container');
+    container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(panelId).classList.add('active');
+  }
+
+  // ─── RUBRIC BAR ANIMATION ────────────────────────────
+  function animateRubric() {
+    document.querySelectorAll('.rubric-fill').forEach(bar => {
+      const target = bar.style.width;
+      bar.style.width = '0%';
+      setTimeout(() => { bar.style.width = target; }, 300);
+    });
+  }
+
+  // Animate rubric when scrolled into view
+  const rubricObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        animateRubric();
+        rubricObserver.disconnect();
+      }
+    });
+  }, { threshold: 0.3 });
+
+  const rubricEl = document.getElementById('rubric-bars');
+  if (rubricEl) rubricObserver.observe(rubricEl);
+
+  // ─── ACTIVE NAV TRACKING ─────────────────────────────
+  const sections = ['disclaimer','intro','objectives','background','setup','whois','dns','harvester','amass','shodan','maltego','report','alternatives','bonus','rubric','submission'];
+  const navItems = document.querySelectorAll('.nav-item');
+
+  const sectionObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting && e.intersectionRatio > 0.3) {
+        const id = e.target.id;
+        navItems.forEach(n => n.classList.remove('active'));
+      }
+    });
+  }, { threshold: 0.3 });
+
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) sectionObserver.observe(el);
+  });
+</script>
+
+</body>
+</html>

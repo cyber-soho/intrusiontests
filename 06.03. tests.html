@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSINT & Footprinting Study App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 3D Flip Card Styles */
+        .perspective { perspective: 1000px; }
+        .preserve-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .flip-card-inner { transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <svg class="w-8 h-8 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    <h1 class="text-xl font-bold text-slate-900">OSINT & Footprinting</h1>
+                </div>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="flex space-x-8 -mb-px">
+                <button id="tab-flashcards" onclick="switchTab('flashcards')" class="border-blue-600 text-blue-600 border-b-2 py-4 px-1 text-sm font-medium transition-colors hover:text-blue-800">
+                    Flashcards (25)
+                </button>
+                <button id="tab-quiz" onclick="switchTab('quiz')" class="border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 border-b-2 py-4 px-1 text-sm font-medium transition-colors">
+                    Practice Quiz (10)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- ==================== FLASHCARDS VIEW ==================== -->
+        <div id="view-flashcards" class="block space-y-6">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-800">Study Flashcards</h2>
+                <p class="text-slate-500 mt-2">Click the card to reveal the definition or answer.</p>
+            </div>
+
+            <!-- Card Container -->
+            <div class="flex flex-col items-center">
+                <div class="perspective w-full max-w-2xl h-80 sm:h-96 cursor-pointer" onclick="flipCard()">
+                    <div id="fc-inner" class="relative w-full h-full preserve-3d flip-card-inner shadow-lg rounded-2xl">
+                        
+                        <!-- Front Face -->
+                        <div class="absolute w-full h-full backface-hidden bg-white border border-slate-200 rounded-2xl p-8 flex flex-col justify-center items-center text-center">
+                            <span class="absolute top-4 right-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Front</span>
+                            <h3 id="fc-front" class="text-2xl sm:text-3xl font-semibold text-slate-800 leading-snug"></h3>
+                        </div>
+
+                        <!-- Back Face -->
+                        <div class="absolute w-full h-full backface-hidden bg-blue-50 border border-blue-200 rounded-2xl p-8 flex flex-col justify-center items-center text-center rotate-y-180">
+                            <span class="absolute top-4 right-4 text-xs font-bold text-blue-400 uppercase tracking-wider">Back</span>
+                            <p id="fc-back" class="text-lg sm:text-xl text-slate-700 leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex items-center justify-between w-full max-w-2xl mt-8">
+                    <button onclick="prevCard()" class="flex items-center px-4 py-2 bg-white border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        Previous
+                    </button>
+                    
+                    <span id="fc-counter" class="text-sm font-medium text-slate-500">1 / 25</span>
+                    
+                    <button onclick="nextCard()" class="flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        Next
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== QUIZ VIEW ==================== -->
+        <div id="view-quiz" class="hidden space-y-6">
+            
+            <!-- Quiz Active State -->
+            <div id="quiz-active" class="block max-w-3xl mx-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800">Knowledge Check</h2>
+                    <span id="quiz-progress" class="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">Question 1 of 10</span>
+                </div>
+
+                <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div class="p-6 sm:p-8">
+                        <!-- Question -->
+                        <h3 id="quiz-question" class="text-xl font-medium text-slate-900 mb-6 leading-relaxed"></h3>
+                        
+                        <!-- Hint Toggle -->
+                        <div class="mb-6">
+                            <button onclick="toggleHint()" class="flex items-center text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors">
+                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                                Need a hint?
+                            </button>
+                            <div id="quiz-hint" class="hidden mt-3 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800"></div>
+                        </div>
+
+                        <!-- Options -->
+                        <div id="quiz-options" class="space-y-3">
+                            <!-- Options injected here via JS -->
+                        </div>
+
+                        <!-- Rationale (Hidden until submit) -->
+                        <div id="quiz-rationale" class="hidden mt-6 p-5 rounded-lg border">
+                            <div class="flex items-start">
+                                <div id="rationale-icon" class="flex-shrink-0 mt-0.5"></div>
+                                <div class="ml-3">
+                                    <h4 id="rationale-title" class="text-sm font-bold uppercase tracking-wider mb-1"></h4>
+                                    <p id="rationale-text" class="text-sm text-slate-700"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer Actions -->
+                    <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end">
+                        <button id="btn-submit-answer" onclick="submitAnswer()" class="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            Submit Answer
+                        </button>
+                        <button id="btn-next-question" onclick="nextQuestion()" class="hidden px-5 py-2.5 bg-slate-800 text-white font-medium rounded-lg hover:bg-slate-900 transition-colors shadow-sm">
+                            Next Question
+                        </button>
+                        <button id="btn-finish-quiz" onclick="showResults()" class="hidden px-5 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm">
+                            View Results
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz Results State -->
+            <div id="quiz-results" class="hidden max-w-2xl mx-auto text-center py-12">
+                <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-10">
+                    <div id="result-icon" class="mx-auto w-20 h-20 mb-6 flex items-center justify-center rounded-full bg-blue-100">
+                        <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+                    </div>
+                    <h2 class="text-3xl font-bold text-slate-900 mb-2">Quiz Completed!</h2>
+                    <p class="text-slate-500 mb-8">You've finished the Footprinting & OSINT practice quiz.</p>
+                    
+                    <div class="bg-slate-50 rounded-xl p-6 mb-8 inline-block min-w-[250px]">
+                        <p class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Your Score</p>
+                        <p class="text-5xl font-bold text-slate-900"><span id="score-display">0</span> <span class="text-2xl text-slate-400">/ 10</span></p>
+                    </div>
+                    
+                    <div>
+                        <button onclick="restartQuiz()" class="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                            Restart Quiz
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Data and Application Logic -->
+    <script>
+        // ==========================================
+        // DATA: FLASHCARDS (25)
+        // ==========================================
+        const flashcardsData = [
+            { front: "Passive Reconnaissance", back: "Gathering information about a target using only publicly available sources without sending packets directly to the target's infrastructure." },
+            { front: "A / AAAA Record", back: "DNS records that translate a domain name to an IPv4 or IPv6 address, revealing hosting providers and CDNs." },
+            { front: "MX Record", back: "A DNS record that specifies the mail server responsible for accepting email messages on behalf of a domain." },
+            { front: "NS Record", back: "A DNS record that indicates the authoritative name server for a domain, revealing the DNS hosting provider." },
+            { front: "TXT Record", back: "A DNS record that stores text information like SPF, DKIM, and DMARC used for verifying third-party services." },
+            { front: "WHOIS Protocol", back: "A query-response protocol used to look up domain registration data, such as registrant details, registrars, and registration dates." },
+            { front: "Certificate Transparency (CT) Logs", back: "Public logs where Certificate Authorities publish every issued TLS certificate, permanently exposing associated subdomains." },
+            { front: "Search Engine Dorking", back: "Using advanced search operators like \"site:target.com\" to passively find indexed subdomains and hidden pages." },
+            { front: "Primary cause of hacking-related breaches", back: "Stolen or brute-forced credentials, which account for over 80% of breaches, often stemming from password reuse." },
+            { front: "Illegal use of breach data", back: "Downloading raw breached datasets or using leaked passwords to log into a system without explicit written consent." },
+            { front: "Metadata", back: "Embedded data about data that describes who created a file, how, when, and where." },
+            { front: "Intelligence revealed by file \"Author\" metadata", back: "Internal usernames, which can serve as potential login credentials for brute-force or credential stuffing attacks." },
+            { front: "ExifTool", back: "An industry-standard command-line tool used to extract metadata from over 400 different file formats." },
+            { front: "Attack Surface", back: "The totality of every digital asset an organization exposes, including servers, APIs, cloud buckets, and third-party integrations." },
+            { front: "First step of Attack Surface Mapping", back: "Collect information from DNS records, subdomains, breach data, and metadata." },
+            { front: "Threat Modeling", back: "A structured process for identifying what could go wrong with a system, which components are at risk, and what countermeasures to apply." },
+            { front: "Spoofing (S in STRIDE)", back: "A threat category addressing the question: Can an attacker pretend to be someone else?" },
+            { front: "Tampering (T in STRIDE)", back: "A threat category addressing the question: Can data be modified without authorization?" },
+            { front: "Repudiation (R in STRIDE)", back: "A threat category addressing the question: Can an actor deny their actions?" },
+            { front: "Information Disclosure (I in STRIDE)", back: "A threat category addressing the question: Can sensitive data leak?" },
+            { front: "Denial of Service (D in STRIDE)", back: "A threat category addressing the question: Can system availability be disrupted?" },
+            { front: "Elevation of Privilege (E in STRIDE)", back: "A threat category addressing the question: Can an attacker gain higher access or administrative rights?" },
+            { front: "Shodan", back: "An internet-wide search engine used to passively discover exposed devices, services, and open ports." },
+            { front: "Data Flow Diagram (DFD)", back: "A visual map used in threat modeling to show how data moves through a system and to identify trust boundaries." },
+            { front: "crt.sh", back: "A web-based tool used to search Certificate Transparency (CT) logs for fast, passive subdomain discovery." }
+        ];
+
+        // ==========================================
+        // DATA: QUIZ (10)
+        // ==========================================
+        const quizData = [
+            {
+                question: "A penetration tester wants to identify which third-party marketing and CRM platforms are authorized to send emails on behalf of a target organization. Which DNS record should they query to find these verification tokens?",
+                hint: "Think about the record type that is used to store unstructured text data, commonly used for SPF, DKIM, and DMARC policies.",
+                options: [
+                    { text: "TXT", rationale: "This record type stores text-based information, including Sender Policy Framework (SPF) and DKIM tokens, which explicitly list authorized third-party email senders.", isCorrect: true },
+                    { text: "MX", rationale: "While related to email, this record only points to the primary mail servers responsible for receiving mail, not the authorization tokens for external outbound services.", isCorrect: false },
+                    { text: "A", rationale: "This record maps a domain name to an IPv4 address, which is useful for finding web hosts but does not contain email authorization policies.", isCorrect: false },
+                    { text: "SOA", rationale: "This record contains administrative information about the DNS zone itself, such as the administrator's email and update serial numbers, rather than third-party service tokens.", isCorrect: false }
+                ]
+            },
+            {
+                question: "An organization recently launched a highly secure, unlinked staging environment for a new application using HTTPS. What is the most reliable passive reconnaissance method to discover this specific subdomain?",
+                hint: "When a secure connection is established, the issuing authority is universally required to publish a permanent public record of it.",
+                options: [
+                    { text: "Querying Certificate Transparency (CT) logs via crt.sh", rationale: "Whenever a public Certificate Authority issues a TLS certificate for a secure site, it must publish it to these permanent, searchable public logs, making the subdomain visible regardless of whether it is linked anywhere.", isCorrect: true },
+                    { text: "Using advanced Google dorking operators like site:target.com", rationale: "Search engines only index pages that they can crawl via links; an unlinked, hidden staging environment is highly unlikely to appear in search results.", isCorrect: false },
+                    { text: "Running a brute-force directory scan against the main domain", rationale: "Sending thousands of requests to guess directories is an active attack technique that violates the rules of passive reconnaissance and would likely trigger defensive alerts.", isCorrect: false },
+                    { text: "Searching the WHOIS database for the parent domain", rationale: "Domain registration records provide ownership and administrative contact details for the top-level domain, but they do not list the individual subdomains created under it.", isCorrect: false }
+                ]
+            },
+            {
+                question: "During the reconnaissance phase, an analyst finds a list of exposed employee passwords in a public breach database. Which action strictly adheres to the ethical and legal boundaries of passive reconnaissance?",
+                hint: "Consider the crucial difference between observing the existence of a vulnerability and actively interacting with or exploiting it.",
+                options: [
+                    { text: "Documenting the exposed accounts in the report to highlight the risk of password reuse.", rationale: "Observing and reporting on publicly available exposure data is a standard, legal part of highlighting human vulnerabilities and recommending mitigations like MFA.", isCorrect: true },
+                    { text: "Downloading the raw, complete database file to local storage for offline cracking.", rationale: "Possessing or downloading massive sets of stolen raw data often violates legal boundaries and acceptable use policies, crossing the line from observation to hoarding stolen property.", isCorrect: false },
+                    { text: "Testing the discovered passwords against the target's corporate VPN portal.", rationale: "Using exposed credentials to attempt unauthorized access is active exploitation, which strictly violates the passive nature of this testing phase.", isCorrect: false },
+                    { text: "Logging into the employee's breached third-party account to verify the data's accuracy.", rationale: "Accessing any account—even a third-party personal account—without the explicit permission of the account owner is illegal.", isCorrect: false }
+                ]
+            },
+            {
+                question: "An analyst uses ExifTool on a PDF whitepaper downloaded from a target's website and discovers the metadata field 'Author: jsmith'. What is the primary intelligence value of this specific finding for a penetration tester?",
+                hint: "Think about how an attacker might use this specific string of text when they eventually try to bypass an authentication portal.",
+                options: [
+                    { text: "It provides a valid internal username format that can be used in credential stuffing attacks.", rationale: "Discovering an author's name often reveals the organization's username naming convention (e.g., first initial + last name), which is highly valuable for generating user lists for later active attacks.", isCorrect: true },
+                    { text: "It reveals the physical location of the company's marketing department.", rationale: "While GPS coordinates in image metadata might reveal locations, a simple author name in a document does not provide geographic intelligence.", isCorrect: false },
+                    { text: "It confirms the specific software version of the server hosting the PDF.", rationale: "The author tag relates to the user who created the document, not the underlying technology stack or version of the web server distributing it.", isCorrect: false },
+                    { text: "It proves that the organization is currently compromised by an insider threat.", rationale: "An employee's name legitimately appearing in the metadata of a document they created is normal corporate behavior and does not indicate malicious insider activity.", isCorrect: false }
+                ]
+            },
+            {
+                question: "After cataloging hundreds of subdomains and IP addresses, a security team needs to identify which of those assets are running vulnerable services or exposing open ports. Which phase of the Attack Surface Mapping process does this represent?",
+                hint: "This step is about taking a basic list of assets and adding deeper technical context to them using external internet-wide databases.",
+                options: [
+                    { text: "Enrich", rationale: "This step involves taking basic discovered assets (like IPs) and cross-referencing them with external scanners (like Shodan or Censys) to add technical context such as open ports and service banners.", isCorrect: true },
+                    { text: "Collect", rationale: "This is the initial phase where raw data points like DNS records and breach data are gathered, prior to identifying specific running services.", isCorrect: false },
+                    { text: "Resolve", rationale: "This step strictly involves translating human-readable names (subdomains) into machine-readable IP addresses, not scanning them for services.", isCorrect: false },
+                    { text: "Visualise", rationale: "This step is about creating a unified map or graph of the data to easily comprehend the organization's exposure, rather than gathering technical service data.", isCorrect: false }
+                ]
+            },
+            {
+                question: "During a threat modeling session, an engineer points out that a user might be able to manipulate hidden HTML form fields to change the price of an item before checkout. Which STRIDE category does this specific threat fall under?",
+                hint: "Focus on the action of an unauthorized individual intentionally modifying a piece of data.",
+                options: [
+                    { text: "Tampering", rationale: "This category specifically deals with the unauthorized modification of data, such as changing an established price value within an application's workflow.", isCorrect: true },
+                    { text: "Spoofing", rationale: "This threat involves pretending to be someone else or another system, rather than altering the data payload of a transaction.", isCorrect: false },
+                    { text: "Elevation of Privilege", rationale: "While altering a price is bad, it does not necessarily mean the attacker has gained administrative or higher-level system access rights.", isCorrect: false },
+                    { text: "Repudiation", rationale: "This deals with an actor's ability to deny they performed an action because of poor logging, rather than the act of altering the data itself.", isCorrect: false }
+                ]
+            },
+            {
+                question: "A threat actor successfully accesses a system and immediately deletes the central audit logs, making it impossible for administrators to prove who performed the subsequent malicious actions. Which STRIDE threat has been realized?",
+                hint: "This threat occurs when a system cannot definitively attribute an action to a specific actor.",
+                options: [
+                    { text: "Repudiation", rationale: "When a system lacks proper, tamper-proof logging, it allows an attacker to completely deny their involvement in an action, fulfilling this specific threat model category.", isCorrect: true },
+                    { text: "Information Disclosure", rationale: "This threat is about sensitive data leaking out to unauthorized parties, not the destruction of evidence.", isCorrect: false },
+                    { text: "Denial of Service", rationale: "While deleting logs is destructive, it does not inherently disrupt the availability of the application or system for legitimate users.", isCorrect: false },
+                    { text: "Spoofing", rationale: "This threat involves faking an identity; while the attacker is hiding their identity by deleting logs, the act of making actions untraceable is categorized differently.", isCorrect: false }
+                ]
+            },
+            {
+                question: "Which of the following activities violates the core rule of '100% Passive Reconnaissance'?",
+                hint: "Passive reconnaissance means your intelligence gathering must never involve directly touching the target organization's own servers or networks.",
+                options: [
+                    { text: "Sending a SYN packet to a discovered IP address to check if port 22 is open.", rationale: "Interacting directly with the target's infrastructure by sending network traffic leaves a trace in their logs and constitutes active scanning, not passive reconnaissance.", isCorrect: true },
+                    { text: "Querying a Regional Internet Registry (RIR) to find out who registered a domain.", rationale: "This involves querying a third-party database (like ARIN or RIPE), which does not send any traffic to the target's actual network.", isCorrect: false },
+                    { text: "Using a search engine to find cached versions of the target's old website pages.", rationale: "Accessing cached data from a third party like Google or the Wayback Machine does not interact with the target's live servers.", isCorrect: false },
+                    { text: "Searching the Have I Been Pwned database for corporate email addresses.", rationale: "This involves querying an independent, third-party security service and generates zero traffic on the target's infrastructure.", isCorrect: false }
+                ]
+            },
+            {
+                question: "A penetration tester needs to visually map the complex relationships between a target company's domain names, IP blocks, and executive email addresses. Which tool is specifically designed for this type of visual link analysis?",
+                hint: "Look for the tool that is described as a 'Visual link-analysis graph'.",
+                options: [
+                    { text: "Maltego", rationale: "This tool specializes in running 'transforms' to query various data sources and presenting the relationships in an interactive, node-based visual graph.", isCorrect: true },
+                    { text: "Subfinder", rationale: "This is a command-line utility optimized for very fast, text-based subdomain discovery via APIs, lacking built-in visual graphing capabilities.", isCorrect: false },
+                    { text: "OWASP Threat Dragon", rationale: "This tool is used for drawing Data Flow Diagrams during the Threat Modeling phase, not for mapping external OSINT data relationships.", isCorrect: false },
+                    { text: "theHarvester", rationale: "While great for collecting emails and subdomains, it is a text-based CLI tool that outputs lists, rather than generating visual relationship maps.", isCorrect: false }
+                ]
+            },
+            {
+                question: "When building a Data Flow Diagram (DFD) for a Threat Modeling exercise, what is the most critical element to identify in order to determine where security controls are needed?",
+                hint: "Think about the lines drawn on a system map that show where data passes between areas with different levels of authorization or security.",
+                options: [
+                    { text: "Trust Boundaries", rationale: "Identifying where data moves from a less secure area to a more secure area (or vice versa) pinpoints the exact locations where attackers might intercept data or elevate privileges.", isCorrect: true },
+                    { text: "Physical Server Locations", rationale: "While physical security is important, a DFD focuses primarily on the logical flow of data and application architecture, regardless of the hardware's geography.", isCorrect: false },
+                    { text: "The specific programming languages used", rationale: "Threat modeling is typically language-agnostic at the architectural level; it is more concerned with the design logic than the specific syntax used to implement it.", isCorrect: false },
+                    { text: "The names of the developers who built the application", rationale: "The identities of the developers are irrelevant to the architectural vulnerabilities and data flows within the system itself.", isCorrect: false }
+                ]
+            }
+        ];
+
+        // ==========================================
+        // APP LOGIC
+        // ==========================================
+        
+        // --- Tab Management ---
+        function switchTab(tabId) {
+            // Update Tab Buttons
+            const fcBtn = document.getElementById('tab-flashcards');
+            const qzBtn = document.getElementById('tab-quiz');
+            
+            if (tabId === 'flashcards') {
+                fcBtn.className = "border-blue-600 text-blue-600 border-b-2 py-4 px-1 text-sm font-medium transition-colors hover:text-blue-800";
+                qzBtn.className = "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 border-b-2 py-4 px-1 text-sm font-medium transition-colors";
+                document.getElementById('view-flashcards').classList.remove('hidden');
+                document.getElementById('view-quiz').classList.add('hidden');
+            } else {
+                qzBtn.className = "border-blue-600 text-blue-600 border-b-2 py-4 px-1 text-sm font-medium transition-colors hover:text-blue-800";
+                fcBtn.className = "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 border-b-2 py-4 px-1 text-sm font-medium transition-colors";
+                document.getElementById('view-quiz').classList.remove('hidden');
+                document.getElementById('view-flashcards').classList.add('hidden');
+            }
+        }
+
+        // --- Flashcard Logic ---
+        let currentFlashcardIndex = 0;
+        let isFlipped = false;
+
+        function renderFlashcard() {
+            const card = flashcardsData[currentFlashcardIndex];
+            document.getElementById('fc-front').innerText = card.front;
+            document.getElementById('fc-back').innerText = card.back;
+            document.getElementById('fc-counter').innerText = `${currentFlashcardIndex + 1} / ${flashcardsData.length}`;
+            
+            // Ensure card is face up when navigating
+            if (isFlipped) {
+                isFlipped = false;
+                document.getElementById('fc-inner').classList.remove('rotate-y-180');
+            }
+        }
+
+        function flipCard() {
+            isFlipped = !isFlipped;
+            document.getElementById('fc-inner').classList.toggle('rotate-y-180', isFlipped);
+        }
+
+        function nextCard() {
+            if (currentFlashcardIndex < flashcardsData.length - 1) {
+                currentFlashcardIndex++;
+                renderFlashcard();
+            } else {
+                // Loop back to start
+                currentFlashcardIndex = 0;
+                renderFlashcard();
+            }
+        }
+
+        function prevCard() {
+            if (currentFlashcardIndex > 0) {
+                currentFlashcardIndex--;
+                renderFlashcard();
+            } else {
+                // Loop to end
+                currentFlashcardIndex = flashcardsData.length - 1;
+                renderFlashcard();
+            }
+        }
+
+        // --- Quiz Logic ---
+        let currentQuizIndex = 0;
+        let score = 0;
+        let selectedOptionIndex = null;
+        let hasAnswered = false;
+        let activeQuizOptions = []; // Shuffled options for current question
+
+        // Utility: Shuffle Array
+        function shuffleArray(array) {
+            let shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function renderQuizQuestion() {
+            hasAnswered = false;
+            selectedOptionIndex = null;
+            
+            const q = quizData[currentQuizIndex];
+            
+            // Shuffle options for this render
+            activeQuizOptions = shuffleArray(q.options);
+
+            // Update UI
+            document.getElementById('quiz-progress').innerText = `Question ${currentQuizIndex + 1} of ${quizData.length}`;
+            document.getElementById('quiz-question').innerText = q.question;
+            
+            // Reset Hint
+            const hintDiv = document.getElementById('quiz-hint');
+            hintDiv.classList.add('hidden');
+            hintDiv.innerText = q.hint;
+
+            // Render Options
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+            
+            activeQuizOptions.forEach((opt, index) => {
+                const optDiv = document.createElement('div');
+                optDiv.id = `option-${index}`;
+                optDiv.className = "p-4 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors flex items-start group";
+                optDiv.onclick = () => selectOption(index);
+                
+                optDiv.innerHTML = `
+                    <div class="flex-shrink-0 mt-0.5 mr-3">
+                        <div id="radio-${index}" class="w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center group-hover:border-blue-400">
+                            <div id="radio-dot-${index}" class="w-2.5 h-2.5 rounded-full bg-blue-600 hidden"></div>
+                        </div>
+                    </div>
+                    <div class="text-slate-700 font-medium">${opt.text}</div>
+                `;
+                optionsContainer.appendChild(optDiv);
+            });
+
+            // Reset UI states
+            document.getElementById('quiz-rationale').classList.add('hidden');
+            document.getElementById('btn-submit-answer').classList.remove('hidden');
+            document.getElementById('btn-submit-answer').disabled = true;
+            document.getElementById('btn-next-question').classList.add('hidden');
+            document.getElementById('btn-finish-quiz').classList.add('hidden');
+        }
+
+        function selectOption(index) {
+            if (hasAnswered) return; // Prevent changing after submit
+            
+            selectedOptionIndex = index;
+            document.getElementById('btn-submit-answer').disabled = false;
+
+            // Update styling for all options
+            activeQuizOptions.forEach((_, i) => {
+                const optDiv = document.getElementById(`option-${i}`);
+                const radio = document.getElementById(`radio-${i}`);
+                const dot = document.getElementById(`radio-dot-${i}`);
+                
+                if (i === index) {
+                    optDiv.classList.add('border-blue-500', 'bg-blue-50');
+                    optDiv.classList.remove('border-slate-200', 'hover:bg-slate-50');
+                    radio.classList.add('border-blue-600');
+                    radio.classList.remove('border-slate-300', 'group-hover:border-blue-400');
+                    dot.classList.remove('hidden');
+                } else {
+                    optDiv.classList.remove('border-blue-500', 'bg-blue-50');
+                    optDiv.classList.add('border-slate-200', 'hover:bg-slate-50');
+                    radio.classList.remove('border-blue-600');
+                    radio.classList.add('border-slate-300', 'group-hover:border-blue-400');
+                    dot.classList.add('hidden');
+                }
+            });
+        }
+
+        function submitAnswer() {
+            if (selectedOptionIndex === null || hasAnswered) return;
+            hasAnswered = true;
+
+            const selectedOption = activeQuizOptions[selectedOptionIndex];
+            const isCorrect = selectedOption.isCorrect;
+
+            if (isCorrect) score++;
+
+            // Highlight correct/incorrect answers
+            activeQuizOptions.forEach((opt, i) => {
+                const optDiv = document.getElementById(`option-${i}`);
+                if (opt.isCorrect) {
+                    optDiv.className = "p-4 border-2 border-green-500 bg-green-50 rounded-lg flex items-start";
+                } else if (i === selectedOptionIndex && !isCorrect) {
+                    optDiv.className = "p-4 border-2 border-red-500 bg-red-50 rounded-lg flex items-start opacity-75";
+                } else {
+                    optDiv.className = "p-4 border border-slate-200 rounded-lg flex items-start opacity-50";
+                    optDiv.style.cursor = "default";
+                }
+            });
+
+            // Show Rationale
+            const rationaleBox = document.getElementById('quiz-rationale');
+            const rationaleTitle = document.getElementById('rationale-title');
+            const rationaleText = document.getElementById('rationale-text');
+            const rationaleIcon = document.getElementById('rationale-icon');
+
+            rationaleBox.classList.remove('hidden');
+            rationaleText.innerText = selectedOption.rationale;
+
+            if (isCorrect) {
+                rationaleBox.className = "hidden mt-6 p-5 rounded-lg border border-green-200 bg-green-50 block";
+                rationaleTitle.innerText = "Correct";
+                rationaleTitle.className = "text-sm font-bold uppercase tracking-wider mb-1 text-green-700";
+                rationaleIcon.innerHTML = `<svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else {
+                rationaleBox.className = "hidden mt-6 p-5 rounded-lg border border-red-200 bg-red-50 block";
+                rationaleTitle.innerText = "Incorrect";
+                rationaleTitle.className = "text-sm font-bold uppercase tracking-wider mb-1 text-red-700";
+                rationaleIcon.innerHTML = `<svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            }
+
+            // Update Buttons
+            document.getElementById('btn-submit-answer').classList.add('hidden');
+            
+            if (currentQuizIndex < quizData.length - 1) {
+                document.getElementById('btn-next-question').classList.remove('hidden');
+            } else {
+                document.getElementById('btn-finish-quiz').classList.remove('hidden');
+            }
+        }
+
+        function toggleHint() {
+            const hintDiv = document.getElementById('quiz-hint');
+            hintDiv.classList.toggle('hidden');
+        }
+
+        function nextQuestion() {
+            currentQuizIndex++;
+            renderQuizQuestion();
+        }
+
+        function showResults() {
+            document.getElementById('quiz-active').classList.add('hidden');
+            document.getElementById('quiz-results').classList.remove('hidden');
+            document.getElementById('score-display').innerText = score;
+        }
+
+        function restartQuiz() {
+            currentQuizIndex = 0;
+            score = 0;
+            document.getElementById('quiz-results').classList.add('hidden');
+            document.getElementById('quiz-active').classList.remove('hidden');
+            renderQuizQuestion();
+        }
+
+        // Initialize App
+        window.onload = () => {
+            renderFlashcard();
+            renderQuizQuestion();
+        };
+    </script>
+</body>
+</html>
+
+
+

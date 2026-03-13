@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intrusion Testing: Active Recon & Vuln Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Slate, Blue, and Emerald (Light Mode) -->
+    <!-- Application Structure Plan: Tabbed Single Page Application (SPA). Sections: Dashboard, The Human Vector (Active Recon), The Machine Vector (Vuln Analysis). This structure groups the linear presentation into thematic, task-oriented modules. It prevents cognitive overload and allows users to explore specific vectors non-linearly. Interactive tools (like the CVSS calculator and DiD layers) replace static tables to promote active learning and understanding of key concepts. -->
+    <!-- Visualization & Content Choices: 1. Overview Stats -> Goal: Inform -> Dynamic Cards -> Justification: High-level context. 2. SMS vs Email Phishing -> Goal: Compare -> Bar Chart (Chart.js) -> Justification: Visual impact of SMS vulnerability vs traditional email. 3. Defence-in-Depth -> Goal: Organize -> Interactive HTML Accordion Stack -> Justification: Represents overlapping layers better than a static table, encouraging exploration (No SVG used). 4. CVSS Scoring -> Goal: Change/Understand -> Interactive Calculator -> Justification: Allows users to see how metrics mathematically affect the exploitability score dynamically. 5. False Positives -> Goal: Inform -> Doughnut Chart (Chart.js) -> Justification: Highlights the noise ratio in scanner data. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 350px; }
+        }
+        .nav-active {
+            border-bottom: 4px solid #0284c7;
+            color: #0369a1;
+            font-weight: 700;
+        }
+        .layer-btn:hover { filter: brightness(0.95); }
+        .calc-btn.selected {
+            background-color: #0ea5e9;
+            color: white;
+            border-color: #0284c7;
+        }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl mr-2">🛡️</span>
+                    <span class="font-bold text-xl text-slate-900 tracking-tight">Cyber.SoHo <span class="text-slate-500 font-normal">| Intrusion Testing</span></span>
+                </div>
+                <div class="hidden md:flex space-x-8 items-center" id="nav-menu">
+                    <button data-target="view-dashboard" class="nav-item nav-active text-slate-600 hover:text-sky-700 px-1 py-5 text-sm font-medium transition-colors">Overview</button>
+                    <button data-target="view-human" class="nav-item text-slate-600 hover:text-sky-700 px-1 py-5 text-sm font-medium transition-colors">The Human Vector</button>
+                    <button data-target="view-machine" class="nav-item text-slate-600 hover:text-sky-700 px-1 py-5 text-sm font-medium transition-colors">The Machine Vector</button>
+                </div>
+                <div class="flex items-center md:hidden">
+                    <select id="mobile-nav" class="bg-slate-100 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-full p-2.5">
+                        <option value="view-dashboard">Overview</option>
+                        <option value="view-human">The Human Vector</option>
+                        <option value="view-machine">The Machine Vector</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        
+        <section id="view-dashboard" class="content-section fade-in">
+            <div class="mb-8">
+                <h1 class="text-4xl font-extrabold text-slate-900 mb-4">Course Day 08: Crossing the Line</h1>
+                <p class="text-lg text-slate-600 leading-relaxed max-w-4xl">
+                    Welcome to Day 08 of the 29-day Intrusion Testing course. Today marks the critical transition from passive reconnaissance to active engagement. You will explore the dual vectors of initial access: exploiting human psychology and scanning machine vulnerabilities. Use this interactive dashboard to review key intelligence, compare methodologies, and prepare for your simulation labs.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col items-center text-center">
+                    <span class="text-4xl mb-3">🕵️</span>
+                    <h3 class="text-lg font-bold text-slate-800">Completed (Days 1-7)</h3>
+                    <p class="text-sm text-slate-500 mt-2">Lab build, RoE (Rules of Engagement), OPSEC, and OSINT.</p>
+                </div>
+                <div class="bg-sky-50 rounded-xl shadow-sm border border-sky-200 p-6 flex flex-col items-center text-center ring-2 ring-sky-500 ring-offset-2">
+                    <span class="text-4xl mb-3">🎯</span>
+                    <h3 class="text-lg font-bold text-sky-900">Today's Focus (Day 08)</h3>
+                    <p class="text-sm text-sky-700 mt-2">Active Reconnaissance (Human Vector) & Vulnerability Analysis (Machine Vector).</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col items-center text-center">
+                    <span class="text-4xl mb-3">🔬</span>
+                    <h3 class="text-lg font-bold text-slate-800">Coming Next</h3>
+                    <p class="text-sm text-slate-500 mt-2">Phishing simulation lab, scanner labs (Day 10), and deep enumeration (Day 11).</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-800 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white">The Paradigm Shift: Passive vs. Active Recon</h2>
+                </div>
+                <div class="p-6">
+                    <p class="text-slate-600 mb-6 font-medium bg-amber-50 border-l-4 border-amber-500 p-4">
+                        <span class="text-amber-700 font-bold">CRITICAL AWARENESS:</span> The moment you send a packet or make a call, the rules change. Testing without authorization is a criminal offence.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-700 border-b border-slate-200 pb-2 mb-4 flex justify-between items-center">
+                                Passive Recon
+                                <span class="text-2xl">👁️</span>
+                            </h3>
+                            <ul class="space-y-3">
+                                <li class="flex items-start"><span class="text-emerald-500 mr-2">✓</span> <span class="text-slate-700">Target cannot see your activities</span></li>
+                                <li class="flex items-start"><span class="text-emerald-500 mr-2">✓</span> <span class="text-slate-700">Tools: WHOIS, DNS lookups, Shodan searches</span></li>
+                                <li class="flex items-start"><span class="text-emerald-500 mr-2">✓</span> <span class="text-slate-700">Low legal risk</span></li>
+                                <li class="flex items-start"><span class="text-emerald-500 mr-2">✓</span> <span class="text-slate-700">Objective: Gathering intelligence quietly</span></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-700 border-b border-slate-200 pb-2 mb-4 flex justify-between items-center">
+                                Active Recon
+                                <span class="text-2xl">⚡</span>
+                            </h3>
+                            <ul class="space-y-3">
+                                <li class="flex items-start"><span class="text-rose-500 mr-2">⚠</span> <span class="text-slate-700 font-semibold">Target CAN detect your probes</span></li>
+                                <li class="flex items-start"><span class="text-rose-500 mr-2">⚠</span> <span class="text-slate-700">Tools: Social engineering, active port scans</span></li>
+                                <li class="flex items-start"><span class="text-rose-500 mr-2">⚠</span> <span class="text-slate-700 font-semibold">High legal risk without signed RoE</span></li>
+                                <li class="flex items-start"><span class="text-rose-500 mr-2">⚠</span> <span class="text-slate-700">Objective: Engaging the target directly</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-human" class="content-section hidden fade-in">
+            <div class="mb-8">
+                <h1 class="text-4xl font-extrabold text-slate-900 mb-4">Active Recon: The Human Vector</h1>
+                <p class="text-lg text-slate-600 leading-relaxed max-w-4xl">
+                    Social engineering manipulates human trust, authority, and social norms to gain unauthorized access. This section breaks down the psychology of manipulation, delivery mechanisms for payloads, and the critical importance of defensive verification protocols. Remember the pizza-box test: $30 of pepperoni can bypass a $50,000 access-control system.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
+                        <span class="mr-2 text-2xl">🧠</span> Cialdini's Six Principles of Influence
+                    </h2>
+                    <p class="text-sm text-slate-500 mb-4">Click a principle to view the attacker's application.</p>
+                    <div class="space-y-3" id="cialdini-container">
+                        <div class="border border-slate-200 rounded-lg overflow-hidden">
+                            <button class="w-full text-left px-4 py-3 bg-slate-50 hover:bg-slate-100 font-semibold text-slate-700 flex justify-between items-center" onclick="toggleAccordion('c1')">
+                                1. Reciprocity <span class="text-slate-400">▼</span>
+                            </button>
+                            <div id="c1" class="hidden px-4 py-3 bg-white text-slate-600 text-sm border-t border-slate-100">
+                                Doing a favour to ask for one back. E.g., holding a door, providing "free" IT help, then requesting a password.
+                            </div>
+                        </div>
+                        <div class="border border-slate-200 rounded-lg overflow-hidden">
+                            <button class="w-full text-left px-4 py-3 bg-slate-50 hover:bg-slate-100 font-semibold text-slate-700 flex justify-between items-center" onclick="toggleAccordion('c2')">
+                                2. Commitment & Consistency <span class="text-slate-400">▼</span>
+                            </button>
+                            <div id="c2" class="hidden px-4 py-3 bg-white text-slate-600 text-sm border-t border-slate-100">
+                                Getting a small "yes" to lead to a big "yes". E.g., verifying a username first, before asking for the 2FA token.
+                            </div>
+                        </div>
+                        <div class="border border-slate-200 rounded-lg overflow-hidden">
+                            <button class="w-full text-left px-4 py-3 bg-slate-50 hover:bg-slate-100 font-semibold text-slate-700 flex justify-between items-center" onclick="toggleAccordion('c3')">
+                                3. Social Proof <span class="text-slate-400">▼</span>
+                            </button>
+                            <div id="c3" class="hidden px-4 py-3 bg-white text-slate-600 text-sm border-t border-slate-100">
+                                "Everyone else already did it." E.g., "The rest of your department has already updated their credentials on this portal."
+                            </div>
+                        </div>
+                        <div class="border border-slate-200 rounded-lg overflow-hidden">
+                            <button class="w-full text-left px-4 py-3 bg-slate-50 hover:bg-slate-100 font-semibold text-slate-700 flex justify-between items-center" onclick="toggleAccordion('c4')">
+                                4. Authority <span class="text-slate-400">▼</span>
+                            </button>
+                            <div id="c4" class="hidden px-4 py-3 bg-white text-slate-600 text-sm border-t border-slate-100">
+                                Impersonating IT, the CEO, or law enforcement. Targets are conditioned to comply with authority figures without questioning.
+                            </div>
+                        </div>
+                        <div class="border border-slate-200 rounded-lg overflow-hidden">
+                            <button class="w-full text-left px-4 py-3 bg-slate-50 hover:bg-slate-100 font-semibold text-slate-700 flex justify-between items-center" onclick="toggleAccordion('c5')">
+                                5. Liking <span class="text-slate-400">▼</span>
+                            </button>
+                            <div id="c5" class="hidden px-4 py-3 bg-white text-slate-600 text-sm border-t border-slate-100">
+                                Building rapport, mirroring behaviour, finding common ground. People comply with people they like.
+                            </div>
+                        </div>
+                        <div class="border border-slate-200 rounded-lg overflow-hidden">
+                            <button class="w-full text-left px-4 py-3 bg-slate-50 hover:bg-slate-100 font-semibold text-slate-700 flex justify-between items-center" onclick="toggleAccordion('c6')">
+                                6. Scarcity <span class="text-slate-400">▼</span>
+                            </button>
+                            <div id="c6" class="hidden px-4 py-3 bg-white text-slate-600 text-sm border-t border-slate-100">
+                                Creating artificial urgency. E.g., "Your account will be locked in 2 hours if you do not click here."
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col">
+                    <h2 class="text-xl font-bold text-slate-800 mb-2 flex items-center">
+                        <span class="mr-2 text-2xl">🎣</span> Phishing Delivery Efficacy
+                    </h2>
+                    <p class="text-sm text-slate-500 mb-4">Comparing typical open rates between communication vectors.</p>
+                    <div class="flex-grow flex items-center justify-center">
+                        <div class="chart-container">
+                            <canvas id="phishingChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        <strong>Insight:</strong> Smishing (SMS) heavily bypasses traditional corporate filters and capitalizes on the intimate nature of mobile devices, resulting in dramatically higher interaction rates.
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+                <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
+                    <span class="mr-2 text-2xl">🛡️</span> E-mail Authentication & Defence
+                </h2>
+                <p class="text-slate-600 mb-6">If all three pillars fail, the message is almost certainly a spoofed sender. Phishing defence requires both technical controls and user training.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-5">
+                        <h3 class="font-bold text-sky-700 text-lg mb-1">SPF</h3>
+                        <p class="text-xs text-slate-400 font-mono mb-3">Sender Policy Framework</p>
+                        <p class="text-sm text-slate-600">Validates that the sender's IP address is officially authorized to send mail on behalf of the domain.</p>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-5">
+                        <h3 class="font-bold text-sky-700 text-lg mb-1">DKIM</h3>
+                        <p class="text-xs text-slate-400 font-mono mb-3">DomainKeys Identified Mail</p>
+                        <p class="text-sm text-slate-600">Applies a cryptographic signature to message headers, ensuring the email content was not tampered with in transit.</p>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-5">
+                        <h3 class="font-bold text-sky-700 text-lg mb-1">DMARC</h3>
+                        <p class="text-xs text-slate-400 font-mono mb-3">Domain-based Message Auth...</p>
+                        <p class="text-sm text-slate-600">The policy layer that combines SPF and DKIM, instructing the receiving server on what to do if an email fails authentication.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 rounded-xl shadow-lg p-6 text-white mb-8">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <span class="mr-2 text-2xl">🔍</span> Payload Inspection: Magic Bytes
+                </h2>
+                <p class="text-slate-300 mb-6 text-sm">Never trust the file extension. Always check the magic bytes (Hex Signatures). A mismatch between the extension and the header is a critical red flag.</p>
+                
+                <div class="flex flex-col md:flex-row gap-6 items-center bg-slate-900 p-6 rounded-lg">
+                    <div class="w-full md:w-1/3">
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Select Target File Type:</label>
+                        <select id="magic-byte-selector" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-full p-2.5">
+                            <option value="pdf">PDF Document (.pdf)</option>
+                            <option value="zip">Archive/Modern Office (.zip, .docx, .xlsx)</option>
+                            <option value="pe">Windows Executable (.exe, .dll)</option>
+                            <option value="elf">Linux Binary (.elf)</option>
+                            <option value="ole2">Legacy MS Office (.doc, .xls)</option>
+                        </select>
+                    </div>
+                    <div class="w-full md:w-2/3 flex items-center justify-center p-4 bg-black rounded border border-slate-700">
+                        <div class="text-center">
+                            <p class="text-slate-400 text-xs uppercase tracking-widest mb-1">Expected Hex Signature</p>
+                            <p id="magic-byte-display" class="font-mono text-3xl text-emerald-400 tracking-widest font-bold">25 50 44 46</p>
+                            <p id="magic-byte-desc" class="text-sm text-slate-500 mt-2">Corresponds to %PDF</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <section id="view-machine" class="content-section hidden fade-in">
+            <div class="mb-8">
+                <h1 class="text-4xl font-extrabold text-slate-900 mb-4">Vulnerability Analysis: The Machine Vector</h1>
+                <p class="text-lg text-slate-600 leading-relaxed max-w-4xl">
+                    Once the perimeter is established, we map the structural defenses and scan for technical weaknesses. This section covers the layers of Defense-in-Depth, the metrics used to calculate vulnerability severity (CVSS), and the realities of analyzing scanner outputs to find actual exploit chains.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h2 class="text-xl font-bold text-slate-800 mb-2 flex items-center">
+                        <span class="mr-2 text-2xl">🏰</span> Defence-in-Depth (DiD) Architecture
+                    </h2>
+                    <p class="text-sm text-slate-500 mb-4">Every control fails eventually. Hover or tap layers to inspect example controls designed to catch the threat when the outer layer fails.</p>
+                    
+                    <div class="flex flex-col space-y-1 mt-6" id="did-stack">
+                        <div class="layer-btn bg-slate-800 text-white p-3 rounded text-center font-bold cursor-pointer relative group transition-all" tabindex="0">
+                            Layer 7: People & Policies
+                            <div class="absolute inset-0 bg-sky-900/90 hidden group-hover:flex group-focus:flex items-center justify-center rounded px-4 text-sm font-normal">
+                                Awareness training, phishing sims, IR plans
+                            </div>
+                        </div>
+                        <div class="layer-btn bg-slate-700 text-white p-3 rounded text-center font-bold cursor-pointer mx-2 relative group transition-all" tabindex="0">
+                            Layer 6: Data Security
+                            <div class="absolute inset-0 bg-sky-800/90 hidden group-hover:flex group-focus:flex items-center justify-center rounded px-4 text-sm font-normal">
+                                AES-256 at rest, TLS 1.3 in transit, DLP
+                            </div>
+                        </div>
+                        <div class="layer-btn bg-slate-600 text-white p-3 rounded text-center font-bold cursor-pointer mx-4 relative group transition-all" tabindex="0">
+                            Layer 5: Application Security
+                            <div class="absolute inset-0 bg-sky-700/90 hidden group-hover:flex group-focus:flex items-center justify-center rounded px-4 text-sm font-normal">
+                                Input validation, SAST/DAST, OWASP Top 10
+                            </div>
+                        </div>
+                        <div class="layer-btn bg-slate-500 text-white p-3 rounded text-center font-bold cursor-pointer mx-6 relative group transition-all" tabindex="0">
+                            Layer 4: Host / Endpoint
+                            <div class="absolute inset-0 bg-sky-600/90 hidden group-hover:flex group-focus:flex items-center justify-center rounded px-4 text-sm font-normal">
+                                EDR, anti-malware, OS hardening (CIS)
+                            </div>
+                        </div>
+                        <div class="layer-btn bg-slate-400 text-slate-900 p-3 rounded text-center font-bold cursor-pointer mx-8 relative group transition-all" tabindex="0">
+                            Layer 3: Network Segmentation
+                            <div class="absolute inset-0 bg-sky-500/90 hidden group-hover:flex group-focus:flex items-center justify-center rounded px-4 text-sm font-normal text-white">
+                                VLANs, ACLs, micro-segmentation, zero-trust
+                            </div>
+                        </div>
+                        <div class="layer-btn bg-slate-300 text-slate-900 p-3 rounded text-center font-bold cursor-pointer mx-10 relative group transition-all" tabindex="0">
+                            Layer 2: Perimeter / Edge
+                            <div class="absolute inset-0 bg-sky-400/90 hidden group-hover:flex group-focus:flex items-center justify-center rounded px-4 text-sm font-normal text-slate-900">
+                                Next-gen firewall, IDS/IPS, WAF, DDoS mitigation
+                            </div>
+                        </div>
+                        <div class="layer-btn bg-slate-200 text-slate-900 p-3 rounded text-center font-bold cursor-pointer mx-12 relative group transition-all" tabindex="0">
+                            Layer 1: Physical Security
+                            <div class="absolute inset-0 bg-sky-300/90 hidden group-hover:flex group-focus:flex items-center justify-center rounded px-4 text-sm font-normal text-slate-900">
+                                Locks, badges, CCTV, biometrics
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col">
+                    <h2 class="text-xl font-bold text-slate-800 mb-2 flex items-center">
+                        <span class="mr-2 text-2xl">📊</span> Scanner Noise: False Positives
+                    </h2>
+                    <p class="text-sm text-slate-500 mb-4">Industry reality: A large percentage of vulnerability scanner findings require manual triage and suppression.</p>
+                    <div class="flex-grow flex items-center justify-center relative">
+                        <div class="chart-container" style="max-height: 250px;">
+                            <canvas id="fpChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-sm text-slate-600 space-y-2 border-t border-slate-100 pt-3">
+                        <p><strong>Top Causes of FP:</strong></p>
+                        <ul class="list-disc pl-5 text-slate-500 space-y-1">
+                            <li>Banner-only detection (patches back-ported)</li>
+                            <li>Version-range mismatches</li>
+                            <li>Port-only inference (assuming service by port number)</li>
+                            <li>Missing architectural context</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="bg-sky-900 rounded-xl shadow-lg p-6 text-white mb-8 border border-sky-800">
+                <h2 class="text-2xl font-bold mb-2 flex items-center">
+                    <span class="mr-2">🧮</span> Interactive CVSS v3.1 Exploitability Calculator
+                </h2>
+                <p class="text-sky-200 mb-6 text-sm max-w-3xl">CVSS measures theoretical severity, not immediate risk. The Exploitability Sub-Score is calculated based on how difficult the attack is to execute. Select the metrics below to see how the score changes. Formula: <code class="bg-sky-950 px-2 py-1 rounded text-sky-300">8.22 × AV × AC × PR × UI</code></p>
+                
+                <div class="flex flex-col md:flex-row gap-8 items-stretch">
+                    <div class="w-full md:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        
+                        <div class="bg-sky-950 p-4 rounded-lg border border-sky-800">
+                            <h3 class="text-sm font-bold text-sky-400 uppercase tracking-wider mb-3">Attack Vector (AV)</h3>
+                            <div class="flex space-x-2">
+                                <button class="calc-btn w-1/2 py-2 text-sm border border-sky-700 rounded transition-colors selected" data-metric="av" data-val="0.85">Network</button>
+                                <button class="calc-btn w-1/2 py-2 text-sm border border-sky-700 rounded transition-colors" data-metric="av" data-val="0.20">Physical</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-sky-950 p-4 rounded-lg border border-sky-800">
+                            <h3 class="text-sm font-bold text-sky-400 uppercase tracking-wider mb-3">Attack Complexity (AC)</h3>
+                            <div class="flex space-x-2">
+                                <button class="calc-btn w-1/2 py-2 text-sm border border-sky-700 rounded transition-colors selected" data-metric="ac" data-val="0.77">Low</button>
+                                <button class="calc-btn w-1/2 py-2 text-sm border border-sky-700 rounded transition-colors" data-metric="ac" data-val="0.44">High</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-sky-950 p-4 rounded-lg border border-sky-800">
+                            <h3 class="text-sm font-bold text-sky-400 uppercase tracking-wider mb-3">Privileges Required (PR)</h3>
+                            <div class="flex space-x-2">
+                                <button class="calc-btn w-1/2 py-2 text-sm border border-sky-700 rounded transition-colors selected" data-metric="pr" data-val="0.85">None</button>
+                                <button class="calc-btn w-1/2 py-2 text-sm border border-sky-700 rounded transition-colors" data-metric="pr" data-val="0.27">High</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-sky-950 p-4 rounded-lg border border-sky-800">
+                            <h3 class="text-sm font-bold text-sky-400 uppercase tracking-wider mb-3">User Interaction (UI)</h3>
+                            <div class="flex space-x-2">
+                                <button class="calc-btn w-1/2 py-2 text-sm border border-sky-700 rounded transition-colors selected" data-metric="ui" data-val="0.85">None</button>
+                                <button class="calc-btn w-1/2 py-2 text-sm border border-sky-700 rounded transition-colors" data-metric="ui" data-val="0.62">Required</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="w-full md:w-1/3 flex flex-col justify-center items-center bg-black rounded-lg border border-sky-900 p-6">
+                        <div class="text-center">
+                            <p class="text-sky-500 text-sm font-bold uppercase tracking-widest mb-2">Exploitability Score</p>
+                            <div id="cvss-score-display" class="text-6xl font-black text-white mb-2">3.9</div>
+                            <p id="cvss-rating" class="text-lg font-bold px-3 py-1 rounded-full inline-block bg-rose-500/20 text-rose-400">HIGH LIKELIHOOD</p>
+                        </div>
+                        <div class="mt-6 text-xs text-sky-400/60 text-center">
+                            Note: This calculates the Exploitability Sub-Score only. Final Base Score requires the Impact Sub-Score (CIA triad).
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h2 class="text-xl font-bold text-slate-800 mb-2 flex items-center">
+                    <span class="mr-2 text-2xl">🔗</span> Prioritisation & Exploit Chains
+                </h2>
+                <div class="flex flex-col md:flex-row items-center gap-6">
+                    <div class="w-full md:w-1/2 text-slate-600">
+                        <p class="mb-4">The CISO's nightmare: 200 vulnerabilities, limited resources. CVSS alone fails because individual medium-severity bugs can be chained to create critical kill-paths.</p>
+                        <p class="mb-4"><strong>Example Kill-Path:</strong></p>
+                        <div class="bg-slate-50 border border-slate-200 p-3 rounded font-mono text-sm text-slate-700 space-y-2">
+                            <div class="flex items-center"><span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs mr-2">CVSS 5.0</span> Anon FTP</div>
+                            <div class="ml-4 border-l-2 border-slate-300 pl-4 py-1">⬇️</div>
+                            <div class="flex items-center"><span class="bg-orange-100 text-orange-800 px-2 py-0.5 rounded text-xs mr-2">CVSS 6.5</span> Credential Leak</div>
+                            <div class="ml-4 border-l-2 border-slate-300 pl-4 py-1">⬇️</div>
+                            <div class="flex items-center"><span class="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs mr-2">CVSS 7.2</span> SSH Login</div>
+                            <div class="ml-4 border-l-2 border-slate-300 pl-4 py-1">⬇️</div>
+                            <div class="flex items-center"><span class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded text-xs mr-2">CVSS 7.8</span> Kernel LPE → <strong>Root Shell</strong></div>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/2 bg-slate-50 p-5 rounded border border-slate-200">
+                        <h3 class="font-bold text-slate-800 mb-2">Exploit Chain Analysis Method</h3>
+                        <ol class="list-decimal pl-5 space-y-2 text-sm text-slate-700">
+                            <li>Model vulnerabilities as a directed graph.</li>
+                            <li>Run Depth-First Search (DFS) from each entry point to discover paths.</li>
+                            <li>Score chains by cumulative CVSS and final access level.</li>
+                            <li><strong>Find the chain-breaking node</strong>: patch the vulnerability appearing in the most chains first.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-6 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm">
+            <p>Cyber.SoHo © 2026 — Authorized use only. Misuse may violate CFAA, CMA, NIS2. Never test without written RoE consent.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const navItems = document.querySelectorAll('.nav-item');
+            const sections = document.querySelectorAll('.content-section');
+            const mobileNav = document.getElementById('mobile-nav');
+
+            function switchView(targetId) {
+                sections.forEach(sec => sec.classList.add('hidden'));
+                document.getElementById(targetId).classList.remove('hidden');
+
+                navItems.forEach(nav => {
+                    nav.classList.remove('nav-active');
+                    if(nav.dataset.target === targetId) {
+                        nav.classList.add('nav-active');
+                    }
+                });
+                
+                if(mobileNav.value !== targetId) {
+                    mobileNav.value = targetId;
+                }
+            }
+
+            navItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    switchView(e.target.dataset.target);
+                });
+            });
+
+            mobileNav.addEventListener('change', (e) => {
+                switchView(e.target.value);
+            });
+
+            window.toggleAccordion = function(id) {
+                const el = document.getElementById(id);
+                if (el.classList.contains('hidden')) {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
+            };
+
+            const magicBytesData = {
+                'pdf': { hex: '25 50 44 46', desc: 'Corresponds to %PDF ASCII string' },
+                'zip': { hex: '50 4B 03 04', desc: 'Used for ZIP, DOCX, XLSX' },
+                'pe':  { hex: '4D 5A', desc: 'Corresponds to MZ (Mark Zbikowski) - Windows Executable' },
+                'elf': { hex: '7F 45 4C 46', desc: 'Corresponds to .ELF - Linux Binary' },
+                'ole2': { hex: 'D0 CF 11 E0', desc: 'Legacy MS Office Document format' }
+            };
+
+            const magicSelect = document.getElementById('magic-byte-selector');
+            const magicDisplay = document.getElementById('magic-byte-display');
+            const magicDesc = document.getElementById('magic-byte-desc');
+
+            magicSelect.addEventListener('change', (e) => {
+                const val = e.target.value;
+                const data = magicBytesData[val];
+                magicDisplay.textContent = data.hex;
+                magicDesc.textContent = data.desc;
+                
+                magicDisplay.classList.remove('text-emerald-400');
+                void magicDisplay.offsetWidth; 
+                magicDisplay.classList.add('text-emerald-400');
+            });
+
+            const ctxPhishing = document.getElementById('phishingChart').getContext('2d');
+            new Chart(ctxPhishing, {
+                type: 'bar',
+                data: {
+                    labels: ['Smishing (SMS)', 'Phishing (E-mail)'],
+                    datasets: [{
+                        label: 'Estimated Open Rate (%)',
+                        data: [98, 20],
+                        backgroundColor: [
+                            'rgba(2, 132, 199, 0.8)',
+                            'rgba(148, 163, 184, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgb(2, 132, 199)',
+                            'rgb(148, 163, 184)'
+                        ],
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y + '% Open Rate';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { callback: function(value) { return value + "%" } }
+                        }
+                    }
+                }
+            });
+
+            const ctxFP = document.getElementById('fpChart').getContext('2d');
+            new Chart(ctxFP, {
+                type: 'doughnut',
+                data: {
+                    labels: ['False Positives', 'True Positives / Actionable'],
+                    datasets: [{
+                        data: [40, 60],
+                        backgroundColor: [
+                            'rgba(244, 63, 94, 0.8)', 
+                            'rgba(16, 185, 129, 0.8)' 
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' ' + context.label + ': ~' + context.parsed + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            let cvssState = { av: 0.85, ac: 0.77, pr: 0.85, ui: 0.85 };
+            
+            function updateCVSS() {
+                const score = 8.22 * cvssState.av * cvssState.ac * cvssState.pr * cvssState.ui;
+                const rounded = score.toFixed(1);
+                
+                const displayEl = document.getElementById('cvss-score-display');
+                const ratingEl = document.getElementById('cvss-rating');
+                
+                displayEl.textContent = rounded;
+                
+                if(rounded >= 3.0) {
+                    ratingEl.textContent = "HIGH EXPLOITABILITY";
+                    ratingEl.className = "text-lg font-bold px-3 py-1 rounded-full inline-block bg-rose-500/20 text-rose-400";
+                } else if(rounded >= 1.5) {
+                    ratingEl.textContent = "MEDIUM EXPLOITABILITY";
+                    ratingEl.className = "text-lg font-bold px-3 py-1 rounded-full inline-block bg-amber-500/20 text-amber-400";
+                } else {
+                    ratingEl.textContent = "LOW EXPLOITABILITY";
+                    ratingEl.className = "text-lg font-bold px-3 py-1 rounded-full inline-block bg-emerald-500/20 text-emerald-400";
+                }
+            }
+
+            document.querySelectorAll('.calc-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const metric = e.target.dataset.metric;
+                    const val = parseFloat(e.target.dataset.val);
+                    
+                    document.querySelectorAll(`.calc-btn[data-metric="${metric}"]`).forEach(b => b.classList.remove('selected'));
+                    e.target.classList.add('selected');
+                    
+                    cvssState[metric] = val;
+                    updateCVSS();
+                });
+            });
+
+            updateCVSS();
+
+        });
+    </script>
+</body>
+</html>
+
+

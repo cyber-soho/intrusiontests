@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intrusion Testing: Study App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Flashcard 3D Flip Animations */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .transition-transform { transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); }
+        
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen p-4 md:p-8 selection:bg-indigo-100 selection:text-indigo-900">
+
+    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden flex flex-col h-[90vh]">
+        
+        <!-- Header & Tabs -->
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-10">
+            <div class="px-6 py-4">
+                <h1 class="text-2xl font-bold text-slate-900">Intrusion Testing</h1>
+                <p class="text-sm text-slate-500">Active Reconnaissance & Vulnerability Analysis</p>
+            </div>
+            <div class="flex border-t border-slate-100">
+                <button id="tab-flashcards" onclick="switchTab('flashcards')" class="flex-1 py-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 hover:bg-slate-50 transition-colors">
+                    Flashcards (22)
+                </button>
+                <button id="tab-quiz" onclick="switchTab('quiz')" class="flex-1 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors">
+                    Practice Quiz (10)
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto p-6 md:p-10 relative bg-slate-50/50">
+            
+            <!-- FLASHCARDS TAB -->
+            <div id="section-flashcards" class="h-full flex flex-col">
+                <div class="flex-1 flex items-center justify-center min-h-[300px]">
+                    
+                    <!-- Card Container -->
+                    <div class="w-full max-w-2xl aspect-[3/2] perspective-1000 cursor-pointer group" onclick="flipCard()">
+                        <!-- Card Inner (handles the rotation) -->
+                        <div id="flashcard-inner" class="relative w-full h-full transition-transform transform-style-3d shadow-md hover:shadow-lg rounded-2xl">
+                            
+                            <!-- Front -->
+                            <div class="absolute w-full h-full backface-hidden bg-white border-2 border-slate-200 rounded-2xl flex flex-col items-center justify-center p-8 text-center">
+                                <span class="text-xs font-bold tracking-wider text-slate-400 uppercase mb-4">Front (Concept)</span>
+                                <h2 id="fc-front" class="text-2xl md:text-3xl font-semibold text-slate-800">Front Text</h2>
+                                <p class="text-sm text-slate-400 mt-6 animate-pulse">Click to flip</p>
+                            </div>
+                            
+                            <!-- Back -->
+                            <div class="absolute w-full h-full backface-hidden bg-indigo-600 border-2 border-indigo-700 rounded-2xl flex flex-col items-center justify-center p-8 text-center rotate-y-180">
+                                <span class="text-xs font-bold tracking-wider text-indigo-300 uppercase mb-4">Back (Definition)</span>
+                                <p id="fc-back" class="text-xl md:text-2xl text-white font-medium leading-relaxed">Back Text</p>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="mt-8 flex items-center justify-between max-w-2xl mx-auto w-full">
+                    <button onclick="prevCard()" class="px-5 py-2.5 bg-white border border-slate-200 rounded-lg shadow-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors font-medium">
+                        &larr; Previous
+                    </button>
+                    <span id="fc-counter" class="text-sm font-bold text-slate-400 tracking-widest">1 / 22</span>
+                    <button onclick="nextCard()" class="px-5 py-2.5 bg-white border border-slate-200 rounded-lg shadow-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors font-medium">
+                        Next &rarr;
+                    </button>
+                </div>
+            </div>
+
+            <!-- QUIZ TAB -->
+            <div id="section-quiz" class="hidden max-w-3xl mx-auto space-y-8 pb-10">
+                <!-- Quiz questions injected here via JS -->
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // --- DATA ---
+        const flashcardsData = [
+            { front: "Key difference between Passive and Active Reconnaissance", back: "Active reconnaissance involves directly engaging the target, making probes detectable and increasing legal risk." },
+            { front: "Social Engineering", back: "Manipulating human trust, authority, and social norms to gain unauthorized access." },
+            { front: "Cialdini's Principle: Reciprocity", back: "Doing a favor for someone so they feel compelled to do one in return." },
+            { front: "Cialdini's Principle: Authority", back: "Exploiting a target's conditioning to comply with figures of power, such as IT staff or executives." },
+            { front: "Cialdini's Principle: Scarcity", back: "Creating artificial urgency, such as threatening to lock an account in 2 hours." },
+            { front: "Smishing vs. Vishing", back: "Smishing uses SMS text messages, while Vishing uses voice calls for social engineering." },
+            { front: "Sender Policy Framework (SPF)", back: "An email authentication protocol that validates if a sender's IP address is authorized to send mail for the domain." },
+            { front: "DomainKeys Identified Mail (DKIM)", back: "An email protocol that applies a cryptographic signature to message headers to prevent tampering." },
+            { front: "DMARC", back: "A policy layer combining SPF and DKIM that dictates what receiving servers should do if an email fails authentication." },
+            { front: "Homoglyph Attack", back: "Using visually similar characters to spoof a legitimate domain name, such as 'rnicrosoft' instead of 'microsoft'." },
+            { front: "Magic Bytes", back: "Hex signatures found at the beginning of a file that identify its true format, regardless of its extension." },
+            { front: "Hex Signature: 4D 5A", back: "Identifies a PE (Portable Executable) file, such as a Windows EXE or DLL." },
+            { front: "Hex Signature: 25 50 44 46", back: "Identifies a PDF document." },
+            { front: "Hex Signature: 7F 45 4C 46", back: "Identifies an ELF file (Linux binary)." },
+            { front: "Rules of Engagement (RoE)", back: "A signed legal agreement that specifies the target systems, allowed techniques, and boundaries of a penetration test." },
+            { front: "Defence-in-Depth (DiD)", back: "The philosophy of building overlapping security layers so that if one control fails, the next will catch the threat." },
+            { front: "Vulnerability Scanner", back: "An automated tool, like Nessus or OpenVAS, used to discover known weaknesses and CVEs across an infrastructure." },
+            { front: "CVSS (Common Vulnerability Scoring System)", back: "An industry standard framework for rating the severity of software vulnerabilities on a scale from 0.0 to 10.0." },
+            { front: "CVSS v3.1 Exploitability Metrics", back: "Attack Vector (AV), Attack Complexity (AC), Privileges Required (PR), and User Interaction (UI)." },
+            { front: "Difference between Vulnerability Severity and Risk", back: "Severity measures how bad a vulnerability could be, while Risk factors in likelihood and asset value (e.g., a critical vuln on an offline box poses zero risk)." },
+            { front: "Common causes of scanner false positives", back: "Banner-only detection, version-range mismatches, port-only inference, and missing architectural context." },
+            { front: "Exploit Chain Analysis", back: "Modeling vulnerabilities as a graph to find the chain-breaking node that patches the most attack paths simultaneously." }
+        ];
+
+        const quizData = [
+            {
+                question: "You are conducting reconnaissance for a client. You use Shodan to find exposed IP addresses, query WHOIS for domain registration details, and then execute an Nmap SYN scan against their primary web server. At what exact point did your actions transition from passive to active reconnaissance?",
+                hint: "Consider which tool actively sends network traffic directly to the target's infrastructure rather than querying third-party databases.",
+                options: [
+                    { text: "Using Shodan to find exposed IP addresses", isCorrect: false, rationale: "Shodan actively scans the internet on its own, but an analyst querying its existing database is performing a passive action." },
+                    { text: "Querying WHOIS for domain registration", isCorrect: false, rationale: "WHOIS queries consult public registries managed by registrars, without sending any packets to the target's actual networks." },
+                    { text: "Executing the Nmap SYN scan", isCorrect: true, rationale: "Sending SYN packets directly to the target's server constitutes engaging the target directly, which crosses the boundary into active reconnaissance." },
+                    { text: "The actions never transitioned to active reconnaissance", isCorrect: false, rationale: "One of the listed actions involves direct network interaction with the target, violating the definition of passive intelligence gathering." }
+                ]
+            },
+            {
+                question: "An employee receives an email stating that their corporate VPN access will be permanently revoked in exactly 2 hours unless they click a link to re-authenticate. Which of Cialdini's principles of influence is the attacker primarily leveraging?",
+                hint: "Think about the psychological effect of a strict time limit and the threat of losing access.",
+                options: [
+                    { text: "Reciprocity", isCorrect: false, rationale: "Reciprocity relies on the target feeling indebted after receiving a favor, which is completely absent in a threat of revoked access." },
+                    { text: "Social Proof", isCorrect: false, rationale: "Social proof leverages the idea that 'everyone else is doing it' to build trust, rather than imposing a strict, threatening deadline." },
+                    { text: "Scarcity", isCorrect: true, rationale: "Creating an artificial, urgent deadline forces the victim into a panicked state to act quickly before they lose a perceived resource or access." },
+                    { text: "Liking", isCorrect: false, rationale: "Liking involves building rapport or finding common ground, which is the complete opposite of a high-pressure, impersonal ultimatum." }
+                ]
+            },
+            {
+                question: "During a phishing investigation, you analyze an email's headers and determine that while the sender's IP address was properly authorized by the domain's owner, the actual content of the email was tampered with during transit. Which email authentication protocol specifically failed or was missing in this scenario?",
+                hint: "Focus on the protocol designed to protect the integrity of the message payload using cryptography, rather than the one validating the origin IP.",
+                options: [
+                    { text: "SPF", isCorrect: false, rationale: "SPF successfully validated the sender's IP address, meaning the authorization layer functioned correctly." },
+                    { text: "DKIM", isCorrect: true, rationale: "DKIM applies a cryptographic signature to verify that the message contents have not been altered since the email was sent, which is what failed here." },
+                    { text: "DMARC", isCorrect: false, rationale: "DMARC relies on the results of the underlying protocols to enforce a receiving policy, rather than performing the cryptographic integrity check itself." },
+                    { text: "DNSSEC", isCorrect: false, rationale: "DNSSEC secures the DNS infrastructure itself from spoofing, not the specific payload contents of an individual email message." }
+                ]
+            },
+            {
+                question: "A SOC analyst is investigating a suspicious email attachment named 'Q4_Financial_Report.pdf'. However, when inspecting the file's header in a hex editor, the first two bytes are '4D 5A'. What type of file is the analyst actually dealing with?",
+                hint: "Remember the specific hex signature associated with the initials of Mark Zbikowski.",
+                options: [
+                    { text: "A legitimate PDF document", isCorrect: false, rationale: "A true PDF file would begin with the hex signature '25 50 44 46', corresponding to the '%PDF' ASCII string." },
+                    { text: "A compressed ZIP archive", isCorrect: false, rationale: "Compressed archives and modern office documents begin with the '50 4B 03 04' hex signature." },
+                    { text: "A Windows executable", isCorrect: true, rationale: "The '4D 5A' hex signature definitively identifies a Portable Executable file, typical of Windows EXE or DLL files, regardless of the spoofed extension." },
+                    { text: "A Linux ELF binary", isCorrect: false, rationale: "A Linux executable binary would begin with the '7F 45 4C 46' signature." }
+                ]
+            },
+            {
+                question: "During an authorized penetration test, you discover a highly vulnerable, unpatched legacy server sitting on the same subnet as your primary target. However, this specific server's IP address is not listed in your Rules of Engagement (RoE) document. What is the most appropriate next step?",
+                hint: "Consider the strict legal and contractual boundaries that protect penetration testers from criminal liability.",
+                options: [
+                    { text: "Exploit the server immediately to demonstrate lateral movement", isCorrect: false, rationale: "Taking action against an out-of-scope asset immediately violates the legal agreement and crosses into criminal unauthorized access." },
+                    { text: "Run a passive vulnerability scan against it to confirm the flaw", isCorrect: false, rationale: "Even seemingly 'safe' interactions with out-of-scope assets can breach the strict legal boundaries established prior to the engagement." },
+                    { text: "Do not touch the server and notify the client of its existence", isCorrect: true, rationale: "The Rules of Engagement serve as a strict legal shield, meaning any asset not explicitly listed in scope must be strictly avoided." },
+                    { text: "Attempt a benign exploit just to prove the severe risk", isCorrect: false, rationale: "Proving the risk of an asset is secondary to operating strictly within the authorized, legally binding boundaries of the engagement." }
+                ]
+            },
+            {
+                question: "An attacker successfully bypasses a corporate Next-Gen Firewall and exploits a SQL injection vulnerability in a public-facing customer portal, allowing them to exfiltrate database records. According to the 7-layer Defence-in-Depth model, which layer primarily failed to prevent the SQL injection itself?",
+                hint: "Focus on the specific control layer meant to catch code-level logic vulnerabilities, rather than network boundaries or data encryption.",
+                options: [
+                    { text: "Perimeter / Network Edge", isCorrect: false, rationale: "The firewall functions at the perimeter to manage network traffic routing, but it is typically not designed to inspect deep application logic flaws like SQLi." },
+                    { text: "Network Segmentation", isCorrect: false, rationale: "Segmentation isolates network zones from one another but does not validate user inputs submitted directly to a public web portal." },
+                    { text: "Application Security", isCorrect: true, rationale: "Input validation and secure coding practices are core components of this layer, which is specifically designed to stop logic flaws like SQL injection." },
+                    { text: "Data Security", isCorrect: false, rationale: "Data security focuses on encryption at rest or in transit, which protects data if the physical drives are stolen but does not stop an application-level query injection." }
+                ]
+            },
+            {
+                question: "Your OpenVAS scanner flags a Linux server as vulnerable to a specific CVE affecting Apache 2.4.49. However, the system administrator proves that the OS vendor has already applied a back-ported patch that fixes the vulnerability without altering the software's version number. What type of false positive is this?",
+                hint: "Think about what data the scanner is reading versus what the system administrator actually implemented behind the scenes.",
+                options: [
+                    { text: "Port-only inference", isCorrect: false, rationale: "The scanner successfully identified the specific software running (Apache) rather than just assuming a web service based solely on port 80 or 443 being open." },
+                    { text: "Banner-only detection", isCorrect: true, rationale: "The scanner simply reads the text version string exposed by the server, failing to recognize that a security patch was applied under the hood without updating that string." },
+                    { text: "Version-range mismatch", isCorrect: false, rationale: "The flagged version string was indeed part of the initially vulnerable range, but the vendor patch altered the reality without altering the version number." },
+                    { text: "Missing architectural context", isCorrect: false, rationale: "This refers to environmental mitigations like a Web Application Firewall or an isolated network, rather than an applied software patch on the host itself." }
+                ]
+            },
+            {
+                question: "A vulnerability scan reveals a flaw with a CVSS v3.1 Base Score of 9.8 (Critical) on a legacy workstation. However, this workstation is completely air-gapped from the corporate network, powered off most of the time, and contains no sensitive company data. How should a security analyst interpret this situation?",
+                hint: "Remember the fundamental formula that separates the theoretical severity of a flaw from its practical danger in a specific environment.",
+                options: [
+                    { text: "The severity is Critical, and the risk to the organization is equally Critical.", isCorrect: false, rationale: "Risk requires both a high likelihood of exploitation and high asset value, both of which are negated by the system's air-gapped status." },
+                    { text: "The severity is Critical, but the actual risk to the organization is near zero.", isCorrect: true, rationale: "CVSS represents the theoretical maximum severity of the flaw, but the environmental isolation reduces the practical likelihood of exploitation, and thus the risk, to almost nothing." },
+                    { text: "Both the severity and the risk are Low due to the machine's isolation.", isCorrect: false, rationale: "The vulnerability itself maintains its inherent critical software characteristics (CVSS 9.8), even if an attacker cannot easily reach the machine." },
+                    { text: "The CVSS score should be manually recalculated to 0.0 to reflect the air-gap.", isCorrect: false, rationale: "The Base Score reflects the immutable qualities of the vulnerability itself; environmental factors adjust the overall risk calculation, not the Base Score." }
+                ]
+            },
+            {
+                question: "You are tasked with prioritizing remediation efforts for a network with dozens of interconnected vulnerabilities. Instead of just patching the highest CVSS scores, you map the vulnerabilities as a directed graph. According to exploit chain analysis, which vulnerability should you patch first?",
+                hint: "Look for the strategic choke point that disrupts the adversary's lateral movement paths most effectively.",
+                options: [
+                    { text: "The single vulnerability with the highest CVSS base score", isCorrect: false, rationale: "High-scoring vulnerabilities might sit on isolated systems, doing nothing to stop an attacker moving through chained, medium-severity flaws toward a critical asset." },
+                    { text: "The vulnerability that acts as the initial entry point", isCorrect: false, rationale: "Securing entry points is vital, but attackers often have multiple initial vectors; breaking internal paths stops deeper intrusion regardless of how they entered." },
+                    { text: "The vulnerability that grants root or domain admin access", isCorrect: false, rationale: "Patching only the final step might leave the attacker deep inside the network with significant privileges just below root, allowing them to pivot elsewhere." },
+                    { text: "The chain-breaking node that appears in the highest number of kill-paths", isCorrect: true, rationale: "Patching the vulnerability that intersects the highest number of attack paths disrupts the adversary's movement most efficiently across the entire network." }
+                ]
+            },
+            {
+                question: "A user reports a suspicious email containing a link to what appears to be their bank's login page. Upon careful inspection, the URL is 'https://www.banc0famerica.com', where the letter 'o' is actually the number zero. What specific type of social engineering technique is this?",
+                hint: "Consider the visual deception tactic used in the characters of the URL string itself.",
+                options: [
+                    { text: "Typo-squatting / Homoglyph attack", isCorrect: true, rationale: "This technique exploits visual similarities between characters (like 'o' and '0') to trick users into trusting a malicious, lookalike domain." },
+                    { text: "Watering-hole attack", isCorrect: false, rationale: "This involves compromising a legitimate website frequently visited by the target audience, rather than creating a fake lookalike domain." },
+                    { text: "Drive-by download", isCorrect: false, rationale: "This refers to the silent delivery of a malicious payload when visiting a page, not the deceptive naming of the URL used to get the user there." },
+                    { text: "Vishing", isCorrect: false, rationale: "This involves voice-based social engineering over the phone, which is completely unrelated to deceptive URLs in an email." }
+                ]
+            }
+        ];
+
+        // --- APP LOGIC ---
+
+        // Tab Switching
+        function switchTab(tabId) {
+            const tabs = ['flashcards', 'quiz'];
+            tabs.forEach(tab => {
+                // Toggle sections
+                const section = document.getElementById(`section-${tab}`);
+                if (tab === tabId) {
+                    section.classList.remove('hidden');
+                    section.classList.add('flex', 'flex-col'); // maintain flex layout for flashcards
+                } else {
+                    section.classList.add('hidden');
+                    section.classList.remove('flex', 'flex-col');
+                }
+
+                // Toggle styling
+                const btn = document.getElementById(`tab-${tab}`);
+                if (tab === tabId) {
+                    btn.classList.add('border-indigo-600', 'text-indigo-600');
+                    btn.classList.remove('border-transparent', 'text-slate-500');
+                } else {
+                    btn.classList.remove('border-indigo-600', 'text-indigo-600');
+                    btn.classList.add('border-transparent', 'text-slate-500');
+                }
+            });
+        }
+
+        // Flashcards Logic
+        let currentCardIndex = 0;
+        let isFlipped = false;
+
+        function renderFlashcard() {
+            const card = flashcardsData[currentCardIndex];
+            document.getElementById('fc-front').innerText = card.front;
+            document.getElementById('fc-back').innerText = card.back;
+            document.getElementById('fc-counter').innerText = `${currentCardIndex + 1} / ${flashcardsData.length}`;
+            
+            // Reset flip state if needed
+            if (isFlipped) {
+                document.getElementById('flashcard-inner').classList.remove('rotate-y-180');
+                isFlipped = false;
+            }
+        }
+
+        function flipCard() {
+            isFlipped = !isFlipped;
+            const inner = document.getElementById('flashcard-inner');
+            if (isFlipped) {
+                inner.classList.add('rotate-y-180');
+            } else {
+                inner.classList.remove('rotate-y-180');
+            }
+        }
+
+        function nextCard() {
+            if (isFlipped) flipCard();
+            setTimeout(() => {
+                currentCardIndex = (currentCardIndex + 1) % flashcardsData.length;
+                renderFlashcard();
+            }, isFlipped ? 300 : 0); // Wait for unflip animation if needed
+        }
+
+        function prevCard() {
+            if (isFlipped) flipCard();
+            setTimeout(() => {
+                currentCardIndex = (currentCardIndex - 1 + flashcardsData.length) % flashcardsData.length;
+                renderFlashcard();
+            }, isFlipped ? 300 : 0);
+        }
+
+        // Quiz Logic
+        function renderQuiz() {
+            const container = document.getElementById('section-quiz');
+            container.innerHTML = ''; // Clear
+
+            quizData.forEach((q, qIndex) => {
+                // Question Card
+                const qDiv = document.createElement('div');
+                qDiv.className = 'bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200';
+                
+                // Header & Hint
+                const headerHtml = `
+                    <div class="flex items-start gap-4 mb-6">
+                        <div class="bg-indigo-100 text-indigo-700 w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0 mt-1">
+                            ${qIndex + 1}
+                        </div>
+                        <div class="space-y-2">
+                            <h3 class="text-lg font-semibold text-slate-800 leading-snug">${q.question}</h3>
+                            <button onclick="toggleHint(${qIndex})" class="text-xs text-indigo-600 font-medium hover:underline flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Show Hint
+                            </button>
+                            <p id="hint-${qIndex}" class="hidden text-sm text-slate-500 italic bg-slate-50 p-3 rounded border border-slate-100 mt-2">${q.hint}</p>
+                        </div>
+                    </div>
+                `;
+
+                // Options
+                const optionsDiv = document.createElement('div');
+                optionsDiv.className = 'space-y-3 pl-0 md:pl-12';
+
+                q.options.forEach((opt, oIndex) => {
+                    const btn = document.createElement('button');
+                    btn.id = `btn-${qIndex}-${oIndex}`;
+                    btn.className = 'w-full text-left p-4 rounded-xl border-2 border-slate-100 bg-white hover:border-indigo-300 hover:bg-slate-50 transition-all font-medium text-slate-700 relative';
+                    btn.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center shrink-0 indicator"></div>
+                            <span>${opt.text}</span>
+                        </div>
+                    `;
+                    btn.onclick = () => handleAnswer(qIndex, oIndex);
+                    optionsDiv.appendChild(btn);
+                });
+
+                // Rationale (Hidden initially)
+                const rationaleDiv = document.createElement('div');
+                rationaleDiv.id = `rationale-${qIndex}`;
+                rationaleDiv.className = 'hidden mt-6 pl-0 md:pl-12';
+
+                qDiv.innerHTML = headerHtml;
+                qDiv.appendChild(optionsDiv);
+                qDiv.appendChild(rationaleDiv);
+                container.appendChild(qDiv);
+            });
+        }
+
+        function toggleHint(qIndex) {
+            const hint = document.getElementById(`hint-${qIndex}`);
+            hint.classList.toggle('hidden');
+        }
+
+        function handleAnswer(qIndex, selectedOIndex) {
+            const q = quizData[qIndex];
+            
+            // Disable all buttons in this question and show results
+            q.options.forEach((opt, oIndex) => {
+                const btn = document.getElementById(`btn-${qIndex}-${oIndex}`);
+                const indicator = btn.querySelector('.indicator');
+                
+                // Disable click
+                btn.onclick = null;
+                btn.classList.remove('hover:border-indigo-300', 'hover:bg-slate-50', 'cursor-pointer');
+                btn.classList.add('cursor-default');
+
+                if (opt.isCorrect) {
+                    // Highlight correct answer
+                    btn.classList.add('border-green-500', 'bg-green-50');
+                    btn.classList.remove('border-slate-100');
+                    indicator.classList.replace('border-slate-300', 'border-green-500');
+                    indicator.classList.add('bg-green-500');
+                    indicator.innerHTML = '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
+                } else if (oIndex === selectedOIndex && !opt.isCorrect) {
+                    // Highlight selected incorrect answer
+                    btn.classList.add('border-red-400', 'bg-red-50', 'opacity-80');
+                    btn.classList.remove('border-slate-100');
+                    indicator.classList.replace('border-slate-300', 'border-red-400');
+                    indicator.classList.add('bg-red-400');
+                    indicator.innerHTML = '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>';
+                } else {
+                    // Fade out unselected incorrect answers
+                    btn.classList.add('opacity-50', 'border-slate-100');
+                }
+            });
+
+            // Show rationale
+            const rationaleDiv = document.getElementById(`rationale-${qIndex}`);
+            const isCorrect = q.options[selectedOIndex].isCorrect;
+            const rationaleText = q.options[selectedOIndex].rationale;
+            
+            rationaleDiv.innerHTML = `
+                <div class="p-4 rounded-xl ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} border ${isCorrect ? 'border-green-200' : 'border-red-200'}">
+                    <p class="font-bold mb-1">${isCorrect ? 'Correct!' : 'Incorrect'}</p>
+                    <p class="text-sm">${rationaleText}</p>
+                </div>
+            `;
+            rationaleDiv.classList.remove('hidden');
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            // Randomize quiz questions and options
+            quizData.sort(() => Math.random() - 0.5);
+            quizData.forEach(q => q.options.sort(() => Math.random() - 0.5));
+
+            renderFlashcard();
+            renderQuiz();
+            switchTab('flashcards'); // Start on flashcards tab
+        });
+
+        // Add keyboard navigation for flashcards
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('section-flashcards').classList.contains('hidden')) return;
+            
+            if (e.key === 'ArrowRight') nextCard();
+            if (e.key === 'ArrowLeft') prevCard();
+            if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                flipCard();
+            }
+        });
+    </script>
+</body>
+</html>

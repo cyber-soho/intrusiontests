@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab 03 — Social Engineering & Phishing Simulation | 420-3C2-DW</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0a0d14;
+    --bg2: #0f1320;
+    --bg3: #141828;
+    --surface: #1a2035;
+    --surface2: #202840;
+    --border: #2a3555;
+    --accent: #00e5ff;
+    --accent2: #ff4c6e;
+    --accent3: #a259ff;
+    --accent4: #00ff9d;
+    --gold: #ffd166;
+    --text: #d0d8f0;
+    --text2: #8899bb;
+    --text3: #5566aa;
+    --heading: #e8eeff;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Sora', sans-serif;
+    --display: 'Space Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  /* ─── Animated background grid ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── Scrollbar ─── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+
+  /* ─── Glitch hero ─── */
+  .hero {
+    position: relative;
+    padding: 70px 40px 50px;
+    background: linear-gradient(160deg, #0d1526 0%, #0a0f1e 50%, #0d1020 100%);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), var(--accent3), transparent);
+    animation: scanline 3s linear infinite;
+  }
+
+  @keyframes scanline {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
+  }
+
+  .hero-grid {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 40px;
+    align-items: start;
+  }
+
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .badge-cyan { background: rgba(0,229,255,0.12); color: var(--accent); border: 1px solid rgba(0,229,255,0.3); }
+  .badge-red { background: rgba(255,76,110,0.12); color: var(--accent2); border: 1px solid rgba(255,76,110,0.3); }
+  .badge-purple { background: rgba(162,89,255,0.12); color: var(--accent3); border: 1px solid rgba(162,89,255,0.3); }
+  .badge-green { background: rgba(0,255,157,0.12); color: var(--accent4); border: 1px solid rgba(0,255,157,0.3); }
+  .badge-gold { background: rgba(255,209,102,0.12); color: var(--gold); border: 1px solid rgba(255,209,102,0.3); }
+
+  .hero-title {
+    font-family: var(--display);
+    font-size: clamp(22px, 3vw, 38px);
+    color: var(--heading);
+    line-height: 1.25;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+
+  .hero-title span {
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(0,229,255,0.4);
+  }
+
+  .hero-subtitle {
+    font-size: 13px;
+    color: var(--text2);
+    font-family: var(--mono);
+    margin-bottom: 24px;
+    letter-spacing: 0.04em;
+  }
+
+  .hero-meta {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    gap: 20px;
+    margin-top: 20px;
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .meta-label {
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: var(--mono);
+  }
+
+  .meta-value {
+    font-size: 13px;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-weight: 500;
+  }
+
+  .countdown-box {
+    background: var(--surface);
+    border: 1px solid var(--accent2);
+    border-radius: 12px;
+    padding: 20px 24px;
+    text-align: center;
+    min-width: 180px;
+    box-shadow: 0 0 30px rgba(255,76,110,0.1);
+  }
+
+  .countdown-label {
+    font-size: 10px;
+    color: var(--accent2);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: var(--mono);
+    margin-bottom: 8px;
+  }
+
+  .countdown-display {
+    font-family: var(--display);
+    font-size: 28px;
+    color: var(--accent2);
+    text-shadow: 0 0 20px rgba(255,76,110,0.5);
+    line-height: 1.1;
+  }
+
+  .countdown-units {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .cu { font-size: 8px; color: var(--text3); font-family: var(--mono); text-align: center; }
+
+  /* ─── Progress bar ─── */
+  .progress-strip {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 40px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .progress-label {
+    font-size: 10px;
+    color: var(--text3);
+    font-family: var(--mono);
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .progress-bar-outer {
+    flex: 1;
+    height: 3px;
+    background: var(--surface);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+
+  .progress-pct {
+    font-size: 10px;
+    color: var(--accent);
+    font-family: var(--mono);
+    min-width: 35px;
+    text-align: right;
+  }
+
+  /* ─── Layout ─── */
+  .layout {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 40px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─── Alert box ─── */
+  .alert {
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin: 32px 0;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    border-left: 3px solid;
+  }
+
+  .alert-icon { font-size: 18px; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; font-size: 13.5px; line-height: 1.7; }
+  .alert-body strong { display: block; margin-bottom: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .alert-danger { background: rgba(255,76,110,0.06); border-color: var(--accent2); }
+  .alert-danger .alert-icon, .alert-danger strong { color: var(--accent2); }
+  .alert-info { background: rgba(0,229,255,0.06); border-color: var(--accent); }
+  .alert-info .alert-icon, .alert-info strong { color: var(--accent); }
+  .alert-tip { background: rgba(0,255,157,0.06); border-color: var(--accent4); }
+  .alert-tip .alert-icon, .alert-tip strong { color: var(--accent4); }
+
+  /* ─── Phase headers ─── */
+  .phase-header {
+    margin: 50px 0 0;
+    padding: 28px 28px 22px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px 12px 0 0;
+    border-bottom: none;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .phase-header::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+  }
+
+  .phase-1::before { background: var(--accent); }
+  .phase-2::before { background: var(--accent3); }
+  .phase-3::before { background: var(--accent2); }
+  .phase-4::before { background: var(--accent4); }
+  .phase-5::before { background: var(--gold); }
+
+  .phase-header:hover { background: var(--surface2); }
+
+  .phase-num {
+    font-family: var(--display);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .p1 { background: rgba(0,229,255,0.15); color: var(--accent); }
+  .p2 { background: rgba(162,89,255,0.15); color: var(--accent3); }
+  .p3 { background: rgba(255,76,110,0.15); color: var(--accent2); }
+  .p4 { background: rgba(0,255,157,0.15); color: var(--accent4); }
+  .p5 { background: rgba(255,209,102,0.15); color: var(--gold); }
+
+  .phase-title { font-family: var(--sans); font-size: 17px; font-weight: 700; color: var(--heading); flex: 1; }
+  .phase-time { font-family: var(--mono); font-size: 11px; color: var(--text2); }
+  .phase-toggle { font-size: 16px; color: var(--text3); transition: transform 0.3s; }
+  .phase-header.open .phase-toggle { transform: rotate(180deg); }
+
+  .phase-body {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 28px;
+    display: none;
+  }
+
+  .phase-body.open { display: block; animation: slideDown 0.3s ease; }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── Section headings ─── */
+  h2 {
+    font-family: var(--display);
+    font-size: 15px;
+    color: var(--accent);
+    margin: 30px 0 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  h2::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--heading);
+    margin: 22px 0 8px;
+    padding-left: 12px;
+    border-left: 2px solid var(--accent3);
+  }
+
+  h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent4);
+    margin: 18px 0 6px;
+    font-family: var(--mono);
+  }
+
+  p { margin-bottom: 14px; color: var(--text); font-size: 14px; }
+
+  /* ─── Code blocks ─── */
+  pre {
+    background: #080c18;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    margin: 14px 0;
+    position: relative;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: #a8c0e8;
+  }
+
+  pre::before {
+    content: attr(data-lang);
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: 9px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: var(--mono);
+  }
+
+  code {
+    background: rgba(0,229,255,0.08);
+    color: var(--accent);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  pre code { background: none; color: inherit; padding: 0; }
+
+  .kw { color: var(--accent3); }
+  .str { color: var(--accent4); }
+  .cm { color: var(--text3); font-style: italic; }
+  .var { color: var(--accent); }
+  .num { color: var(--gold); }
+
+  /* ─── Tables ─── */
+  .table-wrap { overflow-x: auto; margin: 16px 0; border-radius: 8px; border: 1px solid var(--border); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: var(--surface); }
+  th {
+    padding: 11px 14px;
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(42,53,85,0.5);
+    vertical-align: top;
+    line-height: 1.5;
+    font-size: 13px;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  td a { color: var(--accent); text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+
+  /* ─── Checklists ─── */
+  .checklist { list-style: none; margin: 14px 0; }
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 13.5px;
+    color: var(--text);
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .checklist li:hover { background: rgba(255,255,255,0.03); }
+
+  .checklist li.checked { color: var(--text3); text-decoration: line-through; }
+
+  .check-box {
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 10px;
+    color: var(--accent4);
+  }
+  .checked .check-box { background: rgba(0,255,157,0.15); border-color: var(--accent4); }
+
+  /* ─── Waves ─── */
+  .wave-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin: 16px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .wave-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 3px;
+  }
+  .w1::before { background: var(--accent); }
+  .w2::before { background: var(--accent2); }
+  .w3::before { background: var(--gold); }
+
+  .wave-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+  .w1 .wave-label { color: var(--accent); }
+  .w2 .wave-label { color: var(--accent2); }
+  .w3 .wave-label { color: var(--gold); }
+
+  .wave-title { font-size: 15px; font-weight: 700; color: var(--heading); margin-bottom: 12px; }
+
+  .wave-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin: 12px 0;
+  }
+
+  .wm-item { background: rgba(0,0,0,0.2); border-radius: 6px; padding: 8px 12px; }
+  .wm-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--mono); margin-bottom: 3px; }
+  .wm-val { font-size: 12px; color: var(--text); }
+
+  /* ─── Psychology cards ─── */
+  .psych-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+
+  .psych-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    transition: transform 0.2s, border-color 0.2s;
+    cursor: default;
+  }
+
+  .psych-card:hover { transform: translateY(-2px); border-color: var(--accent3); }
+
+  .psych-num {
+    font-family: var(--display);
+    font-size: 22px;
+    color: var(--accent3);
+    opacity: 0.4;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .psych-name { font-size: 12px; font-weight: 700; color: var(--heading); margin-bottom: 6px; }
+  .psych-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .psych-example { font-size: 11px; color: var(--accent4); margin-top: 8px; font-style: italic; font-family: var(--mono); }
+
+  /* ─── KPI table styling ─── */
+  .kpi-high { color: var(--accent2); font-weight: 600; }
+  .kpi-med { color: var(--gold); font-weight: 600; }
+  .kpi-low { color: var(--accent4); font-weight: 600; }
+
+  /* ─── Screenshot markers ─── */
+  .ss-marker {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255,209,102,0.08);
+    border: 1px solid rgba(255,209,102,0.25);
+    border-radius: 6px;
+    padding: 6px 12px;
+    margin: 12px 0;
+    font-size: 12px;
+    color: var(--gold);
+    font-family: var(--mono);
+  }
+
+  .ss-marker .icon { font-size: 14px; }
+
+  /* ─── Journal marker ─── */
+  .journal-marker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(162,89,255,0.07);
+    border: 1px solid rgba(162,89,255,0.25);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 12.5px;
+    color: var(--accent3);
+    font-family: var(--mono);
+  }
+
+  /* ─── Links ─── */
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; opacity: 0.85; }
+
+  .ext-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0,229,255,0.07);
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--accent);
+    transition: background 0.15s;
+  }
+  .ext-link:hover { background: rgba(0,229,255,0.14); text-decoration: none; }
+
+  /* ─── Tools grid ─── */
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 10px;
+    margin: 16px 0;
+  }
+
+  .tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    transition: border-color 0.2s;
+  }
+  .tool-card:hover { border-color: var(--accent3); }
+  .tool-name { font-family: var(--mono); font-size: 12px; color: var(--accent4); margin-bottom: 4px; font-weight: 500; }
+  .tool-role { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+  .tool-link a { font-size: 11px; }
+
+  /* ─── Rubric ─── */
+  .rubric-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0;
+    font-size: 13px;
+  }
+
+  .rubric-label { flex: 0 0 230px; color: var(--text); }
+  .rubric-track { flex: 1; height: 6px; background: var(--surface); border-radius: 3px; overflow: hidden; }
+  .rubric-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent3)); }
+  .rubric-pct { font-family: var(--mono); font-size: 12px; color: var(--accent3); min-width: 30px; text-align: right; }
+
+  /* ─── References ─── */
+  .ref-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
+    margin: 16px 0;
+  }
+
+  .ref-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .ref-org { font-size: 11px; color: var(--text3); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.07em; }
+  .ref-title { font-size: 13px; color: var(--heading); font-weight: 600; }
+  .ref-link a { font-size: 12px; }
+
+  /* ─── Phase overview timeline ─── */
+  .timeline {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    margin: 24px 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .tl-item {
+    padding: 16px 14px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .tl-item:last-child { border-right: none; }
+  .tl-item:hover { background: var(--surface2); }
+
+  .tl-num { font-family: var(--display); font-size: 10px; color: var(--text3); margin-bottom: 6px; }
+  .tl-title { font-size: 11px; font-weight: 600; color: var(--heading); margin-bottom: 4px; }
+  .tl-time { font-size: 10px; color: var(--text3); font-family: var(--mono); }
+  .tl-bar { height: 3px; border-radius: 2px; margin-top: 10px; }
+  .tb1 { background: var(--accent); }
+  .tb2 { background: var(--accent3); }
+  .tb3 { background: var(--accent2); }
+  .tb4 { background: var(--accent4); }
+  .tb5 { background: var(--gold); }
+
+  /* ─── Section top nav ─── */
+  .phase-nav {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 200;
+  }
+
+  .pn-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .pn-dot:hover, .pn-dot.active { background: var(--accent); transform: scale(1.4); }
+
+  /* ─── Footer ─── */
+  footer {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    padding: 30px 40px;
+    margin-top: 60px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text3);
+    font-family: var(--mono);
+    position: relative;
+    z-index: 1;
+  }
+
+  footer strong { color: var(--text2); }
+
+  /* ─── Animations ─── */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  ul.body-list { padding-left: 20px; margin-bottom: 14px; }
+  ul.body-list li { font-size: 13.5px; margin-bottom: 6px; color: var(--text); }
+  ul.body-list li::marker { color: var(--accent3); }
+
+  @media (max-width: 768px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .countdown-box { display: none; }
+    .timeline { grid-template-columns: 1fr; }
+    .tl-item { border-right: none; border-bottom: 1px solid var(--border); }
+    .phase-nav { display: none; }
+    .layout { padding: 0 20px; }
+    .progress-strip { padding: 10px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Side nav dots -->
+<nav class="phase-nav" id="phaseNav">
+  <div class="pn-dot active" data-target="hero" title="Overview"></div>
+  <div class="pn-dot" data-target="phase1" title="Phase 1"></div>
+  <div class="pn-dot" data-target="phase2" title="Phase 2"></div>
+  <div class="pn-dot" data-target="phase3" title="Phase 3"></div>
+  <div class="pn-dot" data-target="phase4" title="Phase 4"></div>
+  <div class="pn-dot" data-target="phase5" title="Phase 5"></div>
+  <div class="pn-dot" data-target="tools" title="Tools"></div>
+  <div class="pn-dot" data-target="rubric" title="Rubric"></div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HERO
+══════════════════════════════════════════════════════════════ -->
+<header class="hero" id="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="badge-row">
+        <span class="badge badge-cyan">420-3C2-DW</span>
+        <span class="badge badge-red">Lab 03</span>
+        <span class="badge badge-purple">Days 08 & 10</span>
+        <span class="badge badge-green">Ponderation 1–2–2</span>
+        <span class="badge badge-gold">6 Hours Hands-On</span>
+      </div>
+      <h1 class="hero-title">Social Engineering &amp;<br><span>Phishing Simulation</span></h1>
+      <p class="hero-subtitle">Intrusion Tests · AEC Program · Dawson College · Term 3</p>
+      <div class="hero-meta">
+        <div class="meta-item">
+          <span class="meta-label">Instructor</span>
+          <span class="meta-value">Cyber.SoHo</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Credits</span>
+          <span class="meta-value">3 Credits</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Labs Weight</span>
+          <span class="meta-value">35% of Grade</span>
+        </div>
+      </div>
+    </div>
+    <div class="countdown-box">
+      <div class="countdown-label">⏰ Due In</div>
+      <div class="countdown-display" id="countdownDisplay">—</div>
+      <div class="countdown-units">
+        <div class="cu" id="cdDays">DAYS</div>
+        <div class="cu" id="cdHrs">HRS</div>
+        <div class="cu" id="cdMin">MIN</div>
+        <div class="cu" id="cdSec">SEC</div>
+      </div>
+      <div style="margin-top:10px;font-size:9px;color:var(--text3);font-family:var(--mono);">Mar 29 · 00:00 EST</div>
+    </div>
+  </div>
+</header>
+
+<!-- Progress bar -->
+<div class="progress-strip">
+  <span class="progress-label">Lab Progress</span>
+  <div class="progress-bar-outer">
+    <div class="progress-bar-inner" id="progressBar"></div>
+  </div>
+  <span class="progress-pct" id="progressPct">0%</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════════════════════════════════ -->
+<main class="layout">
+
+  <!-- Legal Disclaimer -->
+  <div class="alert alert-danger fade-in" style="margin-top:36px;">
+    <div class="alert-icon">⚠️</div>
+    <div class="alert-body">
+      <strong>Legal & Ethical Disclaimer — Read Before Proceeding</strong>
+      This lab operates exclusively within a controlled, isolated, simulated environment using fictional domains, fictional organizations, and fictional personas. <strong>No real individuals, companies, email servers, or external networks are targeted.</strong> All activities are authorized under clearly defined Rules of Engagement (RoE — a formal document governing what is and is not permitted during a security engagement) as part of the course curriculum. Students who apply these techniques outside the lab environment without explicit written authorization may face criminal charges under the <a href="https://laws-lois.justice.gc.ca/eng/acts/C-46/section-342.1.html" target="_blank">Criminal Code of Canada, Section 342.1</a> and may be expelled from the program.<br><br>
+      <strong>All tools and techniques mentioned herein are open suggestions only — you are actively encouraged to research alternatives, build your own solutions, and demonstrate creativity throughout your work.</strong>
+    </div>
+  </div>
+
+  <!-- Overview -->
+  <div class="fade-in">
+    <h2>Overview & Objectives</h2>
+    <p>Social engineering remains the most reliably effective attack vector in the real world. Technical defenses — firewalls, intrusion detection systems (IDS — software/hardware that monitors network traffic for suspicious activity), and endpoint protection — can all be bypassed with a convincing enough email. This lab places you in the role of an authorized red-team consultant hired to assess a fictional organization's <strong>human attack surface.</strong></p>
+
+    <div class="alert alert-info">
+      <div class="alert-icon">🎯</div>
+      <div class="alert-body">
+        <strong>What You Will Build</strong>
+        By completing this lab you will produce: a scoped phishing simulation plan, three complete phishing email templates, a credential-harvest landing page mockup, a six-month security awareness program, a KPI (Key Performance Indicator — a measurable value that demonstrates effectiveness) framework with 10+ indicators, and a full professional penetration testing report — complete with annotated screenshots sufficient to teach this topic from scratch to a complete newcomer.
+      </div>
+    </div>
+
+    <!-- Timeline overview -->
+    <div class="timeline">
+      <div class="tl-item" onclick="openPhase(1)">
+        <div class="tl-num">PHASE 01</div>
+        <div class="tl-title">Environment & Foundations</div>
+        <div class="tl-time">≈ 45 min</div>
+        <div class="tl-bar tb1"></div>
+      </div>
+      <div class="tl-item" onclick="openPhase(2)">
+        <div class="tl-num">PHASE 02</div>
+        <div class="tl-title">Simulation Plan Design</div>
+        <div class="tl-time">≈ 90 min</div>
+        <div class="tl-bar tb2"></div>
+      </div>
+      <div class="tl-item" onclick="openPhase(3)">
+        <div class="tl-num">PHASE 03</div>
+        <div class="tl-title">Templates & Lures</div>
+        <div class="tl-time">≈ 90 min</div>
+        <div class="tl-bar tb3"></div>
+      </div>
+      <div class="tl-item" onclick="openPhase(4)">
+        <div class="tl-num">PHASE 04</div>
+        <div class="tl-title">Awareness + KPIs</div>
+        <div class="tl-time">≈ 60 min</div>
+        <div class="tl-bar tb4"></div>
+      </div>
+      <div class="tl-item" onclick="openPhase(5)">
+        <div class="tl-num">PHASE 05</div>
+        <div class="tl-title">Report Writing</div>
+        <div class="tl-time">≈ 75 min</div>
+        <div class="tl-bar tb5"></div>
+      </div>
+    </div>
+
+    <!-- Fictional target -->
+    <h2>The Fictional Target Organization</h2>
+    <div class="wave-card w1">
+      <div class="wave-label">Target Profile · Lab Environment Only</div>
+      <div class="wave-title">Meridian Financial Partners</div>
+      <p style="font-size:13.5px;margin-bottom:12px;">A mid-sized investment advisory firm with approximately 150 employees across three departments: Finance &amp; Accounting, IT Operations, and Client Relations. Their lab-internal domain is <code>meridian-fp.lab</code> — a non-routable domain that exists only inside your isolated VM network. There is no connection whatsoever to any real company by any name.</p>
+      <div class="wave-meta">
+        <div class="wm-item"><div class="wm-label">Headcount</div><div class="wm-val">~150 staff</div></div>
+        <div class="wm-item"><div class="wm-label">Lab Domain</div><div class="wm-val">meridian-fp.lab</div></div>
+        <div class="wm-item"><div class="wm-label">Departments</div><div class="wm-val">Finance, IT, Client Relations</div></div>
+        <div class="wm-item"><div class="wm-label">Environment</div><div class="wm-val">100% Fictional</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PHASE 1 ═══ -->
+  <div id="phase1" class="fade-in">
+    <div class="phase-header phase-1 open" onclick="togglePhase(this)">
+      <span class="phase-num p1">PHASE 01</span>
+      <span class="phase-title">Environment Setup & Conceptual Foundation</span>
+      <span class="phase-time">≈ 45 minutes</span>
+      <span class="phase-toggle">▾</span>
+    </div>
+    <div class="phase-body open">
+
+      <h2>1.1 — Setting Up Your Isolated Environment</h2>
+      <p>Before writing a single template or designing a single campaign, your environment must be properly isolated. This reflects real-world OPSEC (Operational Security — the practice of protecting sensitive information about your testing activities from exposure) discipline.</p>
+
+      <p>Confirm you are inside your Kali Linux or Parrot OS VM (Virtual Machine — an isolated software-based computer running inside your physical computer). Create a dedicated working directory:</p>
+
+      <pre data-lang="bash"><span class="cm"># Create lab working structure</span>
+<span class="kw">mkdir</span> -p ~/lab03-phishing/{plans,templates,lures,reports,screenshots}
+<span class="kw">cd</span> ~/lab03-phishing
+
+<span class="cm"># Initialize your lab journal</span>
+<span class="kw">touch</span> journal.md
+<span class="kw">echo</span> <span class="str">"# Lab 03 Journal — $(date)"</span> >> journal.md
+
+<span class="cm"># Confirm directory structure</span>
+<span class="kw">tree</span> ~/lab03-phishing</pre>
+
+      <div class="ss-marker"><span class="icon">📸</span> Screenshot 01 · Terminal showing directory structure created</div>
+
+      <h2>1.2 — The Psychology of Phishing</h2>
+      <p>Before you can defend against social engineering, you must understand <em>why</em> human brains are vulnerable to it. This is not about blaming victims — it is about understanding psychological mechanisms that attackers deliberately exploit. The foundational model draws from Dr. Robert Cialdini's six principles of influence, adapted for the digital threat landscape.</p>
+
+      <div class="psych-grid">
+        <div class="psych-card">
+          <div class="psych-num">01</div>
+          <div class="psych-name">Authority</div>
+          <div class="psych-desc">People comply with requests from figures perceived as authoritative — a CEO, IT department, or government body bypasses critical thinking.</div>
+          <div class="psych-example">"As directed by the CISO (Chief Information Security Officer)..."</div>
+        </div>
+        <div class="psych-card">
+          <div class="psych-num">02</div>
+          <div class="psych-name">Urgency / Scarcity</div>
+          <div class="psych-desc">Time pressure compresses the decision window. When people rush, scrutiny falls away.</div>
+          <div class="psych-example">"Your account will be suspended in 24 hours..."</div>
+        </div>
+        <div class="psych-card">
+          <div class="psych-num">03</div>
+          <div class="psych-name">Social Proof</div>
+          <div class="psych-desc">People look to others to determine correct behavior. "Everyone else has already updated their credentials."</div>
+          <div class="psych-example">"All employees must complete verification by EOD."</div>
+        </div>
+        <div class="psych-card">
+          <div class="psych-num">04</div>
+          <div class="psych-name">Liking / Familiarity</div>
+          <div class="psych-desc">People comply more readily with entities they recognize. Spear phishing (targeted, personalized phishing) exploits this through research.</div>
+          <div class="psych-example">Using the target's first name, job title, department.</div>
+        </div>
+        <div class="psych-card">
+          <div class="psych-num">05</div>
+          <div class="psych-name">Reciprocity</div>
+          <div class="psych-desc">When someone does something for you, you feel obligated to return the favor. Attackers frame requests as follow-ups to benefits provided.</div>
+          <div class="psych-example">"Following up on the IT support ticket we resolved..."</div>
+        </div>
+        <div class="psych-card">
+          <div class="psych-num">06</div>
+          <div class="psych-name">Commitment</div>
+          <div class="psych-desc">Once someone agrees to a small request, they are more likely to agree to larger ones — the "foot in the door" technique.</div>
+          <div class="psych-example">Benign survey before escalating to credential request.</div>
+        </div>
+      </div>
+
+      <div class="journal-marker">📓 Journal Task · Write one paragraph per principle describing how each could be used against Meridian Financial Partners employees specifically. This reflection is mandatory.</div>
+
+      <h2>1.3 — Regulatory & Legal Framework</h2>
+      <p>Understanding the legal landscape is a prerequisite for any professional engagement. Familiarize yourself with the following documents and frameworks:</p>
+
+      <div class="ref-grid">
+        <div class="ref-card">
+          <div class="ref-org">NIST (National Institute of Standards and Technology)</div>
+          <div class="ref-title">SP 800-115 — Technical Guide to Security Testing</div>
+          <div class="ref-link"><a href="https://csrc.nist.gov/publications/detail/sp/800-115/final" class="ext-link" target="_blank">🔗 csrc.nist.gov</a></div>
+        </div>
+        <div class="ref-card">
+          <div class="ref-org">PTES (Penetration Testing Execution Standard)</div>
+          <div class="ref-title">Industry Standard Pentest Framework — Social Engineering Phase</div>
+          <div class="ref-link"><a href="http://www.pentest-standard.org/" class="ext-link" target="_blank">🔗 pentest-standard.org</a></div>
+        </div>
+        <div class="ref-card">
+          <div class="ref-org">OWASP (Open Web Application Security Project)</div>
+          <div class="ref-title">Web Security Testing Guide — SE Intersection</div>
+          <div class="ref-link"><a href="https://owasp.org/www-project-web-security-testing-guide/" class="ext-link" target="_blank">🔗 owasp.org</a></div>
+        </div>
+        <div class="ref-card">
+          <div class="ref-org">Government of Canada · Department of Justice</div>
+          <div class="ref-title">Criminal Code s.342.1 — Unauthorized Use of Computer</div>
+          <div class="ref-link"><a href="https://laws-lois.justice.gc.ca/eng/acts/C-46/section-342.1.html" class="ext-link" target="_blank">🔗 laws-lois.justice.gc.ca</a></div>
+        </div>
+        <div class="ref-card">
+          <div class="ref-org">Parliament of Canada</div>
+          <div class="ref-title">Bill C-26 — Canada's Proposed Cybersecurity Act</div>
+          <div class="ref-link"><a href="https://www.parl.ca/DocumentViewer/en/44-1/bill/C-26/first-reading" class="ext-link" target="_blank">🔗 parl.ca</a></div>
+        </div>
+        <div class="ref-card">
+          <div class="ref-org">Privacy Commissioner of Canada</div>
+          <div class="ref-title">PIPEDA (Personal Information Protection and Electronic Documents Act)</div>
+          <div class="ref-link"><a href="https://www.priv.gc.ca/en/privacy-topics/privacy-laws-in-canada/the-personal-information-protection-and-electronic-documents-act-pipeda/" class="ext-link" target="_blank">🔗 priv.gc.ca</a></div>
+        </div>
+      </div>
+
+      <div class="ss-marker"><span class="icon">📸</span> Screenshot 02 · Browser showing each regulatory framework page loaded</div>
+    </div>
+  </div>
+
+  <!-- ═══ PHASE 2 ═══ -->
+  <div id="phase2" class="fade-in">
+    <div class="phase-header phase-2" onclick="togglePhase(this)">
+      <span class="phase-num p2">PHASE 02</span>
+      <span class="phase-title">Designing the Phishing Simulation Plan</span>
+      <span class="phase-time">≈ 90 minutes</span>
+      <span class="phase-toggle">▾</span>
+    </div>
+    <div class="phase-body">
+
+      <h2>2.1 — The Rules of Engagement Document</h2>
+      <p>In professional engagements, no phishing simulation begins without a signed SoW (Statement of Work) and clearly defined RoE (Rules of Engagement — a formal document specifying what actions are authorized, what is prohibited, and who is responsible). You will create a fictitious but realistic RoE for the Meridian engagement.</p>
+
+      <pre data-lang="bash"><span class="kw">nano</span> ~/lab03-phishing/plans/RoE-MFP-Engagement.md</pre>
+
+      <p>Your RoE document must include at minimum these sections — fill each with realistic content for the fictional organization:</p>
+
+      <pre data-lang="markdown"># Rules of Engagement — Phishing Simulation
+## Client: Meridian Financial Partners (FICTIONAL — LAB EXERCISE ONLY)
+## Engagement Type: Social Engineering Assessment — Email Phishing Simulation
+## Authorized By: [Your Name as Consultant] · [Instructor as Client Representative]
+## Date: March 2026
+## Scope: Internal lab environment only. No real email systems. No real targets.
+
+### 1. Authorized Activities
+- Design and document phishing email templates
+- Design landing page mockups (static HTML only — no live hosting)
+- Map fictional employee personas based on org-chart assumptions
+- Create OSINT (Open-Source Intelligence) profile for mock organization
+
+### 2. Explicitly Prohibited Activities
+- Sending any email to any real recipient under any circumstances
+- Registering any real domain name
+- Using any real company's name, logo, or brand without transforming into fiction
+- Accessing any real external systems
+
+### 3. Data Handling
+[Describe how all generated data remains within the isolated environment]
+
+### 4. Emergency Stop Conditions
+[Define three specific conditions under which the engagement stops immediately]
+
+### 5. Deliverables & Timeline
+[List all deliverables with due dates]</pre>
+
+      <div class="ss-marker"><span class="icon">📸</span> Screenshot 03 · Completed RoE document in terminal editor</div>
+
+      <h2>2.2 — Fictional OSINT Profile</h2>
+      <p>Even with a fictional organization, you must practice the OSINT (Open-Source Intelligence — gathering information from publicly available sources) methodology a real attacker would use. Build a complete organizational profile:</p>
+
+      <pre data-lang="bash"><span class="kw">nano</span> ~/lab03-phishing/plans/OSINT-Profile-MFP.md</pre>
+
+      <p>Your profile must cover: organizational hierarchy (with invented but realistic personnel names), technology footprint (choose Microsoft 365 or Google Workspace and justify), SaaS (Software as a Service) tools likely in use, MFA (Multi-Factor Authentication) status, high-value attack surface observations, and at least five realistic social engineering pretexts (cover stories).</p>
+
+      <div class="ss-marker"><span class="icon">📸</span> Screenshot 04 · Completed OSINT profile document</div>
+      <div class="journal-marker">📓 Journal Task · After building the OSINT profile, reflect: which department would be the highest-value phishing target and why? Which individual persona (by role) is most susceptible?</div>
+
+      <h2>2.3 — The Three-Wave Campaign Plan</h2>
+      <p>A professional phishing simulation is not a single email blast — it is a structured, multi-wave operation. Design your three-wave campaign:</p>
+
+      <div class="wave-card w1">
+        <div class="wave-label">Wave 1 · Baseline Measurement</div>
+        <div class="wave-title">Generic IT Notification</div>
+        <div class="wave-meta">
+          <div class="wm-item"><div class="wm-label">Target Group</div><div class="wm-val">All 150 staff</div></div>
+          <div class="wm-item"><div class="wm-label">Sophistication</div><div class="wm-val">Low — no personalization</div></div>
+          <div class="wm-item"><div class="wm-label">Pretext</div><div class="wm-val">Mandatory system upgrade</div></div>
+          <div class="wm-item"><div class="wm-label">Primary Goal</div><div class="wm-val">Establish click-rate baseline</div></div>
+          <div class="wm-item"><div class="wm-label">Psych Principle</div><div class="wm-val">Authority + Urgency</div></div>
+        </div>
+        <p style="font-size:12.5px;color:var(--text2);margin:0;">Mimics the most common commodity phishing emails seen in the wild. Generic sender address, no logo, no personalization. Establishes a pre-training benchmark.</p>
+      </div>
+
+      <div class="wave-card w2">
+        <div class="wave-label">Wave 2 · Spear Phishing (CFO Impersonation)</div>
+        <div class="wave-title">Targeted Executive Impersonation</div>
+        <div class="wave-meta">
+          <div class="wm-item"><div class="wm-label">Target Group</div><div class="wm-val">Finance dept (~40 staff)</div></div>
+          <div class="wm-item"><div class="wm-label">Sophistication</div><div class="wm-val">High — personalized</div></div>
+          <div class="wm-item"><div class="wm-label">Pretext</div><div class="wm-val">CFO invoice approval</div></div>
+          <div class="wm-item"><div class="wm-label">Primary Goal</div><div class="wm-val">Test trained Finance staff</div></div>
+          <div class="wm-item"><div class="wm-label">Psych Principle</div><div class="wm-val">Authority + Urgency + Liking</div></div>
+        </div>
+        <p style="font-size:12.5px;color:var(--text2);margin:0;">Spoofed email from fictional CFO "Margaret Chen" requesting urgent review of a vendor invoice. Personalized greeting, correct department reference, plausible vendor name, year-end time pressure. This mimics BEC (Business Email Compromise — a sophisticated attack where criminals impersonate executives to authorize fraudulent wire transfers).</p>
+      </div>
+
+      <div class="wave-card" style="border-left:3px solid var(--gold);">
+        <div class="wave-label" style="color:var(--gold);">Wave 3 · Post-Training Validation</div>
+        <div class="wave-title">Benefits Portal Notification</div>
+        <div class="wave-meta">
+          <div class="wm-item"><div class="wm-label">Target Group</div><div class="wm-val">All 150 staff</div></div>
+          <div class="wm-item"><div class="wm-label">Sophistication</div><div class="wm-val">Medium — detectable flaw</div></div>
+          <div class="wm-item"><div class="wm-label">Pretext</div><div class="wm-val">Open enrollment update</div></div>
+          <div class="wm-item"><div class="wm-label">Primary Goal</div><div class="wm-val">Measure training impact</div></div>
+          <div class="wm-item"><div class="wm-label">Psych Principle</div><div class="wm-val">Social Proof + Familiarity</div></div>
+        </div>
+        <p style="font-size:12.5px;color:var(--text2);margin:0;">Uses correct Meridian branding but with a subtle domain discrepancy (<code>meridian-fp-benefits.lab</code> vs <code>meridian-fp.lab</code>). Trained employees should catch this. Includes a "Report This Email" button pointing to <code>security@meridian-fp.lab</code>.</p>
+      </div>
+
+      <div class="journal-marker">📓 Journal Task · Why is it important to run multiple waves rather than a single test? What would a single result tell you — and what would it fail to reveal?</div>
+      <div class="ss-marker"><span class="icon">📸</span> Screenshot 05 · Completed campaign plan document</div>
+
+      <h2>2.4 — Infrastructure Plan (Conceptual — No Live Systems)</h2>
+      <p>Document the infrastructure you <em>would</em> use in a real engagement. This is a planning document only — nothing is deployed.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Role</th>
+              <th>Example Tool / Service</th>
+              <th>Key Ethical Safeguard</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Phishing Domain</strong></td>
+              <td>Lookalike domain that resembles target's domain with subtle variation</td>
+              <td>IDN (Internationalized Domain Name) homograph or typosquat</td>
+              <td>Document in RoE; never register for real in this lab</td>
+            </tr>
+            <tr>
+              <td><strong>Phishing Framework</strong></td>
+              <td>Campaign management, tracking, reporting</td>
+              <td><a href="https://getgophish.com/" target="_blank">GoPhish</a>, King Phisher</td>
+              <td>Credential capture disabled; immediate user notification on click</td>
+            </tr>
+            <tr>
+              <td><strong>Landing Page Server</strong></td>
+              <td>Hosts credential-harvesting page mockup</td>
+              <td>GoPhish built-in / Python http.server (local only)</td>
+              <td>No real credential storage; lab-only scope</td>
+            </tr>
+            <tr>
+              <td><strong>Tracking & Logging</strong></td>
+              <td>Open/click/submission events for metrics</td>
+              <td>GoPhish dashboard; MailHog for email capture</td>
+              <td>PIPEDA-compliant data minimization; auto-delete after grading</td>
+            </tr>
+            <tr>
+              <td><strong>Local Email Server</strong></td>
+              <td>Captures outgoing test emails without real sending</td>
+              <td><a href="https://github.com/mailhog/MailHog" target="_blank">MailHog</a></td>
+              <td>No external delivery possible; purely local</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Your infrastructure plan must also explain: what makes a good lookalike domain; how IDN homograph attacks work (research and document at least three real-world examples from public threat intelligence); and how PIPEDA's data minimization principle applies to credential tracking in a real engagement.</p>
+
+      <div class="ss-marker"><span class="icon">📸</span> Screenshot 06 · Completed infrastructure plan document</div>
+    </div>
+  </div>
+
+  <!-- ═══ PHASE 3 ═══ -->
+  <div id="phase3" class="fade-in">
+    <div class="phase-header phase-3" onclick="togglePhase(this)">
+      <span class="phase-num p3">PHASE 03</span>
+      <span class="phase-title">Crafting Templates & Lures</span>
+      <span class="phase-time">≈ 90 minutes</span>
+      <span class="phase-toggle">▾</span>
+    </div>
+    <div class="phase-body">
+
+      <h2>3.1 — Anatomy of a Phishing Email</h2>
+      <p>Every component of a phishing email serves a specific attacker goal — and every component has a corresponding red flag that a trained user should recognize.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Component</th><th>Attacker's Goal</th><th>Red Flag for Trained User</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>From Address</strong></td><td>Appear legitimate</td><td>Domain mismatch, extra characters, homograph characters</td></tr>
+            <tr><td><strong>Reply-To</strong></td><td>Redirect replies to attacker-controlled address</td><td>Different from From address — hover to compare</td></tr>
+            <tr><td><strong>Subject Line</strong></td><td>Create urgency or curiosity</td><td>Excessive urgency, generic phrasing ("Urgent Action Required")</td></tr>
+            <tr><td><strong>Greeting</strong></td><td>Appear personalized</td><td>"Dear User" or "Dear Customer" instead of real name</td></tr>
+            <tr><td><strong>Body Text</strong></td><td>Build credibility, drive action</td><td>Grammar errors, unusual requests, wrong company terminology</td></tr>
+            <tr><td><strong>Call to Action</strong></td><td>Get click, download, or credential entry</td><td>Hover reveals wrong URL; button text doesn't match destination</td></tr>
+            <tr><td><strong>Footer</strong></td><td>Mimic legitimate communications</td><td>Wrong or missing unsubscribe link; wrong company address</td></tr>
+            <tr><td><strong>Attachments</strong></td><td>Deliver payload or harvest credentials</td><td>Unexpected file types (.exe, .iso, .lnk, macro-enabled .docm)</td></tr>
+            <tr><td><strong>Tracking Pixel</strong></td><td>Confirm email was opened (1×1 invisible image)</td><td>Not visible to user; revealed only in email source/headers</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>3.2 — Wave 1 Template (Generic IT Notification)</h2>
+
+      <pre data-lang="bash"><span class="kw">nano</span> ~/lab03-phishing/templates/wave1-IT-notification.html</pre>
+
+      <p>Build a complete, realistic HTML email template. The starter structure below is a minimum skeleton — you must significantly expand and professionalize it. A completed template should look like a legitimate corporate IT notification when rendered in a browser.</p>
+
+      <pre data-lang="html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title&gt;Meridian IT — Important System Notice&lt;/title&gt;
+&lt;/head&gt;
+&lt;body style="font-family: Arial, sans-serif; color: #333333; margin: 0;"&gt;
+  &lt;table width="600" cellpadding="0" cellspacing="0" align="center"&gt;
+    &lt;!-- Header --&gt;
+    &lt;tr&gt;
+      &lt;td bgcolor="#1A3A5C" style="padding: 20px 30px;"&gt;
+        &lt;img src="http://assets.meridian-fp.lab/logo.png"
+             alt="Meridian Financial Partners" height="40"&gt;
+      &lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;!-- Body --&gt;
+    &lt;tr&gt;
+      &lt;td style="padding: 30px 30px 20px;"&gt;
+        &lt;p&gt;Dear [FIRSTNAME],&lt;/p&gt;
+        &lt;p&gt;The Meridian IT Operations team is conducting a
+           mandatory security infrastructure upgrade...&lt;/p&gt;
+        &lt;!-- EXPAND: urgency statement, action button with DELIBERATE
+             DOMAIN TYPO, deadline, IT contact info, policy reference --&gt;
+        &lt;!--
+          TELL #1: Link destination = http://portal.merdian-fp.lab/verify
+                   (transposition typo: merdian vs meridian)
+          TELL #2: From address domain mismatch in email headers
+          TELL #3: Generic greeting with placeholder [FIRSTNAME]
+                   not replaced (wave 1 is low sophistication)
+        --&gt;
+        &lt;a href="http://portal.merdian-fp.lab/verify"
+           style="background:#1A3A5C;color:white;padding:12px 28px;
+                  text-decoration:none;border-radius:4px;
+                  display:inline-block;margin:20px 0;"&gt;
+          Verify Your Credentials
+        &lt;/a&gt;
+      &lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;!-- Footer --&gt;
+    &lt;tr&gt;
+      &lt;td style="padding:15px 30px;background:#f5f5f5;
+                 font-size:11px;color:#999999;"&gt;
+        &lt;!-- EXPAND: fictional company address, unsubscribe link,
+             legal boilerplate, IT helpdesk contact --&gt;
+      &lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/table&gt;
+  &lt;!-- Open-tracking pixel (simulated) --&gt;
+  &lt;img src="http://tracking.meridian-fp.lab/px.gif"
+       width="1" height="1" alt=""&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+
+      <div class="alert alert-tip">
+        <div class="alert-icon">💡</div>
+        <div class="alert-body">
+          <strong>Design Tip</strong>
+          Your completed template should include: (1) a convincing header with fictional logo, (2) personalized-looking greeting, (3) clear urgency messaging, (4) a styled action button with a subtly wrong link destination, (5) a professional footer with fictional company details. Document each embedded "tell" (detectable flaw) in a separate analysis file with screenshots annotating where the tell appears.
+        </div>
+      </div>
+
+      <div class="ss-marker"><span class="icon">📸</span> Screenshot 07 · Wave 1 template rendered in browser (open HTML file locally)</div>
+
+      <h2>3.3 — Wave 2 Template (Spear Phishing — CFO Impersonation)</h2>
+
+      <pre data-lang="bash"><span class="kw">nano</span> ~/lab03-phishing/templates/wave2-spear-CFO.html</pre>
+
+      <p>This is your most sophisticated template. Requirements:</p>
+      <ul class="body-list">
+        <li>Appears to come from "Margaret Chen, CFO" at <code>m.chen@meridian-fp.lab</code></li>
+        <li>Reply-To set to <code>m.chen@meridian-fp-admin.lab</code> — subtle domain variation (key tell)</li>
+        <li>References fictional vendor "Pacific Coast Advisors LLC" — Finance would know this name</li>
+        <li>References a specific invoice number and dollar amount (invent plausible figures)</li>
+        <li>Creates time pressure: "Q1 close requires sign-off before 5 PM today"</li>
+        <li>Includes CFO's correct title, phone extension, and complete email signature</li>
+        <li>References a fictional attached invoice (describe it — do not attach an actual malicious file)</li>
+      </ul>
+
+      <p>After completing the template, create a <strong>wave2-analysis.md</strong> file explaining exactly why this email would be significantly more effective than Wave 1. Cite the specific psychological principles from Phase 1 by name and explain how each is operationalized in this specific template.</p>
+
+      <div class="ss-marker"><span class="icon">📸</span> Screenshot 08 · Wave 2 spear phishing template rendered in browser</div>
+
+      <h2>3.4 — Wave 3 Template (Post-Training Validation)</h2>
+
+      <pre data-lang="bash"><span class="kw">nano</span> ~/lab03-phishing/templates/wave3-benefits-portal.html</pre>
+
+      <p>Slightly higher sophistication than Wave 1, but with one clearly detectable flaw for trained employees. Use correct Meridian branding. The link destination must use <code>meridian-fp-benefits.lab</code> (a domain never mentioned in any legitimate communication). Include a functional "Report This Email" button pointing to <code>security@meridian-fp.lab</code>.</p>
+
+      <div class="ss-marker"><span class="icon">📸</span> Screenshot 09 · Wave 3 template rendered in browser</div>
+
+      <h2>3.5 — Landing Page Mockup</h2>
+
+      <pre data-lang="bash"><span class="kw">nano</span> ~/lab03-phishing/lures/wave1-landing-page.html</pre>
+
+      <p>Design a static HTML page that fictional targets would see after clicking the Wave 1 link. Requirements:</p>
+      <ul class="body-list">
+        <li>Visually approximates a Microsoft 365 login page (fictional approximation only — no copied proprietary assets)</li>
+        <li>Includes fictional credential input form (username + password)</li>
+        <li><strong>Must include a visible disclaimer banner:</strong> <code>[LAB EXERCISE ONLY — SIMULATED PAGE — DO NOT ENTER REAL CREDENTIALS]</code></li>
+        <li>Redirects to a fictional "Verification Successful" page after form submission</li>
+        <li>Entirely self-contained — no external resource loading (demonstrates offline operation technique)</li>
+      </ul>
+
+      <div class="ss-marker"><span class="icon">📸</span> Screenshot 10 · Landing page mockup rendered in browser with disclaimer banner visible</div>
+
+      <h2>3.6 — Credential Harvesting Analysis (Theoretical)</h2>
+      <p>Write a technical explanation (minimum 400 words) covering how credential harvesting works, why HTTPS (Hypertext Transfer Protocol Secure) does not equal safety, how tools like Evilginx use a reverse-proxy technique to bypass MFA, how HSTS (HTTP Strict Transport Security — a browser security mechanism that forces HTTPS connections) provides partial defense, and how password managers detect domain mismatches.</p>
+
+      <div class="alert alert-info">
+        <div class="alert-icon">🔍</div>
+        <div class="alert-body">
+          <strong>Key Concept: HTTPS ≠ Safe</strong>
+          Many users have been taught that the padlock icon (HTTPS) means a website is safe. This is a dangerous misconception. HTTPS only guarantees that the connection between your browser and the server is encrypted — it says nothing about whether the server itself is operated by a malicious actor. Phishing pages routinely use valid SSL/TLS certificates. Your explanation must clearly address this misconception and explain what users should check instead (domain name accuracy, not just padlock presence).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PHASE 4 ═══ -->
+  <div id="phase4" class="fade-in">
+    <div class="phase-header phase-4" onclick="togglePhase(this)">
+      <span class="phase-num p4">PHASE 04</span>
+      <span class="phase-title">Security Awareness Program & KPI Framework</span>
+      <span class="phase-time">≈ 60 minutes</span>
+      <span class="phase-toggle">▾</span>
+    </div>
+    <div class="phase-body">
+
+      <h2>4.1 — Threat Landscape Research</h2>
+      <p>Visit the <a href="https://apwg.org/" target="_blank"><strong>Anti-Phishing Working Group (APWG)</strong></a> website and read their most recent Phishing Activity Trends Report. In your lab report, summarize the current global volume of phishing attacks, the top three most impersonated brands or sectors, and the most common phishing infrastructure patterns. Also reference the <a href="https://www.nist.gov/cyberframework" target="_blank">NIST Cybersecurity Framework 2.0</a> (which explicitly includes Awareness and Training as a core function) and <a href="https://www.cisecurity.org/controls/v8" target="_blank">CIS Controls v8</a> (Control 14: Security Awareness and Skills Training).</p>
+
+      <div class="ss-marker"><span class="icon">📸</span> Screenshot 11 · APWG report page open in browser with relevant statistics visible</div>
+
+      <h2>4.2 — Six-Month Awareness Program Design</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Month</th><th>Activity</th><th>Target Audience</th><th>Delivery Method</th><th>Wave Deployed</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1</strong></td>
+              <td>Foundational e-learning: "How to spot phishing" (20 min) + "Reporting suspicious emails" (10 min)</td>
+              <td>All 150 staff</td>
+              <td>Async LMS (Learning Management System — e.g., Moodle)</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><strong>2</strong></td>
+              <td>Dept-specific modules: Finance → BEC (Business Email Compromise) case studies; IT → Credential hygiene + MFA; Client Relations → Vishing (voice phishing over telephone)</td>
+              <td>By department</td>
+              <td>Facilitated workshop + async</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><strong>3</strong></td>
+              <td>Wave 1 simulation deployment + immediate non-punitive feedback loop for clickers</td>
+              <td>All 150 staff</td>
+              <td>GoPhish campaign + redirect page</td>
+              <td>🟦 Wave 1</td>
+            </tr>
+            <tr>
+              <td><strong>4</strong></td>
+              <td>Reinforcement training addressing Wave 1 weaknesses; gamification quiz competition between departments</td>
+              <td>All staff (dept focus)</td>
+              <td>Competitive quiz platform</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><strong>5</strong></td>
+              <td>Wave 2 spear phishing simulation; advanced BEC module; optional external speaker concept</td>
+              <td>Finance dept</td>
+              <td>GoPhish + advanced workshop</td>
+              <td>🟥 Wave 2</td>
+            </tr>
+            <tr>
+              <td><strong>6</strong></td>
+              <td>Wave 3 simulation; final evaluation report; C-suite (CEO, CFO, CISO) presentation</td>
+              <td>All 150 staff</td>
+              <td>GoPhish + executive report</td>
+              <td>🟡 Wave 3</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>4.3 — KPI Framework (Minimum 10 Required)</h2>
+      <p>A security awareness program without measurable outcomes is compliance theater. Define concrete KPIs — for each, you must provide a justification, a red-alert threshold, and a mapping to a specific <a href="https://www.cisecurity.org/controls/v8" target="_blank">CIS Control v8</a>.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>KPI Name</th><th>Description</th><th>Method</th><th>Baseline Target</th><th>6-Month Target</th><th>Frequency</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Phishing Click Rate</strong></td>
+              <td>% of simulated phishing emails resulting in a link click</td>
+              <td>GoPhish campaign report</td>
+              <td class="kpi-high">&lt; 30%</td>
+              <td class="kpi-low">&lt; 5%</td>
+              <td>Per wave</td>
+            </tr>
+            <tr>
+              <td><strong>Credential Submission Rate</strong></td>
+              <td>% of clicks that proceed to form submission on landing page</td>
+              <td>Landing page analytics</td>
+              <td class="kpi-high">&lt; 15%</td>
+              <td class="kpi-low">&lt; 1%</td>
+              <td>Per wave</td>
+            </tr>
+            <tr>
+              <td><strong>Phishing Report Rate</strong></td>
+              <td>% of simulated emails proactively reported to IT security</td>
+              <td>IT ticketing system</td>
+              <td class="kpi-med">&gt; 5%</td>
+              <td class="kpi-low">&gt; 60%</td>
+              <td>Per wave</td>
+            </tr>
+            <tr>
+              <td><strong>Training Completion Rate</strong></td>
+              <td>% of assigned employees completing mandatory modules</td>
+              <td>LMS completion data</td>
+              <td class="kpi-low">100%</td>
+              <td class="kpi-low">100%</td>
+              <td>Monthly</td>
+            </tr>
+            <tr>
+              <td><strong>Mean Time to Report</strong></td>
+              <td>Average time from email receipt to IT report submission</td>
+              <td>Timestamps: email received vs. ticket created</td>
+              <td>Establish baseline</td>
+              <td class="kpi-low">&lt; 30 min</td>
+              <td>Per wave</td>
+            </tr>
+            <tr>
+              <td><strong>Repeat Clicker Rate</strong></td>
+              <td>% of employees clicking in two or more simulation waves</td>
+              <td>Cross-wave tracking (anonymized)</td>
+              <td>N/A</td>
+              <td class="kpi-low">&lt; 2%</td>
+              <td>Cross-wave</td>
+            </tr>
+            <tr>
+              <td><strong>Dept Vulnerability Score</strong></td>
+              <td>Click rate broken down by department for targeted remediation</td>
+              <td>Campaign segmentation</td>
+              <td>Establish Wave 1</td>
+              <td class="kpi-low">All depts &lt; 5%</td>
+              <td>Per wave</td>
+            </tr>
+            <tr>
+              <td><em>+ 3 more KPIs you design</em></td>
+              <td colspan="5">Research additional relevant KPIs and add them with full documentation</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ss-marker"><span class="icon">📸</span> Screenshot 12 · Completed KPI framework document showing all 10+ indicators</div>
+
+      <h2>4.4 — Technical Controls (Defense-in-Depth)</h2>
+      <p>Document how the following technical controls complement your awareness program. Show sample DNS (Domain Name System) records for the fictional <code>meridian-fp.lab</code> domain:</p>
+
+      <pre data-lang="dns"><span class="cm"># SPF (Sender Policy Framework) — specifies authorized sending mail servers</span>
+meridian-fp.lab. IN TXT <span class="str">"v=spf1 include:_spf.google.com ~all"</span>
+
+<span class="cm"># DKIM (DomainKeys Identified Mail) — cryptographic signature for tamper detection</span>
+default._domainkey.meridian-fp.lab. IN TXT <span class="str">"v=DKIM1; k=rsa; p=MIGfMA0..."</span>
+
+<span class="cm"># DMARC (Domain-based Message Authentication, Reporting & Conformance)</span>
+<span class="cm"># — policy: what to do when SPF/DKIM fail (none / quarantine / reject)</span>
+_dmarc.meridian-fp.lab. IN TXT <span class="str">"v=DMARC1; p=reject; rua=mailto:dmarc@meridian-fp.lab; pct=100"</span></pre>
+
+      <p>Additionally document: anti-phishing filters in Microsoft 365 Defender and Google Workspace; how Google Safe Browsing works; password manager domain-mismatch detection; and FIDO2/WebAuthn (Fast Identity Online 2 / Web Authentication — a standard for hardware security keys that are phishing-resistant because they bind to the exact domain registered during setup).</p>
+    </div>
+  </div>
+
+  <!-- ═══ PHASE 5 ═══ -->
+  <div id="phase5" class="fade-in">
+    <div class="phase-header phase-5" onclick="togglePhase(this)">
+      <span class="phase-num p5">PHASE 05</span>
+      <span class="phase-title">The Lab Report — Your Most Important Deliverable</span>
+      <span class="phase-time">≈ 75 minutes</span>
+      <span class="phase-toggle">▾</span>
+    </div>
+    <div class="phase-body">
+
+      <div class="alert alert-danger">
+        <div class="alert-icon">📋</div>
+        <div class="alert-body">
+          <strong>Report Standard</strong>
+          Your report must be thorough enough that <strong>someone who has never studied cybersecurity could read it, understand exactly what was done and why, and genuinely learn from it.</strong> Every decision must be explained. Every technical term must be defined where it first appears. Every screenshot must be labeled, annotated, and referenced in the body text. A minimum of 12 screenshots is required — more is better.
+        </div>
+      </div>
+
+      <h2>Required Report Structure</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Section</th><th>Content</th><th>Audience</th><th>Min Length</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Cover Page</strong></td><td>Course, Lab #, name, student ID, instructor, date, confidentiality notice</td><td>All</td><td>1 page</td></tr>
+            <tr><td><strong>Table of Contents</strong></td><td>All sections with page numbers</td><td>All</td><td>1 page</td></tr>
+            <tr><td><strong>1. Executive Summary</strong></td><td>Purpose, scope, high-level findings, 3 critical recommendations, risk rating (justified)</td><td>Non-technical (CEO/Board)</td><td>1–2 pages</td></tr>
+            <tr><td><strong>2. Methodology</strong></td><td>PTES SE phase, NIST SP 800-115, Cialdini framework, RoE reference</td><td>Technical</td><td>1 page</td></tr>
+            <tr><td><strong>3. Reconnaissance Findings</strong></td><td>OSINT profile, org diagram, tech footprint, attack vectors ranked by probability</td><td>Technical</td><td>2–3 pages</td></tr>
+            <tr><td><strong>4. Campaign Design</strong></td><td>All 3 waves with screenshots, psychological rationale, annotated "tells"</td><td>Technical</td><td>3–4 pages</td></tr>
+            <tr><td><strong>5. Landing Page Analysis</strong></td><td>Screenshots, credential harvesting mechanics, HTTPS misconception, MFA bypass concepts</td><td>Technical</td><td>2 pages</td></tr>
+            <tr><td><strong>6. Simulated Results</strong></td><td>Hypothetical result table based on Proofpoint/KnowBe4 industry benchmarks (with citations)</td><td>Both</td><td>2 pages</td></tr>
+            <tr><td><strong>7. Awareness Program</strong></td><td>6-month calendar, module descriptions, HR integration strategy</td><td>Both</td><td>2 pages</td></tr>
+            <tr><td><strong>8. KPI Framework</strong></td><td>Full 10+ KPI table, visualization concepts, leadership reporting approach</td><td>Both</td><td>2 pages</td></tr>
+            <tr><td><strong>9. Technical Controls</strong></td><td>Prioritized list with CIS Control mapping, effort/effectiveness ratings, fictional cost estimates</td><td>Technical</td><td>1–2 pages</td></tr>
+            <tr><td><strong>10. Conclusion</strong></td><td>90-day remediation roadmap; 3 immediate actions (within one week); strategic recommendations</td><td>Both</td><td>1 page</td></tr>
+            <tr><td><strong>Appendices A–F</strong></td><td>Raw templates, RoE, OSINT profile, infrastructure plan, all screenshots, full references</td><td>All</td><td>As needed</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Screenshot Submission Checklist</h2>
+
+      <ul class="checklist" id="screenshotChecklist">
+        <li onclick="toggleCheck(this)"><span class="check-box"></span>Screenshot 01 · Terminal showing lab directory structure created</li>
+        <li onclick="toggleCheck(this)"><span class="check-box"></span>Screenshot 02 · Browser showing regulatory framework pages loaded</li>
+        <li onclick="toggleCheck(this)"><span class="check-box"></span>Screenshot 03 · Completed RoE document in terminal editor</li>
+        <li onclick="toggleCheck(this)"><span class="check-box"></span>Screenshot 04 · Completed OSINT profile document</li>
+        <li onclick="toggleCheck(this)"><span class="check-box"></span>Screenshot 05 · Campaign plan document (all 3 waves visible)</li>
+        <li onclick="toggleCheck(this)"><span class="check-box"></span>Screenshot 06 · Infrastructure plan document completed</li>
+        <li onclick="toggleCheck(this)"><span class="check-box"></span>Screenshot 07 · Wave 1 email template rendered in browser</li>
+        <li onclick="toggleCheck(this)"><span class="check-box"></span>Screenshot 08 · Wave 2 (spear phishing) template rendered in browser</li>
+        <li onclick="toggleCheck(this)"><span class="check-box"></span>Screenshot 09 · Wave 3 template rendered in browser</li>
+        <li onclick="toggleCheck(this)"><span class="check-box"></span>Screenshot 10 · Landing page mockup with LAB disclaimer banner visible</li>
+        <li onclick="toggleCheck(this)"><span class="check-box"></span>Screenshot 11 · APWG Phishing Trends Report page open in browser</li>
+        <li onclick="toggleCheck(this)"><span class="check-box"></span>Screenshot 12 · KPI framework document with all 10+ indicators</li>
+        <li onclick="toggleCheck(this)"><span class="check-box"></span>Screenshots 13+ · Any additional evidence you deem relevant to your report</li>
+      </ul>
+
+      <h2>Benchmark Sources for Simulated Results</h2>
+
+      <div class="ref-grid">
+        <div class="ref-card">
+          <div class="ref-org">Proofpoint</div>
+          <div class="ref-title">State of the Phish — Annual Industry Report</div>
+          <div class="ref-link"><a href="https://www.proofpoint.com/us/resources/threat-reports/state-of-phish" class="ext-link" target="_blank">🔗 proofpoint.com</a></div>
+        </div>
+        <div class="ref-card">
+          <div class="ref-org">KnowBe4</div>
+          <div class="ref-title">Phishing Industry Benchmarks Report</div>
+          <div class="ref-link"><a href="https://www.knowbe4.com/phishing-industry-benchmarks" class="ext-link" target="_blank">🔗 knowbe4.com</a></div>
+        </div>
+        <div class="ref-card">
+          <div class="ref-org">Anti-Phishing Working Group (APWG)</div>
+          <div class="ref-title">Phishing Activity Trends Report (Quarterly)</div>
+          <div class="ref-link"><a href="https://apwg.org/" class="ext-link" target="_blank">🔗 apwg.org</a></div>
+        </div>
+        <div class="ref-card">
+          <div class="ref-org">BANQ — Bibliothèque et Archives Nationales du Québec</div>
+          <div class="ref-title">O'Reilly & LinkedIn Learning Access (Free for students)</div>
+          <div class="ref-link"><a href="https://cap.banq.qc.ca/inscription?locale=en" class="ext-link" target="_blank">🔗 cap.banq.qc.ca</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TOOLS ═══ -->
+  <div id="tools" class="fade-in">
+    <h2 style="margin-top:50px;">Alternative Open-Source Tools</h2>
+    <div class="alert alert-tip">
+      <div class="alert-icon">🛠</div>
+      <div class="alert-body">
+        <strong>These Are Starting Points, Not Requirements</strong>
+        The tools below are a non-exhaustive list of open-source options. You are neither required to use any of them, nor restricted from using alternatives. Research your own tools, compare their capabilities, and justify your choices in your report. Build your own scripts where you can. Innovation and thorough independent research are actively rewarded.
+      </div>
+    </div>
+
+    <div class="tools-grid">
+      <div class="tool-card">
+        <div class="tool-name">GoPhish</div>
+        <div class="tool-role">Phishing campaign management, tracking, and reporting</div>
+        <div class="tool-link"><a href="https://getgophish.com/" target="_blank" class="ext-link">🔗 getgophish.com</a></div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">MailHog</div>
+        <div class="tool-role">Local email capture — prevents real external delivery</div>
+        <div class="tool-link"><a href="https://github.com/mailhog/MailHog" target="_blank" class="ext-link">🔗 github.com</a></div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">SET (Social-Engineer Toolkit)</div>
+        <div class="tool-role">Comprehensive social engineering framework — built into Kali</div>
+        <div class="tool-link"><a href="https://github.com/trustedsec/social-engineer-toolkit" target="_blank" class="ext-link">🔗 github.com</a></div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">King Phisher</div>
+        <div class="tool-role">Alternative phishing campaign framework with client/server architecture</div>
+        <div class="tool-link"><a href="https://github.com/rsmusllp/king-phisher" target="_blank" class="ext-link">🔗 github.com</a></div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">Evilginx3</div>
+        <div class="tool-role">Reverse-proxy MFA bypass simulation framework — study conceptually</div>
+        <div class="tool-link"><a href="https://github.com/kgretzky/evilginx2" target="_blank" class="ext-link">🔗 github.com</a></div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">Maltego Community</div>
+        <div class="tool-role">OSINT and link analysis — visualize relationships between entities</div>
+        <div class="tool-link"><a href="https://www.maltego.com/" target="_blank" class="ext-link">🔗 maltego.com</a></div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">theHarvester</div>
+        <div class="tool-role">Email, subdomain, and open-port harvesting — Kali built-in</div>
+        <div class="tool-link"><span style="font-size:11px;color:var(--text3);">Kali: sudo apt install theharvester</span></div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">Moodle</div>
+        <div class="tool-role">Open-source LMS for designing and delivering awareness training modules</div>
+        <div class="tool-link"><a href="https://moodle.org/" target="_blank" class="ext-link">🔗 moodle.org</a></div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">Wazuh</div>
+        <div class="tool-role">Open-source SIEM — Security Information and Event Management — for alert monitoring</div>
+        <div class="tool-link"><a href="https://wazuh.com/" target="_blank" class="ext-link">🔗 wazuh.com</a></div>
+      </div>
+    </div>
+
+    <div class="alert alert-tip">
+      <div class="alert-icon">⭐</div>
+      <div class="alert-body">
+        <strong>Bonus Challenge (Optional)</strong>
+        Set up a local GoPhish + MailHog environment within your VM to actually send and receive test emails internally — with zero external delivery possible. Document the full setup process with screenshots and include it as Appendix G in your report. This demonstrates a significantly higher level of technical initiative.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ RUBRIC ═══ -->
+  <div id="rubric" class="fade-in">
+    <h2 style="margin-top:50px;">Grading Rubric</h2>
+
+    <div class="rubric-bar"><span class="rubric-label">Email Templates (3 waves, HTML quality)</span><div class="rubric-track"><div class="rubric-fill" style="width:20%"></div></div><span class="rubric-pct">20%</span></div>
+    <div class="rubric-bar"><span class="rubric-label">Campaign Plan (3 waves, psychological rationale)</span><div class="rubric-track"><div class="rubric-fill" style="width:15%"></div></div><span class="rubric-pct">15%</span></div>
+    <div class="rubric-bar"><span class="rubric-label">Report Quality (structure, screenshots, depth)</span><div class="rubric-track"><div class="rubric-fill" style="width:15%"></div></div><span class="rubric-pct">15%</span></div>
+    <div class="rubric-bar"><span class="rubric-label">RoE & Scope Document</span><div class="rubric-track"><div class="rubric-fill" style="width:10%"></div></div><span class="rubric-pct">10%</span></div>
+    <div class="rubric-bar"><span class="rubric-label">OSINT Profile</span><div class="rubric-track"><div class="rubric-fill" style="width:10%"></div></div><span class="rubric-pct">10%</span></div>
+    <div class="rubric-bar"><span class="rubric-label">KPI Framework (10+ indicators)</span><div class="rubric-track"><div class="rubric-fill" style="width:10%"></div></div><span class="rubric-pct">10%</span></div>
+    <div class="rubric-bar"><span class="rubric-label">Landing Page Mockup</span><div class="rubric-track"><div class="rubric-fill" style="width:10%"></div></div><span class="rubric-pct">10%</span></div>
+    <div class="rubric-bar"><span class="rubric-label">Security Awareness Program</span><div class="rubric-track"><div class="rubric-fill" style="width:10%"></div></div><span class="rubric-pct">10%</span></div>
+
+    <div class="table-wrap" style="margin-top:20px;">
+      <table>
+        <thead><tr><th>Policy</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Passing Grade</strong></td><td>60% minimum required to pass the lab</td></tr>
+          <tr><td><strong>Literacy Penalty</strong></td><td>Up to −10% for grammar, spelling, punctuation, and syntax errors</td></tr>
+          <tr><td><strong>Late Penalty</strong></td><td>−10% per day late. No submissions accepted after April 5, 2026 (7 days past due date)</td></tr>
+          <tr><td><strong>Academic Integrity</strong></td><td>Plagiarism results in failure of the evaluation component and may result in course failure</td></tr>
+          <tr><td><strong>Submission Method</strong></td><td>As directed by your instructor — confirm method before the due date</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <p><strong>420-3C2-DW · Intrusion Tests · Dawson College AEC Program</strong></p>
+  <p style="margin-top:6px;">Lab 03 · Social Engineering & Phishing Simulation · Days 08 & 10</p>
+  <p style="margin-top:6px;">Due: <strong>March 29, 2026 — 00:00 EST</strong> · Ponderation 1–2–2 · 3 Credits · Labs worth 35%</p>
+  <p style="margin-top:12px;font-size:10px;color:var(--text3);">This document is intended exclusively for students enrolled in this course. Distribution is restricted.<br>All cybersecurity techniques are presented for educational purposes within a controlled, authorized lab environment only.</p>
+</footer>
+
+<script>
+  // ─── Countdown ───
+  function updateCountdown() {
+    const due = new Date('2026-03-29T05:00:00Z'); // Midnight EST = 05:00 UTC
+    const now = new Date();
+    const diff = due - now;
+
+    if (diff <= 0) {
+      document.getElementById('countdownDisplay').textContent = 'SUBMITTED?';
+      return;
+    }
+
+    const days = Math.floor(diff / 86400000);
+    const hrs  = Math.floor((diff % 86400000) / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+
+    const pad = n => String(n).padStart(2, '0');
+    document.getElementById('countdownDisplay').textContent =
+      `${pad(days)}:${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+    document.getElementById('cdDays').textContent = 'DAYS';
+    document.getElementById('cdHrs').textContent = 'HRS';
+    document.getElementById('cdMin').textContent = 'MIN';
+    document.getElementById('cdSec').textContent = 'SEC';
+  }
+
+  setInterval(updateCountdown, 1000);
+  updateCountdown();
+
+  // ─── Phase toggle ───
+  function togglePhase(header) {
+    const body = header.nextElementSibling;
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    header.classList.toggle('open', !isOpen);
+    updateProgress();
+  }
+
+  function openPhase(num) {
+    const phase = document.getElementById('phase' + num);
+    if (!phase) return;
+    phase.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const header = phase.querySelector('.phase-header');
+    const body = phase.querySelector('.phase-body');
+    if (!body.classList.contains('open')) {
+      body.classList.add('open');
+      header.classList.add('open');
+    }
+  }
+
+  // ─── Progress ───
+  let totalChecks = 0, checkedCount = 0;
+
+  function updateProgress() {
+    const items = document.querySelectorAll('.checklist li');
+    totalChecks = items.length;
+    checkedCount = document.querySelectorAll('.checklist li.checked').length;
+    const pct = totalChecks ? Math.round((checkedCount / totalChecks) * 100) : 0;
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressPct').textContent = pct + '%';
+  }
+
+  function toggleCheck(li) {
+    li.classList.toggle('checked');
+    const box = li.querySelector('.check-box');
+    if (li.classList.contains('checked')) {
+      box.textContent = '✓';
+    } else {
+      box.textContent = '';
+    }
+    updateProgress();
+  }
+
+  // ─── Scroll animations ───
+  const fadeEls = document.querySelectorAll('.fade-in');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.05 });
+
+  fadeEls.forEach(el => observer.observe(el));
+
+  // ─── Nav dots ───
+  const dots = document.querySelectorAll('.pn-dot');
+  const sections = ['hero','phase1','phase2','phase3','phase4','phase5','tools','rubric'];
+
+  window.addEventListener('scroll', () => {
+    let current = 0;
+    sections.forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el && el.getBoundingClientRect().top < window.innerHeight / 2) {
+        current = i;
+      }
+    });
+    dots.forEach((d, i) => d.classList.toggle('active', i === current));
+  });
+
+  dots.forEach((dot, i) => {
+    dot.addEventListener('click', () => {
+      const target = document.getElementById(dot.dataset.target);
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  // ─── Scroll progress bar (top) ───
+  // (overrides the checklist-based one when no checklist is visible)
+  updateProgress();
+</script>
+</body>
+</html>

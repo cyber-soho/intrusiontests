@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Reconnaissance & Scanning - Study Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Flip Card 3D effects */
+        .flip-card {
+            perspective: 1000px;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .flip-card-front {
+            background-color: #ffffff;
+            color: #1f2937;
+            border: 2px solid #e5e7eb;
+        }
+        .flip-card-back {
+            background-color: #f3f4f6;
+            color: #111827;
+            border: 2px solid #d1d5db;
+            transform: rotateY(180deg);
+        }
+        
+        /* Custom scrollbar for better look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen">
+
+    <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-blue-900 mb-2">Active Reconnaissance & Scanning</h1>
+            <p class="text-gray-600">Days 11–12 Slide Deck Review</p>
+        </header>
+
+        <!-- Tabs Navigation -->
+        <div class="flex border-b border-gray-200 mb-6">
+            <button id="tab-flashcards" class="flex-1 py-4 px-6 text-center font-medium text-sm sm:text-base border-b-2 border-blue-600 text-blue-600 focus:outline-none transition-colors" onclick="switchTab('flashcards')">
+                Flashcards (25)
+            </button>
+            <button id="tab-quiz" class="flex-1 py-4 px-6 text-center font-medium text-sm sm:text-base border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none transition-colors" onclick="switchTab('quiz')">
+                Practice Quiz (10)
+            </button>
+        </div>
+
+        <!-- Flashcards Content -->
+        <div id="content-flashcards" class="block transition-opacity duration-300">
+            <div class="flex flex-col items-center">
+                <div class="w-full max-w-2xl h-64 sm:h-80 flip-card cursor-pointer mb-6" id="flashcard-container" onclick="flipCard()">
+                    <div class="flip-card-inner" id="flashcard-inner">
+                        <div class="flip-card-front text-xl sm:text-2xl font-semibold text-center" id="flashcard-front">
+                            <!-- Front content loaded via JS -->
+                        </div>
+                        <div class="flip-card-back text-lg sm:text-xl text-center" id="flashcard-back">
+                            <!-- Back content loaded via JS -->
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="text-sm text-gray-500 mb-4 animate-pulse">Click the card to flip</p>
+                
+                <div class="flex items-center justify-between w-full max-w-2xl">
+                    <button onclick="prevCard()" class="px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed" id="btn-prev-card">
+                        &larr; Previous
+                    </button>
+                    <span class="text-gray-600 font-medium" id="flashcard-counter">1 / 25</span>
+                    <button onclick="nextCard()" class="px-4 py-2 bg-blue-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed" id="btn-next-card">
+                        Next &rarr;
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Content -->
+        <div id="content-quiz" class="hidden transition-opacity duration-300">
+            <div class="bg-white rounded-lg shadow-md p-6 sm:p-8 max-w-3xl mx-auto" id="quiz-container">
+                <!-- Quiz Header -->
+                <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
+                    <h2 class="text-xl font-bold text-gray-800" id="quiz-title">Question 1 of 10</h2>
+                    <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded" id="quiz-score-badge">Score: 0</span>
+                </div>
+
+                <!-- Question Area -->
+                <div id="quiz-question-area">
+                    <p class="text-lg font-medium text-gray-900 mb-4" id="quiz-question-text">
+                        <!-- Question loaded via JS -->
+                    </p>
+
+                    <!-- Hint -->
+                    <div class="mb-6">
+                        <button onclick="toggleHint()" class="text-sm text-yellow-600 font-medium flex items-center hover:text-yellow-700 focus:outline-none">
+                            <span class="mr-1">💡</span> Need a hint?
+                        </button>
+                        <div id="quiz-hint-text" class="hidden mt-2 text-sm italic text-gray-600 bg-yellow-50 p-3 rounded border border-yellow-100">
+                            <!-- Hint loaded via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="space-y-3" id="quiz-options-container">
+                        <!-- Options loaded via JS -->
+                    </div>
+
+                    <!-- Rationale (Hidden until answered) -->
+                    <div id="quiz-rationale-container" class="hidden mt-6 p-4 rounded-md border">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0" id="quiz-rationale-icon">
+                                <!-- Icon loaded via JS -->
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium" id="quiz-rationale-title"></h3>
+                                <div class="mt-2 text-sm" id="quiz-rationale-text"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="mt-8 flex justify-end">
+                        <button onclick="nextQuestion()" id="btn-next-question" class="hidden px-5 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                            Next Question &rarr;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Results Area (Hidden until end) -->
+                <div id="quiz-results-area" class="hidden text-center py-8">
+                    <div class="text-5xl mb-4">🏆</div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Quiz Completed!</h2>
+                    <p class="text-lg text-gray-600 mb-6">You scored <span id="final-score" class="font-bold text-blue-600">0</span> out of 10.</p>
+                    <button onclick="restartQuiz()" class="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                        Restart Quiz 🔄
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data and Application Logic -->
+    <script>
+        // --- DATA ---
+        const flashcardsData = [
+            { front: "Passive reconnaissance", back: "Information gathering that involves no direct contact with the target, such as using WHOIS or OSINT." },
+            { front: "Active reconnaissance", back: "Information gathering that directly touches the target infrastructure, such as port scans and service probes." },
+            { front: "TCP (Transmission Control Protocol) characteristics", back: "A connection-oriented protocol requiring a 3-way handshake, providing reliable and ordered data delivery." },
+            { front: "UDP (User Datagram Protocol) characteristics", back: "A connectionless, \"fire and forget\" protocol with no handshake or acknowledgment, making it faster but unreliable." },
+            { front: "Critical services typically running on UDP", back: "DNS (port 53), SNMP (port 161), and DHCP (ports 67/68)." },
+            { front: "TCP SYN Scan flag and nickname", back: "-sS, commonly known as a \"Stealth Scan\" because it tears down the connection before completion to avoid logging." },
+            { front: "Mechanism of a TCP SYN Scan (-sS)", back: "Nmap sends a SYN, the target replies with a SYN-ACK, and Nmap immediately sends an RST to tear down the connection." },
+            { front: "TCP Connect Scan flag and distinguishing feature", back: "-sT, which completes the full 3-way handshake and works without requiring root privileges." },
+            { front: "UDP Scan flag", back: "-sU" },
+            { front: "Expected response for a closed port during a UDP scan", back: "An ICMP Port Unreachable message." },
+            { front: "Primary benefit of Service/Version Detection (-sV)", back: "It identifies the exact software version running, turning a generic open port finding into an actionable vulnerability report." },
+            { front: "Nmap Aggressive Scan flag (-A)", back: "Enables OS detection, version detection, script scanning, and traceroute all at once." },
+            { front: "Primary goal of protocol enumeration", back: "Identifying valid user accounts, misconfigurations, and network resources to turn open ports into attack paths." },
+            { front: "Information revealed by SMB enumeration", back: "Share names, permissions, user accounts, groups, OS versions, and password policies." },
+            { front: "Primary tool for all-in-one SMB enumeration", back: "enum4linux (-a for all information)" },
+            { front: "Critical vulnerability associated with SMBv1", back: "EternalBlue (MS17-010), which allows for Remote Code Execution." },
+            { front: "Critical misconfiguration risk in LDAP", back: "Anonymous Bind, which allows an attacker to dump the entire Active Directory with zero credentials." },
+            { front: "Information revealed by SNMP enumeration", back: "System uptime, network interfaces, ARP tables, routing tables, and running processes." },
+            { front: "Default read-only community string for SNMP", back: "\"public\", which is often transmitted in cleartext by SNMPv1 and v2c." },
+            { front: "Nmap Timing Template for production-safe scanning", back: "-T2 (Polite) or -T3 (Normal)" },
+            { front: "Output flag to save Nmap results in all major formats", back: "-oA (followed by the base filename)" },
+            { front: "Three file extensions produced by the -oA flag", back: ".nmap (human-readable), .xml (machine-parseable), and .gnmap (grepable)" },
+            { front: "Purpose of the --excludefile flag in Nmap", back: "To specify a list of IP addresses or ranges that must never be scanned, helping enforce scope and avoid fragile hosts." },
+            { front: "Nmap flag to minimize footprint by scanning fewer ports", back: "--top-ports (e.g., --top-ports 1000 limits the scan to the 1000 most common ports)." },
+            { front: "Key requirements of the pre-flight scan checklist", back: "Verify scope, obtain written authorization, set proper timing, configure output, flag fragile hosts, notify the SOC, and verify OPSEC." }
+        ];
+
+        const quizData = [
+            {
+                question: "You are tasked with mapping out all critical infrastructure on a client's network, specifically looking for DHCP and DNS servers. You initiate a standard TCP SYN scan but find nothing. What is the most likely reason?",
+                hint: "Consider the underlying transport protocol these specific network services rely on to function.",
+                options: [
+                    { text: "These services operate over connectionless protocols requiring a UDP scan.", rationale: "DNS and DHCP utilize User Datagram Protocol, which is not checked by default TCP scans and requires the specific -sU flag to discover.", isCorrect: true },
+                    { text: "The target has rate-limited ICMP responses blocking the SYN packets.", rationale: "Rate-limiting affects the speed of UDP scans by dropping ICMP port unreachable messages, but it does not cause a TCP SYN scan to miss TCP ports.", isCorrect: false },
+                    { text: "A full three-way handshake is required to map these specific ports.", rationale: "While a Connect scan completes the handshake, it still only targets TCP ports, missing services that rely on connectionless delivery.", isCorrect: false },
+                    { text: "The services require root privileges to be discovered by Nmap.", rationale: "While some Nmap flags require elevated privileges to craft raw packets, the limitation here is the protocol type, not the permission level.", isCorrect: false }
+                ]
+            },
+            {
+                question: "You want to identify open ports on a web server while minimizing the chances of your activity appearing in the application's access logs. Which scanning technique achieves this by intentionally manipulating the connection process?",
+                hint: "Think about how a typical connection is finalized and how interrupting that process might prevent an application from recording the interaction.",
+                options: [
+                    { text: "Sending a full three-way handshake using the OS connect() system call.", rationale: "Completing the handshake creates a fully established session that is highly likely to be recorded by application-level logging mechanisms.", isCorrect: false },
+                    { text: "Sending a SYN packet and responding with an RST after receiving a SYN-ACK.", rationale: "Tearing down the connection before the final ACK prevents the three-way handshake from completing, which usually stops the application layer from logging the interaction.", isCorrect: true },
+                    { text: "Sending an empty UDP packet to trigger an ICMP port unreachable message.", rationale: "This technique is used for mapping UDP services, not for quietly scanning standard web servers which primarily utilize TCP.", isCorrect: false },
+                    { text: "Sending an aggressive NSE script payload to bypass stateless firewalls.", rationale: "Utilizing scripting engines typically increases the noise and footprint of a scan, making it much more likely to be detected and logged by security appliances.", isCorrect: false }
+                ]
+            },
+            {
+                question: "Your initial port scan reveals that port 445 is open on a Windows server. To determine if this specific machine is susceptible to the EternalBlue vulnerability, what is the most critical next step?",
+                hint: "Knowing a door exists is different from knowing exactly what type of lock is on it; you need to query the service for its specific identity.",
+                options: [
+                    { text: "Execute an aggressive scan to map the surrounding network topology.", rationale: "Mapping the surrounding network provides situational awareness but does not confirm the patch level of the specific service running on port 445.", isCorrect: false },
+                    { text: "Run a comprehensive UDP scan to check for corresponding open UDP ports.", rationale: "While thorough, discovering connectionless services does not provide the specific patch information needed to validate an EternalBlue vulnerability.", isCorrect: false },
+                    { text: "Run a service version detection scan to identify the specific SMB version installed.", rationale: "Extracting the exact software build allows you to check against known CVEs, turning a generic open port into an actionable vulnerability finding.", isCorrect: true },
+                    { text: "Use enum4linux to attempt a null session login and extract user lists.", rationale: "Extracting user accounts is a valuable enumeration step, but it evaluates credential access rather than the underlying vulnerability of the protocol implementation itself.", isCorrect: false }
+                ]
+            },
+            {
+                question: "You are authorized to scan a specific client subnet designated as 10.0.1.0/24. If a junior analyst accidentally inputs the target as 10.0.0.0/16, what is the immediate operational risk?",
+                hint: "Consider the difference in the mathematical scope of these two CIDR notations and how that translates to the number of devices targeted.",
+                options: [
+                    { text: "The Nmap scan will automatically fail to start due to a subnet mask syntax mismatch.", rationale: "Nmap natively supports CIDR notation and will successfully execute the command against the provided /16 range without producing a syntax error.", isCorrect: false },
+                    { text: "The scan will automatically switch to a slow timing template to compensate for the larger network.", rationale: "Nmap strictly follows the timing parameters provided by the user and does not dynamically throttle itself based simply on the size of the target subnet.", isCorrect: false },
+                    { text: "The scan will target up to 65,536 hosts instead of 256, potentially crashing out-of-scope devices.", rationale: "A /16 subnet mask encompasses a vastly larger IP range than a /24, leading to unauthorized scanning that can disrupt fragile systems and violate the rules of engagement.", isCorrect: true },
+                    { text: "The output files will be automatically compressed to prevent excessive data usage.", rationale: "The tool writes output linearly based on findings and does not feature automatic file compression for large subnet targets.", isCorrect: false }
+                ]
+            },
+            {
+                question: "While enumerating a Domain Controller, an analyst executes an ldapsearch command without providing any credentials and successfully retrieves the entire Active Directory structure. Which specific misconfiguration allowed this?",
+                hint: "Look for a setting that permits users to connect and query a directory service without authenticating their identity.",
+                options: [
+                    { text: "The server is running an outdated version of SMBv1.", rationale: "While highly vulnerable to remote code execution, this protocol deals with file sharing and does not govern directory service queries.", isCorrect: false },
+                    { text: "Anonymous bind is enabled on the directory service.", rationale: "This legacy configuration allows unauthenticated users to connect and extract sensitive domain structures, including group memberships and user objects.", isCorrect: true },
+                    { text: "The community string was left as the default public.", rationale: "This is a common issue for network management protocols that reveals routing and system data, but it is not used to secure directory access.", isCorrect: false },
+                    { text: "A null session was permitted on the server's file shares.", rationale: "This allows unauthenticated access to shared folders and local system information, but it is distinct from directly querying the centralized domain directory service.", isCorrect: false }
+                ]
+            },
+            {
+                question: "You are preparing to run an active Nmap scan against a client's live production environment containing legacy servers. To balance obtaining results with avoiding network disruption, which timing template is most appropriate?",
+                hint: "You need a speed setting that is standard enough to finish in a reasonable time but gentle enough not to overwhelm sensitive equipment.",
+                options: [
+                    { text: "-T4 (Aggressive)", rationale: "This speed is optimized for fast, reliable networks in lab environments and carries a high risk of overwhelming production or legacy systems.", isCorrect: false },
+                    { text: "-T0 (Paranoid)", rationale: "While extremely safe, this setting is designed primarily for IDS evasion and is typically too slow for standard network assessments.", isCorrect: false },
+                    { text: "-T5 (Insane)", rationale: "This is the fastest and most disruptive timing template, explicitly warned against for use in any production environment due to the high risk of service denial.", isCorrect: false },
+                    { text: "-T2 (Polite)", rationale: "This setting intentionally slows down probe transmission to reduce the likelihood of crashing fragile systems, making it safe for production environments.", isCorrect: true }
+                ]
+            },
+            {
+                question: "After completing a comprehensive network scan, you need to import the results into an exploitation framework and also quickly search through the findings using command-line utilities. Which Nmap flag ensures the data is saved in formats suitable for both tasks?",
+                hint: "Look for the command argument designed to output the scan data into multiple distinct file types simultaneously.",
+                options: [
+                    { text: "-oA", rationale: "This flag commands Nmap to output results in all major formats simultaneously, including XML for machine parsing and grepable format for CLI searching.", isCorrect: true },
+                    { text: "-sC", rationale: "This flag initiates the default suite of Nmap Scripting Engine scripts against the target rather than managing how the output data is stored.", isCorrect: false },
+                    { text: "--top-ports", rationale: "This argument restricts the scan to a specific number of common ports to minimize the footprint, completely unrelated to file output formatting.", isCorrect: false },
+                    { text: "-sV", rationale: "This command enables service version detection to identify running software builds, not the mechanism for saving the final report.", isCorrect: false }
+                ]
+            },
+            {
+                question: "During an internal network assessment, you intercept network traffic and discover system descriptions and routing tables being transmitted in cleartext. Which protocol and configuration are most likely responsible for this insecure transmission?",
+                hint: "Identify the network management protocol that historically lacks encryption and relies on a shared password for access.",
+                options: [
+                    { text: "LDAP utilizing an anonymous bind connection.", rationale: "While this configuration allows unauthorized access to directory structures, it does not specifically relate to the broadcast of network routing tables over the wire.", isCorrect: false },
+                    { text: "SMBv1 responding to a null session request.", rationale: "This misconfiguration leaks share names and local system data over file sharing protocols, not the specific network management data described.", isCorrect: false },
+                    { text: "SNMPv1 or v2c using a default community string.", rationale: "Early versions of this network management protocol do not support encryption, causing management data and the authentication string to be transmitted in plain text.", isCorrect: true },
+                    { text: "TCP Connect scans generating unencrypted handshake logs.", rationale: "While connection scans leave logs, they do not inherently broadcast internal system descriptions or routing tables across the network.", isCorrect: false }
+                ]
+            },
+            {
+                question: "When executing an Nmap scan with the version detection flag, the tool first performs a SYN scan to identify open ports. What is the immediate next step Nmap takes to determine the service version?",
+                hint: "Think about how Nmap decides which specific type of traffic to send to an unknown open port to coax out an identifying banner.",
+                options: [
+                    { text: "It runs default NSE scripts to brute-force service credentials.", rationale: "Script execution is a later stage in the scanning process, occurring only after the primary service and version have been identified.", isCorrect: false },
+                    { text: "It consults the nmap-service-probes database to select protocol-specific packets.", rationale: "Before sending any data, the tool references its internal database to determine the most effective probes for eliciting a response from the newly discovered port.", isCorrect: true },
+                    { text: "It checks the target's operating system using TCP/IP fingerprinting.", rationale: "Operating system detection is a separate function triggered by a different flag and relies on analyzing network stack behavior, not service banners.", isCorrect: false },
+                    { text: "It sends a raw UDP datagram to trigger an ICMP response.", rationale: "This action describes the mechanism for discovering open UDP ports, not the process for identifying software versions on already discovered ports.", isCorrect: false }
+                ]
+            },
+            {
+                question: "Your Rules of Engagement explicitly forbid scanning a block of IP addresses belonging to fragile medical devices, though they reside within the main target subnet. How should you technically enforce this restriction during your active recon phase?",
+                hint: "You need a command-line argument that explicitly tells the scanning engine to ignore specific targets regardless of the broader subnet scope.",
+                options: [
+                    { text: "Set the timing template to -T1 to ensure the fragile devices are not overwhelmed.", rationale: "While slower, a gentle timing template still sends packets to the target, which constitutes a direct violation of the strict exclusion outlined in the rules of engagement.", isCorrect: false },
+                    { text: "Run a ping-sweep and manually delete the medical IPs from the final results.", rationale: "A ping-sweep is a form of active reconnaissance; touching the excluded IPs in any manner violates scope before the manual deletion even occurs.", isCorrect: false },
+                    { text: "Limit the scan to the top 100 ports using the --top-ports argument.", rationale: "Reducing the number of ports scanned minimizes the overall footprint but still actively engages the target IPs, violating the exclusion rule.", isCorrect: false },
+                    { text: "Use the --excludefile flag to load a list of the forbidden IP addresses.", rationale: "This argument allows testers to provide a definitive blocklist, ensuring Nmap will not send any packets to those specific hosts, protecting fragile infrastructure.", isCorrect: true }
+                ]
+            }
+        ];
+
+        // --- APP LOGIC ---
+
+        // Tab Switching
+        function switchTab(tabName) {
+            const btnFlashcards = document.getElementById('tab-flashcards');
+            const btnQuiz = document.getElementById('tab-quiz');
+            const contentFlashcards = document.getElementById('content-flashcards');
+            const contentQuiz = document.getElementById('content-quiz');
+
+            if (tabName === 'flashcards') {
+                btnFlashcards.classList.add('border-blue-600', 'text-blue-600');
+                btnFlashcards.classList.remove('border-transparent', 'text-gray-500');
+                btnQuiz.classList.remove('border-blue-600', 'text-blue-600');
+                btnQuiz.classList.add('border-transparent', 'text-gray-500');
+                
+                contentFlashcards.classList.remove('hidden');
+                contentQuiz.classList.add('hidden');
+            } else {
+                btnQuiz.classList.add('border-blue-600', 'text-blue-600');
+                btnQuiz.classList.remove('border-transparent', 'text-gray-500');
+                btnFlashcards.classList.remove('border-blue-600', 'text-blue-600');
+                btnFlashcards.classList.add('border-transparent', 'text-gray-500');
+                
+                contentQuiz.classList.remove('hidden');
+                contentFlashcards.classList.add('hidden');
+            }
+        }
+
+        // --- Flashcards Logic ---
+        let currentCardIndex = 0;
+        let isFlipped = false;
+
+        function initFlashcards() {
+            renderCard();
+        }
+
+        function renderCard() {
+            const frontEl = document.getElementById('flashcard-front');
+            const backEl = document.getElementById('flashcard-back');
+            const counterEl = document.getElementById('flashcard-counter');
+            const btnPrev = document.getElementById('btn-prev-card');
+            const btnNext = document.getElementById('btn-next-card');
+
+            // Reset flip state
+            isFlipped = false;
+            document.getElementById('flashcard-container').classList.remove('flipped');
+
+            // Set content
+            frontEl.textContent = flashcardsData[currentCardIndex].front;
+            backEl.textContent = flashcardsData[currentCardIndex].back;
+            counterEl.textContent = `${currentCardIndex + 1} / ${flashcardsData.length}`;
+
+            // Update buttons
+            btnPrev.disabled = currentCardIndex === 0;
+            btnNext.disabled = currentCardIndex === flashcardsData.length - 1;
+        }
+
+        function flipCard() {
+            const container = document.getElementById('flashcard-container');
+            isFlipped = !isFlipped;
+            if (isFlipped) {
+                container.classList.add('flipped');
+            } else {
+                container.classList.remove('flipped');
+            }
+        }
+
+        function nextCard() {
+            if (currentCardIndex < flashcardsData.length - 1) {
+                currentCardIndex++;
+                renderCard();
+            }
+        }
+
+        function prevCard() {
+            if (currentCardIndex > 0) {
+                currentCardIndex--;
+                renderCard();
+            }
+        }
+
+        // --- Quiz Logic ---
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let isQuestionAnswered = false;
+
+        function initQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            document.getElementById('quiz-results-area').classList.add('hidden');
+            document.getElementById('quiz-question-area').classList.remove('hidden');
+            renderQuestion();
+        }
+
+        // Shuffle function for quiz options to match specifications
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function renderQuestion() {
+            isQuestionAnswered = false;
+            const q = quizData[currentQuestionIndex];
+            
+            document.getElementById('quiz-title').textContent = `Question ${currentQuestionIndex + 1} of ${quizData.length}`;
+            document.getElementById('quiz-score-badge').textContent = `Score: ${score}`;
+            document.getElementById('quiz-question-text').textContent = q.question;
+            
+            // Handle Hint
+            const hintDiv = document.getElementById('quiz-hint-text');
+            hintDiv.textContent = q.hint;
+            hintDiv.classList.add('hidden');
+            
+            // Handle Options
+            const optionsContainer = document.getElementById('quiz-options-container');
+            optionsContainer.innerHTML = '';
+            
+            // Create a shuffled copy of the options
+            const shuffledOptions = shuffleArray([...q.options]);
+
+            shuffledOptions.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left p-4 rounded-lg border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white relative';
+                btn.innerHTML = `<span class="block pr-8">${opt.text}</span>`;
+                btn.onclick = () => selectOption(opt, btn, shuffledOptions);
+                optionsContainer.appendChild(btn);
+            });
+
+            // Hide rationale and next button
+            document.getElementById('quiz-rationale-container').classList.add('hidden');
+            document.getElementById('btn-next-question').classList.add('hidden');
+        }
+
+        function toggleHint() {
+            const hintDiv = document.getElementById('quiz-hint-text');
+            hintDiv.classList.toggle('hidden');
+        }
+
+        function selectOption(selectedOpt, selectedBtn, allOptionsCurrentState) {
+            if (isQuestionAnswered) return; // Prevent multiple selections
+            isQuestionAnswered = true;
+
+            const optionsContainer = document.getElementById('quiz-options-container');
+            const buttons = optionsContainer.querySelectorAll('button');
+
+            // Disable all buttons and show styling
+            buttons.forEach((btn, index) => {
+                btn.disabled = true;
+                btn.classList.remove('hover:border-blue-400', 'hover:bg-blue-50', 'cursor-pointer');
+                
+                const opt = allOptionsCurrentState[index];
+                
+                if (opt.isCorrect) {
+                    // Highlight correct answer
+                    btn.classList.add('bg-green-50', 'border-green-500');
+                    btn.innerHTML += `<span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-green-600 font-bold">✓</span>`;
+                } else if (btn === selectedBtn && !opt.isCorrect) {
+                    // Highlight incorrect selection
+                    btn.classList.add('bg-red-50', 'border-red-500');
+                    btn.innerHTML += `<span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-red-600 font-bold">✗</span>`;
+                } else {
+                    btn.classList.add('opacity-50', 'bg-gray-50');
+                }
+            });
+
+            // Update Score
+            if (selectedOpt.isCorrect) {
+                score++;
+                document.getElementById('quiz-score-badge').textContent = `Score: ${score}`;
+            }
+
+            // Show Rationale
+            const rationaleContainer = document.getElementById('quiz-rationale-container');
+            const rationaleTitle = document.getElementById('quiz-rationale-title');
+            const rationaleText = document.getElementById('quiz-rationale-text');
+            const rationaleIcon = document.getElementById('quiz-rationale-icon');
+
+            rationaleContainer.classList.remove('hidden');
+            rationaleText.textContent = selectedOpt.rationale;
+
+            if (selectedOpt.isCorrect) {
+                rationaleContainer.className = 'mt-6 p-4 rounded-md border bg-green-50 border-green-200 text-green-800';
+                rationaleIcon.innerHTML = `<svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`;
+                rationaleTitle.textContent = "Correct Selection!";
+            } else {
+                rationaleContainer.className = 'mt-6 p-4 rounded-md border bg-red-50 border-red-200 text-red-800';
+                rationaleIcon.innerHTML = `<svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>`;
+                rationaleTitle.textContent = "Incorrect Selection.";
+            }
+
+            // Show Next Button
+            const nextBtn = document.getElementById('btn-next-question');
+            nextBtn.classList.remove('hidden');
+            if (currentQuestionIndex === quizData.length - 1) {
+                nextBtn.innerHTML = "Finish Quiz &rarr;";
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                renderQuestion();
+            } else {
+                // Show final results
+                document.getElementById('quiz-question-area').classList.add('hidden');
+                document.getElementById('quiz-results-area').classList.remove('hidden');
+                document.getElementById('final-score').textContent = score;
+            }
+        }
+
+        function restartQuiz() {
+            initQuiz();
+        }
+
+        // Initialize App
+        window.onload = () => {
+            initFlashcards();
+            initQuiz();
+            switchTab('flashcards'); // Default tab
+        };
+    </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Reconnaissance & Scanning | Cyber.SoHo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 250px;
+            }
+        }
+
+        .nav-item {
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .nav-item.active {
+            background-color: #e0e7ff;
+            color: #4338ca;
+            border-right: 4px solid #4338ca;
+            font-weight: 600;
+        }
+
+        .nav-item:hover:not(.active) {
+            background-color: #f1f5f9;
+        }
+
+        .tab-btn {
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+        }
+
+        .tab-btn.active {
+            border-bottom: 2px solid #4338ca;
+            color: #4338ca;
+            font-weight: 600;
+        }
+
+        .content-section {
+            display: none;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-item {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .step-item.active {
+            background-color: #e0e7ff;
+            border-left-color: #4338ca;
+        }
+
+        /* <!-- Chosen Palette: Calm Slate & Indigo (Warm Neutrals with subtle vibrant accents) --> */
+        /* <!-- Application Structure Plan: A modular dashboard layout with a persistent sidebar (or top bar on mobile) was chosen. This allows users to context-switch between distinct lessons quickly. The content is broken down from a sequential slide deck into interactive, task-oriented modules: Overview (Context), Scanning (Mechanics), Versioning (Depth), Enumeration (Extraction), and Hygiene (Process). This structure is more explorable than a flat document, turning passive reading into active discovery. --> */
+        /* <!-- Visualization & Content Choices: 
+            1. TCP/UDP Scans -> Compare Speed/Stealth -> Chart.js Bar Chart -> Visualizes trade-offs instantly.
+            2. Version Detection (-sV) -> Explain Process -> Interactive 7-Step List + Detail Panel -> Prevents overwhelming text blocks.
+            3. Enumeration Risks -> Highlight Misconfigurations -> Chart.js Doughnut Chart -> Emphasizes criticality of findings.
+            4. Scan Hygiene -> Ensure Compliance -> Interactive Checklist with Progress Bar -> Gamifies and reinforces operational procedures.
+            Method: Vanilla JS, Tailwind CSS, Chart.js. NO SVG/Mermaid. 
+        --> */
+        /* <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. --> */
+
+    </style>
+</head>
+<body class="flex flex-col md:flex-row h-screen overflow-hidden">
+
+    <nav class="w-full md:w-64 bg-white border-r border-slate-200 flex flex-col shadow-sm z-10 flex-shrink-0">
+        <div class="p-6 border-b border-slate-200">
+            <h1 class="text-xl font-bold text-slate-800 tracking-tight">Intrusion Test</h1>
+            <p class="text-xs text-slate-500 mt-1">Cyber.SoHo Educational Hub</p>
+            <div class="mt-4 inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded font-medium">Days 11-12: Active Recon</div>
+        </div>
+        <div class="flex-1 overflow-y-auto py-4 flex flex-col gap-1 px-3" id="nav-menu">
+            <div class="nav-item active px-4 py-3 rounded-md text-sm text-slate-600 flex items-center gap-3" data-target="overview">
+                <span class="text-lg">🧭</span> Overview & Context
+            </div>
+            <div class="nav-item px-4 py-3 rounded-md text-sm text-slate-600 flex items-center gap-3" data-target="lesson1">
+                <span class="text-lg">📡</span> Lesson 1: Scans
+            </div>
+            <div class="nav-item px-4 py-3 rounded-md text-sm text-slate-600 flex items-center gap-3" data-target="lesson2">
+                <span class="text-lg">🔍</span> Lesson 2: Versioning
+            </div>
+            <div class="nav-item px-4 py-3 rounded-md text-sm text-slate-600 flex items-center gap-3" data-target="lesson3">
+                <span class="text-lg">📂</span> Lesson 3: Enumeration
+            </div>
+            <div class="nav-item px-4 py-3 rounded-md text-sm text-slate-600 flex items-center gap-3" data-target="lesson4">
+                <span class="text-lg">🛡️</span> Lesson 4: Hygiene
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 overflow-y-auto bg-slate-50 relative">
+        
+        <section id="overview" class="content-section active p-6 md:p-10 max-w-6xl mx-auto">
+            <header class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-800 mb-2">Active Reconnaissance & Scanning</h2>
+                <p class="text-slate-600 leading-relaxed">
+                    This section provides the overarching context for Days 11 and 12 of the Intrusion Test course. It locates our current progress within the broader syllabus and establishes the fundamental difference between passive intelligence gathering and active target engagement.
+                </p>
+            </header>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><span class="text-indigo-600">📍</span> Course Progress</h3>
+                <div class="flex items-center justify-between text-xs text-slate-500 mb-2 font-medium">
+                    <span>Day 1 (Start)</span>
+                    <span class="text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded">Days 11-12 (Current)</span>
+                    <span>Day 15 (Midterm)</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-2.5 mb-6">
+                    <div class="bg-indigo-600 h-2.5 rounded-full" style="width: 75%"></div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div class="p-3 bg-slate-50 rounded border border-slate-100 text-slate-400"><del>Days 1-5: Setup & OPSEC</del></div>
+                    <div class="p-3 bg-slate-50 rounded border border-slate-100 text-slate-400"><del>Days 6-9: OSINT & Phishing</del></div>
+                    <div class="p-3 bg-slate-50 rounded border border-slate-100 text-slate-400"><del>Day 10: Vuln Analysis</del></div>
+                    <div class="p-3 bg-indigo-50 rounded border border-indigo-200 text-indigo-800 font-medium shadow-sm">Days 11-12: Active Recon</div>
+                </div>
+            </div>
+
+            <h3 class="text-xl font-bold text-slate-800 mb-4">Methodology Shift: Passive vs. Active</h3>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-lg font-semibold text-slate-700">Passive Recon</h4>
+                        <span class="text-2xl">👻</span>
+                    </div>
+                    <ul class="space-y-3 text-slate-600 text-sm">
+                        <li class="flex items-start gap-2"><span>▪️</span> No direct contact with target</li>
+                        <li class="flex items-start gap-2"><span>▪️</span> Uses WHOIS, DNS queries, OSINT</li>
+                        <li class="flex items-start gap-2"><span>▪️</span> Completely invisible to the target</li>
+                        <li class="flex items-start gap-2 text-slate-400"><span>▪️</span> Covered in Days 6–7</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-6 rounded-xl border-2 border-indigo-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-16 h-16 bg-indigo-50 rounded-bl-full -z-10"></div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-lg font-semibold text-indigo-800">Active Recon</h4>
+                        <span class="text-2xl">🎯</span>
+                    </div>
+                    <ul class="space-y-3 text-slate-700 text-sm font-medium">
+                        <li class="flex items-start gap-2"><span>▪️</span> Directly touches target infrastructure</li>
+                        <li class="flex items-start gap-2"><span>▪️</span> Involves port scans and service probes</li>
+                        <li class="flex items-start gap-2 text-rose-600"><span>▪️</span> Generates logs & alerts (Noisy)</li>
+                        <li class="flex items-start gap-2"><span>▪️</span> Focus of Today (Days 11-12)</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="lesson1" class="content-section p-6 md:p-10 max-w-6xl mx-auto">
+            <header class="mb-8">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Lesson 1</span>
+                    <h2 class="text-3xl font-bold text-slate-800">TCP & UDP Scans</h2>
+                </div>
+                <p class="text-slate-600 leading-relaxed">
+                    This module explores the core mechanics of network port scanning. You will interact with a visual comparison of different Nmap scan types, balancing speed against stealth, and review the critical differences between TCP and UDP protocols.
+                </p>
+            </header>
+
+            <div class="grid md:grid-cols-2 gap-8 mb-10">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">TCP (Transmission Control)</h3>
+                    <ul class="space-y-2 text-sm text-slate-600 mb-4">
+                        <li>✔️ Connection-oriented (3-way handshake)</li>
+                        <li>✔️ SYN → SYN-ACK → ACK</li>
+                        <li>✔️ Reliable, ordered delivery</li>
+                        <li>✔️ Layer 4, OSI Model</li>
+                    </ul>
+                    <div class="bg-slate-50 p-3 rounded text-xs border border-slate-100 font-mono text-slate-700">
+                        Scan Flags: -sS (Stealth), -sT (Connect)
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">UDP (User Datagram)</h3>
+                    <ul class="space-y-2 text-sm text-slate-600 mb-4">
+                        <li>🚀 Connectionless (Fire and forget)</li>
+                        <li>🚀 No handshake, no acknowledgment</li>
+                        <li>🚀 Faster but unreliable delivery</li>
+                        <li>🚀 Targets: DNS (53), SNMP (161), DHCP</li>
+                    </ul>
+                    <div class="bg-slate-50 p-3 rounded text-xs border border-slate-100 font-mono text-slate-700">
+                        Scan Flags: -sU (UDP Scan)
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+                <h3 class="text-xl font-bold text-slate-800 mb-2">Nmap Scan Type Analysis</h3>
+                <p class="text-sm text-slate-500 mb-6">Compare the operational profiles of common scan flags based on speed efficiency and stealth (likelihood of bypassing basic logging).</p>
+                
+                <div class="chart-container">
+                    <canvas id="scanChart"></canvas>
+                </div>
+
+                <div class="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-100 flex gap-4">
+                    <div class="text-2xl">💡</div>
+                    <div>
+                        <h4 class="font-bold text-indigo-800 text-sm">Key Takeaway</h4>
+                        <p class="text-sm text-indigo-700 mt-1">Never ignore UDP. TCP scans find most services, but critical infrastructure runs on UDP. Combine <code>-sS</code> and <code>-sU</code> for complete coverage. A full UDP scan takes 18+ hours; always scan the top 100 ports first.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="lesson2" class="content-section p-6 md:p-10 max-w-6xl mx-auto">
+            <header class="mb-8">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Lesson 2</span>
+                    <h2 class="text-3xl font-bold text-slate-800">Service & Version Detection</h2>
+                </div>
+                <p class="text-slate-600 leading-relaxed">
+                    Finding open doors is not enough; we must identify what lies behind them. This section breaks down how Nmap's <code>-sV</code> flag operates under the hood and demonstrates why version detection is critical for transforming raw data into actionable vulnerabilities.
+                </p>
+            </header>
+
+            <div class="bg-rose-50 border border-rose-200 rounded-xl p-6 mb-10">
+                <h3 class="text-lg font-bold text-rose-800 mb-4">The Impact of Version Detection</h3>
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-1 bg-white p-4 rounded shadow-sm border border-rose-100">
+                        <div class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2">Without -sV</div>
+                        <div class="font-mono text-slate-700 text-sm mb-2">Port 80 / tcp open</div>
+                        <p class="text-sm text-slate-600">"Something speaks HTTP." Passes standard compliance audits. Generic finding.</p>
+                    </div>
+                    <div class="flex items-center justify-center text-rose-300">
+                        <span class="text-2xl font-bold">VS</span>
+                    </div>
+                    <div class="flex-1 bg-white p-4 rounded shadow-sm border-l-4 border-l-rose-500">
+                        <div class="text-xs text-rose-500 uppercase font-bold tracking-wider mb-2">With -sV (Actionable)</div>
+                        <div class="font-mono text-rose-700 text-sm mb-2 font-bold">Apache 2.2.15 on CentOS</div>
+                        <p class="text-sm text-slate-600">Reveals end-of-life software with 30+ known CVEs including RCE. Immediate critical remediation required.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-xl font-bold text-slate-800 mb-6">How -sV Works (7-Step Flow)</h3>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="col-span-1 border-r border-slate-200 pr-4">
+                    <ul class="space-y-2 text-sm" id="sv-steps-list">
+                        <li class="step-item active p-3 rounded border-l-4 border-indigo-600 font-medium" data-step="1">1. Port Discovery</li>
+                        <li class="step-item p-3 rounded border-l-4 border-transparent text-slate-500 hover:text-slate-800" data-step="2">2. Probe Selection</li>
+                        <li class="step-item p-3 rounded border-l-4 border-transparent text-slate-500 hover:text-slate-800" data-step="3">3. Probe Transmission</li>
+                        <li class="step-item p-3 rounded border-l-4 border-transparent text-slate-500 hover:text-slate-800" data-step="4">4. Response Capture</li>
+                        <li class="step-item p-3 rounded border-l-4 border-transparent text-slate-500 hover:text-slate-800" data-step="5">5. Pattern Matching</li>
+                        <li class="step-item p-3 rounded border-l-4 border-transparent text-slate-500 hover:text-slate-800" data-step="6">6. NSE Enhancement</li>
+                        <li class="step-item p-3 rounded border-l-4 border-transparent text-slate-500 hover:text-slate-800" data-step="7">7. Report Generation</li>
+                    </ul>
+                </div>
+                <div class="col-span-2 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-200 p-8 min-h-[250px]">
+                    <div id="sv-step-detail" class="text-center">
+                        <span class="text-4xl block mb-4">🚪</span>
+                        <h4 class="text-xl font-bold text-slate-800 mb-2">1. Port Discovery</h4>
+                        <p class="text-slate-600">A standard SYN scan identifies which ports are open before any version detection begins.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 bg-slate-800 rounded-xl p-6 text-slate-300">
+                <h4 class="text-white font-bold mb-3 flex items-center gap-2"><span class="text-green-400">▶</span> CLI Reference</h4>
+                <div class="grid md:grid-cols-2 gap-4 text-sm font-mono">
+                    <div><span class="text-green-300">nmap -sV</span> <br><span class="text-slate-400 font-sans text-xs">Basic detection</span></div>
+                    <div><span class="text-green-300">nmap -sV --version-intensity 9</span> <br><span class="text-slate-400 font-sans text-xs">Maximum effort</span></div>
+                    <div><span class="text-green-300">nmap -A</span> <br><span class="text-slate-400 font-sans text-xs">Aggressive (OS+Ver+Scripts)</span></div>
+                    <div><span class="text-green-300">nmap -sV -sC -oA scan</span> <br><span class="text-slate-400 font-sans text-xs">Version + Default Scripts + Save</span></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="lesson3" class="content-section p-6 md:p-10 max-w-6xl mx-auto">
+            <header class="mb-8">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Lesson 3</span>
+                    <h2 class="text-3xl font-bold text-slate-800">Protocol Enumeration</h2>
+                </div>
+                <p class="text-slate-600 leading-relaxed">
+                    Enumeration turns open ports into attack paths. Use the tabs below to explore what information can be extracted from SMB, LDAP, and SNMP services, the tools used to extract it, and the severity of common misconfigurations.
+                </p>
+            </header>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+                <div class="flex border-b border-slate-200 bg-slate-50">
+                    <button class="tab-btn active flex-1 py-4 text-sm text-center text-slate-600 hover:bg-slate-100" data-tab="smb">SMB (139/445)</button>
+                    <button class="tab-btn flex-1 py-4 text-sm text-center text-slate-600 hover:bg-slate-100" data-tab="ldap">LDAP (389/636)</button>
+                    <button class="tab-btn flex-1 py-4 text-sm text-center text-slate-600 hover:bg-slate-100" data-tab="snmp">SNMP (161/UDP)</button>
+                </div>
+                
+                <div class="p-6 md:p-8 min-h-[300px]">
+                    <div id="tab-smb" class="tab-content block">
+                        <div class="flex items-center gap-4 mb-6">
+                            <span class="text-4xl">📁</span>
+                            <div>
+                                <h3 class="text-2xl font-bold text-slate-800">Server Message Block (SMB)</h3>
+                                <p class="text-sm text-rose-600 font-bold">Critical Risk: SMBv1 Enabled / Null Sessions</p>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="font-bold text-slate-700 mb-3 border-b pb-1">What It Reveals</h4>
+                                <ul class="space-y-2 text-sm text-slate-600">
+                                    <li>• Share names & permissions (C$, ADMIN$)</li>
+                                    <li>• User accounts & groups</li>
+                                    <li>• OS version & build number</li>
+                                    <li>• Password policy (lockout, complexity)</li>
+                                    <li>• Active sessions & logged-on users</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-700 mb-3 border-b pb-1">Key Tools</h4>
+                                <ul class="space-y-2 text-sm text-slate-600 font-mono bg-slate-50 p-4 rounded border border-slate-100">
+                                    <li>enum4linux -a</li>
+                                    <li>smbclient -L //&lt;ip&gt; -N</li>
+                                    <li>smbmap -H &lt;ip&gt;</li>
+                                    <li>nmap --script smb-enum-*</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tab-ldap" class="tab-content hidden">
+                        <div class="flex items-center gap-4 mb-6">
+                            <span class="text-4xl">s📇</span>
+                            <div>
+                                <h3 class="text-2xl font-bold text-slate-800">Lightweight Directory Access Protocol</h3>
+                                <p class="text-sm text-rose-600 font-bold">Critical Risk: Anonymous Bind Allowed</p>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="font-bold text-slate-700 mb-3 border-b pb-1">What It Reveals</h4>
+                                <ul class="space-y-2 text-sm text-slate-600">
+                                    <li>• All user objects (sAMAccountName)</li>
+                                    <li>• Group memberships (Domain Admins!)</li>
+                                    <li>• Organizational Units (structure)</li>
+                                    <li>• Group Policy Objects (GPOs)</li>
+                                    <li>• Service Principal Names (Kerberoasting)</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-700 mb-3 border-b pb-1">Key Tools</h4>
+                                <div class="text-sm text-slate-600 font-mono bg-slate-50 p-4 rounded border border-slate-100 overflow-x-auto">
+                                    ldapsearch -x -H ldap://&lt;ip&gt; -b "dc=lab,dc=local" "(objectclass=user)"
+                                </div>
+                                <p class="text-xs text-slate-500 mt-2 italic">If anonymous bind is allowed, this dumps the entire directory with zero credentials.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tab-snmp" class="tab-content hidden">
+                        <div class="flex items-center gap-4 mb-6">
+                            <span class="text-4xl">🕸️</span>
+                            <div>
+                                <h3 class="text-2xl font-bold text-slate-800">Simple Network Management Protocol</h3>
+                                <p class="text-sm text-orange-600 font-bold">High Risk: Default "public" Community String</p>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="font-bold text-slate-700 mb-3 border-b pb-1">What It Reveals</h4>
+                                <ul class="space-y-2 text-sm text-slate-600">
+                                    <li>• System description & uptime</li>
+                                    <li>• Network interfaces & IP addresses</li>
+                                    <li>• ARP tables (neighbor discovery)</li>
+                                    <li>• Routing tables</li>
+                                    <li>• Running processes & installed software</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-700 mb-3 border-b pb-1">Key Tools</h4>
+                                <ul class="space-y-2 text-sm text-slate-600 font-mono bg-slate-50 p-4 rounded border border-slate-100">
+                                    <li>snmpwalk -c public -v2c &lt;ip&gt;</li>
+                                    <li>snmp-check -t &lt;ip&gt; -c public</li>
+                                    <li>onesixtyone -c wordlist.txt &lt;ip&gt;</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 items-center">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Misconfiguration Risk Profile</h3>
+                    <p class="text-sm text-slate-600 mb-4">Visualization of severity for common enumeration vulnerabilities discovered during testing.</p>
+                    <ul class="space-y-3 text-sm">
+                        <li class="flex justify-between items-center p-2 bg-rose-50 rounded">
+                            <span class="font-medium text-slate-700">SMBv1 Enabled</span>
+                            <span class="bg-rose-600 text-white px-2 py-0.5 rounded text-xs">CRITICAL</span>
+                        </li>
+                        <li class="flex justify-between items-center p-2 bg-rose-50 rounded">
+                            <span class="font-medium text-slate-700">LDAP Anonymous Bind</span>
+                            <span class="bg-rose-600 text-white px-2 py-0.5 rounded text-xs">CRITICAL</span>
+                        </li>
+                        <li class="flex justify-between items-center p-2 bg-orange-50 rounded">
+                            <span class="font-medium text-slate-700">SMB Null Session Allowed</span>
+                            <span class="bg-orange-500 text-white px-2 py-0.5 rounded text-xs">HIGH</span>
+                        </li>
+                        <li class="flex justify-between items-center p-2 bg-orange-50 rounded">
+                            <span class="font-medium text-slate-700">SNMP Default "public"</span>
+                            <span class="bg-orange-500 text-white px-2 py-0.5 rounded text-xs">HIGH</span>
+                        </li>
+                        <li class="flex justify-between items-center p-2 bg-yellow-50 rounded">
+                            <span class="font-medium text-slate-700">SNMPv1/v2c in Prod (Cleartext)</span>
+                            <span class="bg-yellow-500 text-white px-2 py-0.5 rounded text-xs">MEDIUM</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="chart-container">
+                    <canvas id="riskChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="lesson4" class="content-section p-6 md:p-10 max-w-6xl mx-auto">
+            <header class="mb-8">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Lesson 4</span>
+                    <h2 class="text-3xl font-bold text-slate-800">Scan Hygiene & Operations</h2>
+                </div>
+                <p class="text-slate-600 leading-relaxed">
+                    Discipline separates professionals from amateurs. This section covers operational security, footprint minimization, and pre-engagement procedures to prevent network crashes, user lockouts, and scope violations. Use the interactive pre-flight checklist before initiating any scan.
+                </p>
+            </header>
+
+            <div class="grid md:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><span>⏱️</span> Timing Templates</h3>
+                    <p class="text-sm text-slate-500 mb-4">Nmap uses timing templates to dictate scanning aggressiveness. Higher numbers equal faster speeds but higher risks of crashing systems or detection.</p>
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm"><span>-T0 Paranoid</span> <span class="text-slate-400">IDS Evasion</span></div>
+                        <div class="flex justify-between text-sm"><span>-T1 Sneaky</span> <span class="text-slate-400">Slow Evasion</span></div>
+                        <div class="flex justify-between text-sm font-bold text-indigo-700 bg-indigo-50 p-1 rounded"><span>-T2 Polite</span> <span>Production Safe</span></div>
+                        <div class="flex justify-between text-sm font-bold text-indigo-700 bg-indigo-50 p-1 rounded"><span>-T3 Normal</span> <span>Standard</span></div>
+                        <div class="flex justify-between text-sm"><span>-T4 Aggressive</span> <span class="text-orange-500">Labs Only</span></div>
+                        <div class="flex justify-between text-sm"><span>-T5 Insane</span> <span class="text-rose-600 font-bold">Never in Prod</span></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><span>⚠️</span> The Midnight Misfire</h3>
+                    <div class="bg-slate-800 text-slate-300 p-4 rounded-lg font-mono text-sm mb-4 border-l-4 border-rose-500">
+                        <p class="text-rose-400 mb-2">// Incident Report excerpt</p>
+                        <p>Junior tester typed 10.0.0.0/16 instead of 10.0.1.0/24</p>
+                        <p class="mt-2 text-yellow-300">→ Scanned 65,536 hosts instead of 256</p>
+                        <p>→ Crashed fragile printers</p>
+                        <p>→ Triggered account lockouts</p>
+                        <p class="mt-2 text-rose-400 font-bold">RESULT: Engagement Terminated</p>
+                    </div>
+                    <p class="text-sm text-slate-600 font-medium">Always output cleanly: <code class="bg-slate-100 px-1 rounded">-oA &lt;basename&gt;</code> to get .nmap, .xml, and .gnmap formats.</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-100 border border-slate-200 rounded-xl p-6 md:p-8">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h3 class="text-2xl font-bold text-slate-800 mb-1">Pre-Flight Checklist</h3>
+                        <p class="text-sm text-slate-500">Complete before executing active scans against target infrastructure.</p>
+                    </div>
+                    <div class="text-right">
+                        <span id="checklist-progress-text" class="text-2xl font-bold text-indigo-600">0%</span>
+                        <span class="text-xs text-slate-500 block uppercase tracking-wide">Ready Status</span>
+                    </div>
+                </div>
+                
+                <div class="w-full bg-slate-200 rounded-full h-2 mb-8">
+                    <div id="checklist-bar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-4" id="checklist-container">
+                    <label class="flex items-start gap-3 p-4 bg-white rounded shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                        <input type="checkbox" class="checklist-item mt-1 w-5 h-5 accent-indigo-600">
+                        <div>
+                            <span class="block font-semibold text-slate-800">Scope Verified</span>
+                            <span class="text-xs text-slate-500">Matches signed RoE & exclusions loaded</span>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 bg-white rounded shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                        <input type="checkbox" class="checklist-item mt-1 w-5 h-5 accent-indigo-600">
+                        <div>
+                            <span class="block font-semibold text-slate-800">Written Authorization</span>
+                            <span class="text-xs text-slate-500">Signed document physically/digitally on file</span>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 bg-white rounded shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                        <input type="checkbox" class="checklist-item mt-1 w-5 h-5 accent-indigo-600">
+                        <div>
+                            <span class="block font-semibold text-slate-800">Timing Template Correct</span>
+                            <span class="text-xs text-slate-500">Using -T2/-T3 for production environments</span>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 bg-white rounded shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                        <input type="checkbox" class="checklist-item mt-1 w-5 h-5 accent-indigo-600">
+                        <div>
+                            <span class="block font-semibold text-slate-800">Output Configured</span>
+                            <span class="text-xs text-slate-500">Using -oA with standard timestamp convention</span>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 bg-white rounded shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                        <input type="checkbox" class="checklist-item mt-1 w-5 h-5 accent-indigo-600">
+                        <div>
+                            <span class="block font-semibold text-slate-800">Fragile Hosts Flagged</span>
+                            <span class="text-xs text-slate-500">SCADA, medical, IoT excluded or noted</span>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 bg-white rounded shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                        <input type="checkbox" class="checklist-item mt-1 w-5 h-5 accent-indigo-600">
+                        <div>
+                            <span class="block font-semibold text-slate-800">SOC Notified</span>
+                            <span class="text-xs text-slate-500">Client Blue Team aware of testing window</span>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 bg-white rounded shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors md:col-span-2">
+                        <input type="checkbox" class="checklist-item mt-1 w-5 h-5 accent-indigo-600">
+                        <div>
+                            <span class="block font-semibold text-slate-800">OPSEC Verified</span>
+                            <span class="text-xs text-slate-500">VPN active, source IP matches allowed list</span>
+                        </div>
+                    </label>
+                </div>
+                
+                <div id="checklist-success" class="mt-6 p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg hidden text-center font-bold animate-pulse">
+                    🟢 All systems green. Cleared for active reconnaissance.
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const navItems = document.querySelectorAll('.nav-item');
+        const contentSections = document.querySelectorAll('.content-section');
+
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                navItems.forEach(nav => nav.classList.remove('active'));
+                contentSections.forEach(section => section.classList.remove('active'));
+
+                item.classList.add('active');
+                const targetId = item.getAttribute('data-target');
+                document.getElementById(targetId).classList.add('active');
+                
+                if(targetId === 'lesson1' && scanChartInstance) scanChartInstance.update();
+                if(targetId === 'lesson3' && riskChartInstance) riskChartInstance.update();
+            });
+        });
+
+        const svStepsData = [
+            { icon: "🚪", title: "1. Port Discovery", desc: "A standard SYN scan identifies which ports are open before any version detection begins." },
+            { icon: "🗃️", title: "2. Probe Selection", desc: "Nmap consults its massive nmap-service-probes database to decide what to send." },
+            { icon: "📨", title: "3. Probe Transmission", desc: "Sends protocol-specific packets designed to force the service to identify itself." },
+            { icon: "🎣", title: "4. Response Capture", desc: "Collects returning banners, error messages, and handshake data." },
+            { icon: "🧩", title: "5. Pattern Matching", desc: "Compares captured data against 6,500+ signatures for 650+ known protocols." },
+            { icon: "📜", title: "6. NSE Enhancement", desc: "Nmap Scripting Engine kicks in to handle complex, multi-stage protocol identification." },
+            { icon: "📋", title: "7. Report Generation", desc: "Compiles final output showing service, version, OS family, and CPE identifiers." }
+        ];
+
+        const stepItems = document.querySelectorAll('.step-item');
+        const stepDetail = document.getElementById('sv-step-detail');
+
+        stepItems.forEach(item => {
+            item.addEventListener('click', () => {
+                stepItems.forEach(step => {
+                    step.classList.remove('active', 'border-indigo-600', 'font-medium');
+                    step.classList.add('border-transparent', 'text-slate-500');
+                });
+                
+                item.classList.add('active', 'border-indigo-600', 'font-medium');
+                item.classList.remove('border-transparent', 'text-slate-500');
+
+                const stepIndex = parseInt(item.getAttribute('data-step')) - 1;
+                const data = svStepsData[stepIndex];
+                
+                stepDetail.innerHTML = `
+                    <span class="text-4xl block mb-4">${data.icon}</span>
+                    <h4 class="text-xl font-bold text-slate-800 mb-2">${data.title}</h4>
+                    <p class="text-slate-600">${data.desc}</p>
+                `;
+            });
+        });
+
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => b.classList.remove('active', 'border-b-2', 'border-indigo-600', 'font-bold'));
+                tabContents.forEach(c => {
+                    c.classList.remove('block');
+                    c.classList.add('hidden');
+                });
+
+                btn.classList.add('active', 'border-b-2', 'border-indigo-600', 'font-bold');
+                const targetTab = document.getElementById('tab-' + btn.getAttribute('data-tab'));
+                targetTab.classList.remove('hidden');
+                targetTab.classList.add('block');
+            });
+        });
+
+        const checkBoxes = document.querySelectorAll('.checklist-item');
+        const progressBar = document.getElementById('checklist-bar');
+        const progressText = document.getElementById('checklist-progress-text');
+        const successMsg = document.getElementById('checklist-success');
+
+        checkBoxes.forEach(box => {
+            box.addEventListener('change', () => {
+                const total = checkBoxes.length;
+                const checked = document.querySelectorAll('.checklist-item:checked').length;
+                const percentage = Math.round((checked / total) * 100);
+                
+                progressBar.style.width = percentage + '%';
+                progressText.innerText = percentage + '%';
+
+                if(percentage === 100) {
+                    progressBar.classList.replace('bg-indigo-600', 'bg-green-500');
+                    progressText.classList.replace('text-indigo-600', 'text-green-600');
+                    successMsg.classList.remove('hidden');
+                } else {
+                    progressBar.classList.replace('bg-green-500', 'bg-indigo-600');
+                    progressText.classList.replace('text-green-600', 'text-indigo-600');
+                    successMsg.classList.add('hidden');
+                }
+            });
+        });
+
+        let scanChartInstance = null;
+        let riskChartInstance = null;
+
+        function initCharts() {
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = '#64748b';
+
+            const ctxScan = document.getElementById('scanChart').getContext('2d');
+            scanChartInstance = new Chart(ctxScan, {
+                type: 'bar',
+                data: {
+                    labels: ['SYN (-sS)', 'Connect (-sT)', 'UDP (-sU)', 'Null (-sN)', 'FIN (-sF)', 'Xmas (-sX)'],
+                    datasets: [
+                        {
+                            label: 'Speed / Efficiency',
+                            data: [90, 60, 10, 80, 80, 80],
+                            backgroundColor: '#4f46e5',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Stealth Factor',
+                            data: [80, 10, 60, 70, 70, 70],
+                            backgroundColor: '#94a3b8',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: { display: true, text: 'Relative Score (0-100)' }
+                        }
+                    },
+                    plugins: {
+                        tooltip: { mode: 'index', intersect: false },
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+
+            const ctxRisk = document.getElementById('riskChart').getContext('2d');
+            riskChartInstance = new Chart(ctxRisk, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Critical (SMBv1, Anon Bind)', 'High (Null Session, Public)', 'Medium (SNMPv1/v2c)'],
+                    datasets: [{
+                        data: [2, 2, 1],
+                        backgroundColor: ['#e11d48', '#f97316', '#eab308'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initCharts);
+
+    </script>
+</body>
+</html>
+
+
+

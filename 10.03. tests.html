@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Basics & Practical Applications Study App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for 3D flip effect */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        .flip-transition {
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-800 selection:bg-blue-200">
+
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">AWS Basics & Applications</h1>
+            <p class="text-slate-500 mt-2">Interactive Study Companion</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="flex justify-center space-x-2 mb-8 bg-slate-200/50 p-1 rounded-xl max-w-sm mx-auto">
+            <button id="tab-flashcards" onclick="switchTab('flashcards')" class="flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all bg-white text-blue-700 shadow-sm">
+                Flashcards (25)
+            </button>
+            <button id="tab-quiz" onclick="switchTab('quiz')" class="flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all text-slate-600 hover:text-slate-900">
+                Practice Quiz (10)
+            </button>
+        </div>
+
+        <!-- Flashcards Section -->
+        <section id="section-flashcards" class="block">
+            <div class="flex flex-col items-center">
+                <!-- Progress Tracker -->
+                <div class="text-sm font-semibold text-slate-500 mb-4 bg-white px-4 py-1 rounded-full shadow-sm">
+                    Card <span id="current-card-num">1</span> of <span id="total-cards-num">25</span>
+                </div>
+
+                <!-- Flashcard Container -->
+                <div class="w-full max-w-2xl h-80 perspective-1000 cursor-pointer" onclick="flipCard()">
+                    <div id="flashcard-inner" class="relative w-full h-full transform-style-3d flip-transition shadow-lg rounded-2xl">
+                        
+                        <!-- Front of Card -->
+                        <div class="absolute w-full h-full backface-hidden bg-white border-2 border-slate-100 rounded-2xl p-8 flex flex-col justify-center items-center text-center">
+                            <span class="text-xs uppercase tracking-widest text-blue-500 font-bold mb-4 block">Term / Concept</span>
+                            <h2 id="card-front-text" class="text-2xl md:text-3xl font-bold text-slate-800">AWS (Amazon Web Services)</h2>
+                            <p class="text-slate-400 text-sm absolute bottom-6">Click to reveal definition</p>
+                        </div>
+
+                        <!-- Back of Card -->
+                        <div class="absolute w-full h-full backface-hidden bg-blue-600 text-white border-2 border-blue-600 rounded-2xl p-8 flex flex-col justify-center items-center text-center rotate-y-180">
+                            <span class="text-xs uppercase tracking-widest text-blue-200 font-bold mb-4 block">Definition</span>
+                            <p id="card-back-text" class="text-lg md:text-xl font-medium leading-relaxed">A cloud computing platform offering over 200 services on-demand over the internet, billed by actual usage without upfront hardware purchases.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex items-center space-x-6 mt-8">
+                    <button onclick="prevCard()" class="p-3 rounded-full bg-white shadow-sm hover:shadow-md text-slate-600 hover:text-blue-600 transition-all focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <button onclick="flipCard()" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors shadow-md">
+                        Flip Card
+                    </button>
+                    <button onclick="nextCard()" class="p-3 rounded-full bg-white shadow-sm hover:shadow-md text-slate-600 hover:text-blue-600 transition-all focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quiz Section -->
+        <section id="section-quiz" class="hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8">
+                <div class="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Practical Applications Quiz</h2>
+                        <p class="text-slate-500 text-sm mt-1">Test your architectural decision-making skills.</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-slate-500">Score</div>
+                        <div class="text-2xl font-bold text-blue-600"><span id="quiz-score">0</span> / 10</div>
+                    </div>
+                </div>
+
+                <div id="quiz-container" class="space-y-10">
+                    <!-- Quiz questions rendered via JS -->
+                </div>
+                
+                <div id="quiz-completion" class="hidden mt-10 p-6 bg-green-50 rounded-xl border border-green-100 text-center">
+                    <h3 class="text-xl font-bold text-green-800 mb-2">Quiz Completed!</h3>
+                    <p class="text-green-700">You scored <span id="final-score" class="font-bold"></span> out of 10.</p>
+                    <button onclick="resetQuiz()" class="mt-4 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors shadow-sm">Retake Quiz</button>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // --- DATA ---
+        const flashcards = [
+            { front: "AWS (Amazon Web Services)", back: "A cloud computing platform offering over 200 services on-demand over the internet, billed by actual usage." },
+            { front: "Primary financial advantage of the cloud", back: "It converts Capital Expenditure (CapEx) into Operational Expenditure (OpEx), so you pay only for resources you use." },
+            { front: "Origin of AWS", back: "Born from Amazon's need to solve holiday traffic scaling problems by renting out excess infrastructure." },
+            { front: "EC2 (Elastic Compute Cloud)", back: "Virtual servers by the hour/second. Gives full control over hardware specs and OS." },
+            { front: "AWS Lambda", back: "Serverless compute service that runs functions without managing servers, billed per millisecond." },
+            { front: "S3 (Simple Storage Service)", back: "Object storage for any file type. Has 99.999999999% durability. The backbone of AWS workflows." },
+            { front: "EBS (Elastic Block Store)", back: "SSD storage drives directly attached to EC2 instances (like USB external hard drives)." },
+            { front: "Amazon Glacier", back: "Ultra-cheap cold storage service specifically designed for long-term data archival." },
+            { front: "RDS (Relational Database Service)", back: "Managed service for SQL databases (MySQL, PostgreSQL). Best for structured data and transactions." },
+            { front: "Amazon DynamoDB", back: "Managed NoSQL key-value database providing single-digit millisecond latency at massive scale." },
+            { front: "Amazon Redshift", back: "Data warehouse with columnar storage, optimized for complex SQL analytics across billions of rows." },
+            { front: "Amazon SageMaker", back: "Comprehensive ML service to build, train, and deploy models. Includes SageMaker Studio IDE." },
+            { front: "Amazon Comprehend", back: "NLP service used to identify sentiment, entities, and topics within text." },
+            { front: "Amazon Rekognition", back: "Computer vision service for identifying objects, faces, and text in images and videos." },
+            { front: "VPC (Virtual Private Cloud)", back: "Provisions a logically isolated, private network section within AWS to host your resources." },
+            { front: "Route 53", back: "AWS's highly available Domain Name System (DNS) web service." },
+            { front: "CloudFront", back: "A Content Delivery Network (CDN) that caches content at edge locations to reduce latency." },
+            { front: "IAM (Identity & Access Management)", back: "The foundational security service that controls who is authenticated and authorized to use resources." },
+            { front: "AWS Regions", back: "Geographically isolated areas worldwide that contain multiple Availability Zones." },
+            { front: "Availability Zones (AZs)", back: "Distinct data centers within a single Region, connected by high-speed fiber for fault tolerance." },
+            { front: "Edge Locations", back: "Global caching facilities used by CloudFront to deliver content closer to users." },
+            { front: "Spot Instances", back: "Pricing model offering steep discounts (up to 90%) on unused EC2 capacity. Ideal for fault-tolerant jobs." },
+            { front: "Shared Responsibility Model", back: "AWS secures the infrastructure 'OF' the cloud. You secure your data and configurations 'IN' the cloud." },
+            { front: "Principle of Least Privilege", back: "Every user/entity should be granted only the absolute minimum permissions required to do their job." },
+            { front: "Amazon Kinesis", back: "Managed service designed for real-time streaming data ingestion and processing." }
+        ];
+
+        const quizData = [
+            {
+                question: "A graduate student needs to run heavy machine learning training jobs for about 15 hours every week, but the timing is flexible. They want to minimize costs as much as possible. Which compute pricing strategy should they use?",
+                options: [
+                    { text: "Purchase a $4,000 GPU workstation to avoid recurring cloud fees.", rationale: "Buying hardware is high CapEx that remains idle for most of the week.", isCorrect: false },
+                    { text: "Provision an On-Demand EC2 instance and leave it running constantly.", rationale: "Running continuously incurs charges 24/7, negating the pay-as-you-go benefits.", isCorrect: false },
+                    { text: "Utilize Spot Instances while implementing model checkpointing.", rationale: "Spot instances offer massive discounts for fault-tolerant workloads, and checkpointing mitigates the risk of interruption.", isCorrect: true },
+                    { text: "Sign a 3-year contract for Reserved Instances to lock in a discount.", rationale: "Reserved Instances require steady-state usage, which doesn't fit a flexible 15-hour/week schedule.", isCorrect: false }
+                ]
+            },
+            {
+                question: "A hospital must legally retain terabytes of patient records for seven years. These records are almost never accessed but must be kept securely. Which storage service is most appropriate?",
+                options: [
+                    { text: "Amazon S3 Standard", rationale: "S3 Standard is for frequently accessed data and is unnecessarily expensive for archival.", isCorrect: false },
+                    { text: "Amazon EBS", rationale: "EBS is block storage meant to be attached to running EC2 instances.", isCorrect: false },
+                    { text: "Amazon Glacier", rationale: "Glacier is specifically engineered for ultra-low-cost cold storage archiving.", isCorrect: true },
+                    { text: "Amazon DynamoDB", rationale: "DynamoDB is a high-performance database, entirely unsuited for static file archival.", isCorrect: false }
+                ]
+            },
+            {
+                question: "You are developing a real-time multiplayer mobile game that requires storing player scores and retrieving them with single-digit millisecond latency for millions of concurrent users. Which database service fits best?",
+                options: [
+                    { text: "Amazon RDS", rationale: "Traditional SQL databases struggle to maintain sub-millisecond latency at massive, unpredictable scales.", isCorrect: false },
+                    { text: "Amazon Redshift", rationale: "Data warehouses are for complex analytics, not high-throughput low-latency transactions.", isCorrect: false },
+                    { text: "Amazon DynamoDB", rationale: "A managed NoSQL key-value store is designed to deliver consistent, ultra-low-latency performance at any scale.", isCorrect: true },
+                    { text: "Amazon S3", rationale: "S3 is object storage, not a database engine capable of structured millisecond read/writes.", isCorrect: false }
+                ]
+            },
+            {
+                question: "A financial startup in Germany needs to deploy a new application that processes local citizens' banking data. What is the primary factor that should dictate their choice of AWS Region?",
+                options: [
+                    { text: "The region offering the absolute lowest compute costs globally.", rationale: "Prioritizing cost over legal compliance can result in severe penalties.", isCorrect: false },
+                    { text: "A region located within the European Union to adhere to GDPR requirements.", rationale: "Regulatory frameworks often mandate that sensitive data must physically reside within specific boundaries.", isCorrect: true },
+                    { text: "The region featuring the highest number of Edge Locations.", rationale: "Edge Locations speed up content delivery but are not primary data processing centers.", isCorrect: false },
+                    { text: "The us-east-1 region in Northern Virginia, as it was the first AWS region.", rationale: "Age or origin of a data center has no bearing on its suitability for regulated EU data.", isCorrect: false }
+                ]
+            },
+            {
+                question: "Your team needs to run a simple data-cleaning script that executes in under three seconds every time a user uploads a photo. You want to completely avoid provisioning or managing underlying operating systems. Which service is appropriate?",
+                options: [
+                    { text: "Amazon EC2", rationale: "EC2 requires you to provision resources and manage patches, contradicting the requirement.", isCorrect: false },
+                    { text: "Amazon EMR", rationale: "EMR is for deploying large-scale Hadoop/Spark clusters, overkill for a 3-second script.", isCorrect: false },
+                    { text: "AWS Lambda", rationale: "Serverless architectures allow code execution in response to triggers without provisioning infrastructure.", isCorrect: true },
+                    { text: "Amazon SageMaker", rationale: "SageMaker is a full machine learning platform, not a lightweight function executor.", isCorrect: false }
+                ]
+            },
+            {
+                question: "A company's customer data is stolen because an employee accidentally configured an S3 bucket to allow public read access over the internet. Under the Shared Responsibility Model, who is accountable for this breach?",
+                options: [
+                    { text: "AWS, because they own and operate the physical S3 infrastructure.", rationale: "The provider guarantees physical security, not the logical access rules applied by the user.", isCorrect: false },
+                    { text: "The customer, because configuring access policies is a security 'IN' the cloud task.", rationale: "Customers retain full responsibility for configuring IAM and resource access permissions.", isCorrect: true },
+                    { text: "AWS, because S3 is a fully managed service where AWS handles all patching.", rationale: "AWS handles patching, but logical access control remains the user's responsibility.", isCorrect: false },
+                    { text: "Accountability is shared 50/50 since both parties utilize the S3 service.", rationale: "Responsibilities are distinctly separated, not vaguely shared as a percentage of fault.", isCorrect: false }
+                ]
+            },
+            {
+                question: "You are building a data pipeline to track live telemetry from thousands of delivery trucks. Which AWS service should act as the initial point of contact to ingest this continuous, real-time data stream?",
+                options: [
+                    { text: "Amazon Athena", rationale: "Athena is used to run ad-hoc queries against static files already in S3, not for capturing live streams.", isCorrect: false },
+                    { text: "Amazon Kinesis", rationale: "Kinesis is purpose-built to continuously capture and process massive volumes of streaming data.", isCorrect: true },
+                    { text: "AWS Glue", rationale: "Glue is an ETL service used to clean data usually after it has been ingested.", isCorrect: false },
+                    { text: "Amazon CloudFront", rationale: "CloudFront is a CDN for delivering content out to users, not ingesting telemetry inward.", isCorrect: false }
+                ]
+            },
+            {
+                question: "A new data science intern joins your team. They only need to download processed datasets from a specific S3 bucket to their local machine. How should you provision their access?",
+                options: [
+                    { text: "Provide them with the AWS root account credentials but strictly enforce MFA.", rationale: "The root account has unrestricted access and should never be used for daily tasks.", isCorrect: false },
+                    { text: "Assign them an IAM role that grants full administrative access for 30 days.", rationale: "Granting admin privileges violates security protocols if the user only needs read-only bucket access.", isCorrect: false },
+                    { text: "Create an IAM user for them with a policy attached that only allows 'Read' actions on that specific S3 bucket.", rationale: "This perfectly adheres to the Principle of Least Privilege.", isCorrect: true },
+                    { text: "Add them to the 'Data Engineers' IAM group which has write access across S3, Glue, and Redshift.", rationale: "Extensive write privileges expose the environment to unnecessary risk.", isCorrect: false }
+                ]
+            },
+            {
+                question: "Your marketing team has a spreadsheet of 50,000 product reviews and wants to quickly classify them as positive, negative, or neutral without writing custom machine learning code. Which service handles this out-of-the-box?",
+                options: [
+                    { text: "Amazon Rekognition", rationale: "Rekognition relies on computer vision for images/video, ineffective for raw text.", isCorrect: false },
+                    { text: "Amazon SageMaker", rationale: "SageMaker would require manually building and training a custom model.", isCorrect: false },
+                    { text: "Amazon Comprehend", rationale: "Comprehend is a managed NLP service that instantly extracts sentiment from text.", isCorrect: true },
+                    { text: "AWS CloudTrail", rationale: "CloudTrail is an auditing tool for API activity, it has no analytical capabilities.", isCorrect: false }
+                ]
+            },
+            {
+                question: "To ensure maximum uptime, you want your web application to survive the total failure of a single data center due to a natural disaster. How should you design the architecture?",
+                options: [
+                    { text: "Deploy the application's infrastructure across at least two Availability Zones.", rationale: "Distributing across distinct, separated data centers (AZs) ensures the system remains operational if one fails.", isCorrect: true },
+                    { text: "Host the application entirely within the nearest Edge Location.", rationale: "Edge locations are small caching nodes, not fully equipped data centers for backend infrastructure.", isCorrect: false },
+                    { text: "Use AWS Glacier to create hourly backups of the web servers.", rationale: "Archival backups cannot provide high availability or keep a live app running during an outage.", isCorrect: false },
+                    { text: "Purchase a Reserved Instance to guarantee hardware capacity.", rationale: "Billing discounts do not alter the physical fault tolerance of the architecture.", isCorrect: false }
+                ]
+            }
+        ];
+
+        // --- APP LOGIC ---
+
+        // Tab Navigation
+        function switchTab(tab) {
+            document.getElementById('section-flashcards').classList.toggle('hidden', tab !== 'flashcards');
+            document.getElementById('section-quiz').classList.toggle('hidden', tab !== 'quiz');
+            
+            const btnFlashcards = document.getElementById('tab-flashcards');
+            const btnQuiz = document.getElementById('tab-quiz');
+
+            if (tab === 'flashcards') {
+                btnFlashcards.className = "flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all bg-white text-blue-700 shadow-sm";
+                btnQuiz.className = "flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all text-slate-600 hover:text-slate-900";
+            } else {
+                btnQuiz.className = "flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all bg-white text-blue-700 shadow-sm";
+                btnFlashcards.className = "flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all text-slate-600 hover:text-slate-900";
+            }
+        }
+
+        // Flashcards Logic
+        let currentCardIndex = 0;
+        let isCardFlipped = false;
+
+        const elFront = document.getElementById('card-front-text');
+        const elBack = document.getElementById('card-back-text');
+        const elInner = document.getElementById('flashcard-inner');
+        const elNum = document.getElementById('current-card-num');
+
+        function renderFlashcard() {
+            if (isCardFlipped) {
+                // Flip back before changing text
+                elInner.classList.remove('rotate-y-180');
+                isCardFlipped = false;
+                setTimeout(() => {
+                    updateCardText();
+                }, 300); // Wait for half flip
+            } else {
+                updateCardText();
+            }
+        }
+
+        function updateCardText() {
+            const card = flashcards[currentCardIndex];
+            elFront.innerText = card.front;
+            elBack.innerText = card.back;
+            elNum.innerText = currentCardIndex + 1;
+        }
+
+        function flipCard() {
+            isCardFlipped = !isCardFlipped;
+            if (isCardFlipped) {
+                elInner.classList.add('rotate-y-180');
+            } else {
+                elInner.classList.remove('rotate-y-180');
+            }
+        }
+
+        function nextCard() {
+            currentCardIndex = (currentCardIndex + 1) % flashcards.length;
+            renderFlashcard();
+        }
+
+        function prevCard() {
+            currentCardIndex = (currentCardIndex - 1 + flashcards.length) % flashcards.length;
+            renderFlashcard();
+        }
+
+        // Quiz Logic
+        let score = 0;
+        let answeredSet = new Set();
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = ''; // clear
+            
+            quizData.forEach((q, qIndex) => {
+                const qDiv = document.createElement('div');
+                qDiv.className = "bg-slate-50 border border-slate-100 rounded-xl p-5 md:p-6";
+                qDiv.id = `q-${qIndex}`;
+
+                const title = document.createElement('h3');
+                title.className = "font-semibold text-slate-800 text-lg mb-4";
+                title.innerText = `${qIndex + 1}. ${q.question}`;
+                qDiv.appendChild(title);
+
+                const optionsContainer = document.createElement('div');
+                optionsContainer.className = "space-y-3";
+
+                q.options.forEach((opt, optIndex) => {
+                    const btn = document.createElement('button');
+                    btn.id = `btn-${qIndex}-${optIndex}`;
+                    btn.className = "w-full text-left p-4 rounded-lg border-2 border-slate-200 hover:border-blue-400 bg-white hover:bg-blue-50 transition-colors text-slate-700 relative overflow-hidden group";
+                    btn.onclick = () => handleOptionClick(qIndex, optIndex);
+                    
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = "font-medium text-slate-500 mr-2 group-hover:text-blue-600";
+                    labelSpan.innerText = String.fromCharCode(65 + optIndex) + "."; // A, B, C, D
+
+                    const textSpan = document.createElement('span');
+                    textSpan.innerText = opt.text;
+
+                    btn.appendChild(labelSpan);
+                    btn.appendChild(textSpan);
+                    
+                    // Rationale container (hidden initially)
+                    const rationaleDiv = document.createElement('div');
+                    rationaleDiv.id = `rat-${qIndex}-${optIndex}`;
+                    rationaleDiv.className = "hidden mt-3 text-sm p-3 rounded bg-slate-100 text-slate-600 border-l-4";
+                    rationaleDiv.innerText = opt.rationale;
+
+                    optionsContainer.appendChild(btn);
+                    optionsContainer.appendChild(rationaleDiv);
+                });
+
+                qDiv.appendChild(optionsContainer);
+                container.appendChild(qDiv);
+            });
+        }
+
+        function handleOptionClick(qIndex, optIndex) {
+            if (answeredSet.has(qIndex)) return; // Prevent multiple answers
+
+            answeredSet.add(qIndex);
+            const question = quizData[qIndex];
+            const selectedOpt = question.options[optIndex];
+
+            // Evaluate all options for UI updates
+            question.options.forEach((opt, idx) => {
+                const btn = document.getElementById(`btn-${qIndex}-${idx}`);
+                const rat = document.getElementById(`rat-${qIndex}-${idx}`);
+                
+                // Disable all buttons
+                btn.disabled = true;
+                btn.classList.remove('hover:border-blue-400', 'hover:bg-blue-50', 'cursor-pointer');
+                
+                if (idx === optIndex) {
+                    // This is the clicked one
+                    rat.classList.remove('hidden');
+                    if (opt.isCorrect) {
+                        btn.classList.add('border-green-500', 'bg-green-50', 'text-green-800');
+                        rat.classList.add('border-green-500', 'bg-green-100', 'text-green-800');
+                        score++;
+                        document.getElementById('quiz-score').innerText = score;
+                    } else {
+                        btn.classList.add('border-red-400', 'bg-red-50', 'text-red-800');
+                        rat.classList.add('border-red-400', 'bg-red-100', 'text-red-800');
+                    }
+                } else if (opt.isCorrect) {
+                    // Highlight the correct one if they missed it
+                    btn.classList.add('border-green-500', 'bg-green-50/50');
+                    rat.classList.remove('hidden');
+                    rat.classList.add('border-green-500', 'bg-green-100', 'text-green-800');
+                } else {
+                    // Faded look for unselected incorrect options
+                    btn.classList.add('opacity-50');
+                }
+            });
+
+            checkQuizCompletion();
+        }
+
+        function checkQuizCompletion() {
+            if (answeredSet.size === quizData.length) {
+                document.getElementById('quiz-completion').classList.remove('hidden');
+                document.getElementById('final-score').innerText = score;
+                window.scrollTo({
+                    top: document.body.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        function resetQuiz() {
+            score = 0;
+            answeredSet.clear();
+            document.getElementById('quiz-score').innerText = score;
+            document.getElementById('quiz-completion').classList.add('hidden');
+            renderQuiz();
+            window.scrollTo({
+                top: document.getElementById('section-quiz').offsetTop,
+                behavior: 'smooth'
+            });
+        }
+
+        // Initialize
+        document.getElementById('total-cards-num').innerText = flashcards.length;
+        renderFlashcard();
+        renderQuiz();
+    </script>
+</body>
+</html>
+
+
+

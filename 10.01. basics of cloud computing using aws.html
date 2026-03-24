@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS for Data Science | Educational Hub</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chosen Palette: Warm Neutrals & AWS Orange (Slate-50 background, Slate-800 text, Orange-500 accents) -->
+<!-- Application Structure Plan: The application is designed as a continuous scrolling dashboard with a fixed side navigation. This structure was chosen because it allows users to consume the educational content linearly (like a presentation) while also providing quick non-linear access to specific reference topics (Economics, Services, Security). The content is grouped functionally rather than strictly following the slide order, prioritizing the narrative arc of "What -> Why -> How -> Cost -> Security". -->
+<!-- Visualization & Content Choices: 
+1. Market Share -> Goal: Inform -> Doughnut Chart -> Interaction: Hover tooltips -> Justification: Clearly shows AWS dominance in the IaaS market -> Chart.js.
+2. Break-even Analysis -> Goal: Compare/Persuade -> Line Chart -> Interaction: Hover data points -> Justification: Visually proves the CapEx vs OpEx argument over time -> Chart.js.
+3. Services Explorer -> Goal: Organize/Explore -> Interactive Grid/Tabs -> Interaction: Click categories to swap details -> Justification: Prevents overwhelming the user with 200+ services, focusing on core buckets -> Vanilla JS + HTML.
+4. Pricing Model Comparison -> Goal: Compare -> Bar Chart -> Interaction: Hover details -> Justification: Directly compares On-Demand vs Spot+Free Tier costs -> Chart.js.
+5. Shared Responsibility & Pipeline -> Goal: Organize/Relationships -> Interactive HTML layout -> Interaction: Toggle responsibilities, hover pipeline steps -> Justification: Simplifies complex operational concepts into digestible bites -> HTML/CSS. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+<style>
+body { font-family: 'Inter', sans-serif; }
+.chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 350px; max-height: 400px; }
+@media (max-width: 640px) { .chart-container { height: 250px; } }
+.nav-link.active { background-color: #f97316; color: white; }
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased flex flex-col md:flex-row min-h-screen">
+
+<nav class="w-full md:w-64 bg-slate-900 text-slate-300 md:fixed h-auto md:h-screen flex flex-col shadow-xl z-50">
+<div class="p-6 bg-slate-950 text-center md:text-left">
+<h1 class="text-2xl font-bold text-white tracking-tight">Cyber<span class="text-orange-500">.</span>SoHo</h1>
+<p class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Educational Hub</p>
+</div>
+<div class="flex-1 overflow-y-auto py-4 flex flex-row md:flex-col gap-2 px-4 md:px-0 overflow-x-auto md:overflow-x-visible whitespace-nowrap md:whitespace-normal">
+<a href="#overview" class="nav-link active px-6 py-3 hover:bg-slate-800 transition-colors font-medium rounded-md md:rounded-none text-sm md:text-base">1. Overview</a>
+<a href="#economics" class="nav-link px-6 py-3 hover:bg-slate-800 transition-colors font-medium rounded-md md:rounded-none text-sm md:text-base">2. Cloud Economics</a>
+<a href="#services" class="nav-link px-6 py-3 hover:bg-slate-800 transition-colors font-medium rounded-md md:rounded-none text-sm md:text-base">3. Core Services</a>
+<a href="#infrastructure" class="nav-link px-6 py-3 hover:bg-slate-800 transition-colors font-medium rounded-md md:rounded-none text-sm md:text-base">4. Infrastructure & Cost</a>
+<a href="#security" class="nav-link px-6 py-3 hover:bg-slate-800 transition-colors font-medium rounded-md md:rounded-none text-sm md:text-base">5. Security & Workflow</a>
+</div>
+<div class="p-6 text-xs text-slate-500 hidden md:block">
+<p>&copy; 2026 Cyber.SoHo</p>
+<p class="mt-1">Graduate Level Program</p>
+</div>
+</nav>
+
+<main class="flex-1 md:ml-64 p-6 md:p-12 lg:p-20 overflow-x-hidden">
+
+<section id="overview" class="mb-24 scroll-mt-24">
+<div class="max-w-4xl">
+<h2 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">Basics of Cloud Computing: <span class="text-orange-500">AWS</span></h2>
+<p class="text-xl text-slate-600 mb-8 italic border-l-4 border-orange-500 pl-4 bg-white py-4 pr-4 rounded-r-lg shadow-sm">"The cloud is not just someone else's computer — it is the backbone of modern data science."</p>
+
+<div class="bg-white rounded-xl shadow-md p-6 md:p-8 mb-8 border border-slate-100">
+<h3 class="text-2xl font-bold mb-4 text-slate-800">What is AWS?</h3>
+<p class="text-slate-600 mb-6 leading-relaxed">This section introduces the core concept of Amazon Web Services (AWS), detailing its market dominance and fundamental premise. It sets the stage for why cloud computing is essential for modern data science by highlighting its scale, speed, and billing model.</p>
+<ul class="space-y-3 mb-8">
+<li class="flex items-start"><span class="text-orange-500 mr-2 text-lg">&#10004;</span> <span class="text-slate-700">A cloud computing platform offering <strong>200+ services</strong> on-demand over the internet.</span></li>
+<li class="flex items-start"><span class="text-orange-500 mr-2 text-lg">&#10004;</span> <span class="text-slate-700">Billed by actual usage — no upfront hardware purchase.</span></li>
+<li class="flex items-start"><span class="text-orange-500 mr-2 text-lg">&#10004;</span> <span class="text-slate-700">Spin up a virtual server in <strong>under 2 minutes</strong>.</span></li>
+<li class="flex items-start"><span class="text-orange-500 mr-2 text-lg">&#10004;</span> <span class="text-slate-700">Born in 2006 from Amazon solving its own holiday traffic scaling problems.</span></li>
+</ul>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-slate-50 p-6 rounded-lg">
+<div>
+<h4 class="text-lg font-semibold mb-2">Global Market Position</h4>
+<p class="text-sm text-slate-600 mb-4">AWS holds the largest share of the global cloud Infrastructure as a Service (IaaS) market, ahead of Microsoft Azure and Google Cloud Platform.</p>
+<div class="text-xs text-slate-400 mt-4 border-t pt-2 border-slate-200">Source: Gartner & Synergy Research Group</div>
+</div>
+<div class="chart-container h-64 md:h-80 mx-auto w-full max-w-[300px]">
+<canvas id="marketShareChart"></canvas>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section id="economics" class="mb-24 scroll-mt-24">
+<div class="max-w-4xl">
+<h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-6">Cloud Economics for Data Scientists</h2>
+<p class="text-lg text-slate-600 mb-8">Here, we analyze the financial paradigm shift of the cloud. By exploring the transition from CapEx to OpEx, you can interact with a break-even analysis to understand when cloud computing is most cost-effective for bursty, intermittent workloads.</p>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+<div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-t-4 border-t-slate-400">
+<h3 class="text-xl font-bold mb-4 flex items-center"><span class="text-2xl mr-2">&#128187;</span> On-Premises (Without Cloud)</h3>
+<ul class="space-y-2 text-slate-600">
+<li>Buy $4,000 GPU workstation</li>
+<li>Weeks to set up hardware</li>
+<li>Sits idle when not training models</li>
+<li>Fixed, limited capacity</li>
+<li>You maintain everything</li>
+</ul>
+</div>
+<div class="bg-white p-6 rounded-xl shadow-lg border border-orange-100 border-t-4 border-t-orange-500 relative transform md:-translate-y-2">
+<div class="absolute -top-3 -right-3 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase">Winner</div>
+<h3 class="text-xl font-bold mb-4 flex items-center"><span class="text-2xl mr-2">&#9729;&#65039;</span> With AWS</h3>
+<ul class="space-y-2 text-slate-600">
+<li>Rent GPU instance at ~$0.53/hr</li>
+<li>2 minutes to launch</li>
+<li>Shut down = $0 cost</li>
+<li>Scale infinitely on demand</li>
+<li>AWS maintains hardware</li>
+</ul>
+</div>
+</div>
+
+<div class="bg-white rounded-xl shadow-md p-6 md:p-8 border border-slate-100">
+<h3 class="text-xl font-bold mb-2 text-slate-800">The CapEx vs. OpEx Break-Even Analysis</h3>
+<p class="text-sm text-slate-500 mb-6">Compare buying a $4,000 GPU workstation versus renting an EC2 instance at $0.53/hr. Hover over the chart to see the cost comparison over time.</p>
+<div class="chart-container">
+<canvas id="breakEvenChart"></canvas>
+</div>
+<div class="mt-6 bg-orange-50 text-orange-800 p-4 rounded-lg flex items-start">
+<span class="text-xl mr-3">&#128161;</span>
+<div>
+<p class="font-bold">Key Takeaway</p>
+<p class="text-sm mt-1">Most data science workloads are "bursty." The break-even point is ~7,600 hours (~317 days of 24/7 use). For typical graduate student usage (~12 hours/week), cloud wins decisively.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section id="services" class="mb-24 scroll-mt-24">
+<div class="max-w-5xl">
+<h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-6">Core Service Architecture</h2>
+<p class="text-lg text-slate-600 mb-8">This interactive explorer categorizes the vast AWS ecosystem into manageable domains. Select a category below to reveal the foundational services, their analogies, and their specific roles in a data scientist's toolkit.</p>
+
+<div class="flex flex-col md:flex-row gap-6">
+<div class="w-full md:w-1/3 flex flex-col gap-2">
+<button onclick="switchTab('compute')" id="btn-compute" class="text-left px-5 py-4 rounded-lg bg-orange-500 text-white font-semibold transition-all shadow-md focus:outline-none">&#9881;&#65039; Compute (The Engines)</button>
+<button onclick="switchTab('storage')" id="btn-storage" class="text-left px-5 py-4 rounded-lg bg-white text-slate-600 hover:bg-slate-50 font-semibold border border-slate-200 transition-all focus:outline-none">&#128194; Storage (The Filing Cabinets)</button>
+<button onclick="switchTab('databases')" id="btn-databases" class="text-left px-5 py-4 rounded-lg bg-white text-slate-600 hover:bg-slate-50 font-semibold border border-slate-200 transition-all focus:outline-none">&#128451;&#65039; Databases (Organized Data)</button>
+<button onclick="switchTab('ml')" id="btn-ml" class="text-left px-5 py-4 rounded-lg bg-white text-slate-600 hover:bg-slate-50 font-semibold border border-slate-200 transition-all focus:outline-none">&#129416; Machine Learning (The Brains)</button>
+<button onclick="switchTab('network')" id="btn-network" class="text-left px-5 py-4 rounded-lg bg-white text-slate-600 hover:bg-slate-50 font-semibold border border-slate-200 transition-all focus:outline-none">&#128640; Net & Security (Roads & Guards)</button>
+</div>
+
+<div class="w-full md:w-2/3 bg-white rounded-xl shadow-md border border-slate-200 p-6 md:p-8 min-h-[350px]">
+<div id="tab-compute" class="tab-content active">
+<h3 class="text-2xl font-bold text-slate-800 mb-2">Compute Services</h3>
+<p class="text-slate-500 mb-6 pb-4 border-b">The foundational engines providing raw processing power.</p>
+<div class="space-y-4">
+<div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+<div class="font-bold text-lg text-slate-800 flex justify-between">EC2 (Elastic Compute Cloud) <span class="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded">Core</span></div>
+<p class="text-sm text-slate-600 mt-1">Virtual servers by the hour/second. Pick CPU, RAM, GPU, OS for full control.</p>
+<p class="text-xs font-medium text-orange-600 mt-2 bg-orange-50 inline-block px-2 py-1 rounded">Analogy: Renting a furnished apartment</p>
+</div>
+<div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+<div class="font-bold text-lg text-slate-800">Lambda</div>
+<p class="text-sm text-slate-600 mt-1">Serverless computing. Run functions without managing servers. Pay per millisecond of execution — zero idle cost.</p>
+<p class="text-xs font-medium text-orange-600 mt-2 bg-orange-50 inline-block px-2 py-1 rounded">Analogy: Hiring a freelancer per task</p>
+</div>
+<div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+<div class="font-bold text-lg text-slate-800">ECS / EKS</div>
+<p class="text-sm text-slate-600 mt-1">Run Docker (ECS) or Kubernetes (EKS) containers for portable, reproducible deployments.</p>
+<p class="text-xs font-medium text-orange-600 mt-2 bg-orange-50 inline-block px-2 py-1 rounded">Analogy: Standardized shipping containers</p>
+</div>
+</div>
+</div>
+
+<div id="tab-storage" class="tab-content">
+<h3 class="text-2xl font-bold text-slate-800 mb-2">Storage Services</h3>
+<p class="text-slate-500 mb-6 pb-4 border-b">Where your data lives, from active files to deep archives.</p>
+<div class="space-y-4">
+<div class="p-4 bg-slate-50 rounded-lg border border-slate-100 border-l-4 border-l-orange-500">
+<div class="font-bold text-lg text-slate-800 flex justify-between">S3 (Simple Storage Service) <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded font-bold">The Backbone</span></div>
+<p class="text-sm text-slate-600 mt-1">Object storage for any file. 99.999999999% durability (eleven 9s). Nearly every AWS workflow starts and ends here.</p>
+<p class="text-xs font-medium text-orange-600 mt-2 bg-orange-50 inline-block px-2 py-1 rounded">Analogy: Infinite Google Drive</p>
+</div>
+<div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+<div class="font-bold text-lg text-slate-800">EBS (Elastic Block Store)</div>
+<p class="text-sm text-slate-600 mt-1">SSD drives directly attached to your EC2 instances.</p>
+<p class="text-xs font-medium text-orange-600 mt-2 bg-orange-50 inline-block px-2 py-1 rounded">Analogy: USB external hard drives</p>
+</div>
+<div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+<div class="font-bold text-lg text-slate-800">Glacier</div>
+<p class="text-sm text-slate-600 mt-1">Ultra-cheap cold storage for long-term archival.</p>
+<p class="text-xs font-medium text-orange-600 mt-2 bg-orange-50 inline-block px-2 py-1 rounded">Analogy: Off-site storage unit</p>
+</div>
+</div>
+</div>
+
+<div id="tab-databases" class="tab-content">
+<h3 class="text-2xl font-bold text-slate-800 mb-2">Database Services</h3>
+<p class="text-slate-500 mb-6 pb-4 border-b">Structured and unstructured data management at scale.</p>
+<div class="space-y-4">
+<div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+<div class="font-bold text-lg text-slate-800">RDS (Relational Database Service)</div>
+<p class="text-sm text-slate-600 mt-1">SQL (MySQL, PostgreSQL). Best for structured data and transactions. AWS handles backups, patches, and scaling.</p>
+</div>
+<div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+<div class="font-bold text-lg text-slate-800">DynamoDB</div>
+<p class="text-sm text-slate-600 mt-1">NoSQL key-value database. Provides single-digit millisecond latency at any scale.</p>
+</div>
+<div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+<div class="font-bold text-lg text-slate-800">Redshift</div>
+<p class="text-sm text-slate-600 mt-1">Data warehouse with columnar storage optimized for complex SQL analytics across billions of rows.</p>
+</div>
+</div>
+</div>
+
+<div id="tab-ml" class="tab-content">
+<h3 class="text-2xl font-bold text-slate-800 mb-2">Machine Learning</h3>
+<p class="text-slate-500 mb-6 pb-4 border-b">The most relevant tools for data scientists to build and deploy models.</p>
+<div class="space-y-4">
+<div class="p-4 bg-orange-50 rounded-lg border border-orange-200">
+<div class="font-bold text-lg text-slate-800">SageMaker</div>
+<p class="text-sm text-slate-700 mt-1">Full ML lifecycle platform: build, train, deploy. Includes Studio (cloud IDE with Jupyter), distributed training, and 1-click HTTPS endpoints.</p>
+</div>
+<div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+<div class="font-bold text-lg text-slate-800">Comprehend</div>
+<p class="text-sm text-slate-600 mt-1">NLP service to find sentiment, entities, and topics in text.</p>
+</div>
+<div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+<div class="font-bold text-lg text-slate-800">Rekognition</div>
+<p class="text-sm text-slate-600 mt-1">Computer vision service for identifying objects, faces, and text in images and video.</p>
+</div>
+</div>
+</div>
+
+<div id="tab-network" class="tab-content">
+<h3 class="text-2xl font-bold text-slate-800 mb-2">Networking & Security</h3>
+<p class="text-slate-500 mb-6 pb-4 border-b">The underlying infrastructure that keeps everything connected and secure.</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div>
+<h4 class="font-bold text-slate-700 mb-2 border-b pb-1">Networking</h4>
+<ul class="text-sm space-y-3">
+<li><strong class="text-slate-800">VPC:</strong> Your isolated private network in the cloud.</li>
+<li><strong class="text-slate-800">Route 53:</strong> DNS service (Domain to IP translation).</li>
+<li><strong class="text-slate-800">CloudFront:</strong> CDN caching content at 400+ edge locations.</li>
+</ul>
+</div>
+<div>
+<h4 class="font-bold text-slate-700 mb-2 border-b pb-1">Security</h4>
+<ul class="text-sm space-y-3">
+<li><strong class="text-slate-800">IAM:</strong> Identity & Access Management (Who can access what).</li>
+<li><strong class="text-slate-800">KMS:</strong> Encryption key management.</li>
+<li><strong class="text-slate-800">CloudTrail:</strong> Audit log of every API call made in your account.</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section id="infrastructure" class="mb-24 scroll-mt-24">
+<div class="max-w-4xl">
+<h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-6">Global Infrastructure & Pricing</h2>
+<p class="text-lg text-slate-600 mb-8">This section maps the physical reality of the cloud and demystifies its cost structures. Explore the hierarchy of Regions and Availability Zones, and compare pricing models to optimize your budget for machine learning tasks.</p>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+<div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center">
+<div class="text-4xl font-black text-slate-800 mb-2">34</div>
+<div class="text-sm font-bold text-orange-500 uppercase tracking-wide">Regions</div>
+<p class="text-xs text-slate-500 mt-2">Geographically isolated areas worldwide. Choice affects latency, compliance (e.g., GDPR), and cost.</p>
+</div>
+<div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center">
+<div class="text-4xl font-black text-slate-800 mb-2">108+</div>
+<div class="text-sm font-bold text-orange-500 uppercase tracking-wide">Availability Zones</div>
+<p class="text-xs text-slate-500 mt-2">Separate data centers within regions, connected by high-speed fiber for fault tolerance.</p>
+</div>
+<div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center">
+<div class="text-4xl font-black text-slate-800 mb-2">400+</div>
+<div class="text-sm font-bold text-orange-500 uppercase tracking-wide">Edge Locations</div>
+<p class="text-xs text-slate-500 mt-2">Caching facilities for CloudFront CDN to bring content closer to end users globally.</p>
+</div>
+</div>
+
+<div class="bg-white rounded-xl shadow-md p-6 md:p-8 border border-slate-100 mb-8">
+<h3 class="text-xl font-bold mb-2 text-slate-800">Pricing Models & Cost Estimation</h3>
+<p class="text-sm text-slate-500 mb-6">Smart pricing choices can save 70%+. Compare On-Demand pricing versus using Spot Instances and the Free Tier for a typical monthly thesis project (50GB S3, 80hrs GPU, 24/7 API).</p>
+<div class="chart-container h-72">
+<canvas id="pricingChart"></canvas>
+</div>
+<div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div class="p-4 bg-slate-50 rounded border border-slate-200">
+<span class="font-bold text-slate-800">On-Demand:</span> No commitment, predictable, but highest cost per hour. Best for unpredictable workloads.
+</div>
+<div class="p-4 bg-orange-50 rounded border border-orange-200">
+<span class="font-bold text-orange-800">Spot Instances:</span> Up to 90% discount. AWS can reclaim with 2-min warning. <strong class="text-slate-800">Perfect for ML training</strong> if you use checkpointing!
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section id="security" class="mb-24 scroll-mt-24">
+<div class="max-w-5xl">
+<h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-6">Security & Data Workflow</h2>
+<p class="text-lg text-slate-600 mb-8">Understand the Shared Responsibility Model and trace a real-world data pipeline. This area clarifies where your security obligations lie and visualizes how data flows from ingestion to machine learning deployment.</p>
+
+<div class="bg-slate-900 text-white rounded-xl shadow-xl overflow-hidden mb-12">
+<div class="p-6 md:p-8 border-b border-slate-700">
+<h3 class="text-2xl font-bold mb-2">The Shared Responsibility Model</h3>
+<p class="text-slate-400 text-sm">Misconfigured IAM is the #1 cause of cloud security incidents. Know your boundaries.</p>
+</div>
+<div class="flex flex-col md:flex-row">
+<div class="w-full md:w-1/2 p-6 md:p-8 bg-slate-800 hover:bg-slate-750 transition-colors">
+<div class="flex items-center mb-4">
+<span class="text-3xl mr-3">&#127970;</span>
+<h4 class="text-xl font-bold text-orange-400">AWS Secures "OF" the Cloud</h4>
+</div>
+<ul class="space-y-3 text-slate-300 text-sm">
+<li>&#10004; Physical data centers & hardware</li>
+<li>&#10004; Global networking infrastructure</li>
+<li>&#10004; Hypervisor layer</li>
+<li>&#10004; Managed service infrastructure</li>
+</ul>
+<p class="mt-6 text-xs text-slate-500 italic">Analogy: AWS builds the apartment building, installs locks on the main doors, and provides fire exits.</p>
+</div>
+<div class="w-full md:w-1/2 p-6 md:p-8 border-t md:border-t-0 md:border-l border-slate-700 hover:bg-slate-800 transition-colors">
+<div class="flex items-center mb-4">
+<span class="text-3xl mr-3">&#128273;</span>
+<h4 class="text-xl font-bold text-white">YOU Secure "IN" the Cloud</h4>
+</div>
+<ul class="space-y-3 text-slate-300 text-sm">
+<li>&#10004; Customer data & encryption choices</li>
+<li>&#10004; <strong>IAM Configuration (Users, Roles, Policies)</strong></li>
+<li>&#10004; Network settings (VPC, firewalls)</li>
+<li>&#10004; Application code & dependencies</li>
+</ul>
+<p class="mt-6 text-xs text-slate-500 italic">Analogy: You secure your specific apartment—who has keys, what's inside, and remembering to lock the door.</p>
+</div>
+</div>
+<div class="bg-orange-600 p-4 text-center text-sm font-bold tracking-wide">
+THE GOLDEN RULE: Principle of Least Privilege — Every entity gets ONLY the minimum permissions needed.
+</div>
+</div>
+
+<div class="bg-white rounded-xl shadow-md p-6 md:p-8 border border-slate-100">
+<h3 class="text-2xl font-bold text-slate-800 mb-6">Real-World Data Science Pipeline on AWS</h3>
+<p class="text-slate-600 mb-8">Hover over each step to see the primary AWS services used in an end-to-end machine learning workflow.</p>
+
+<div class="flex flex-col md:flex-row justify-between items-stretch gap-2 md:gap-0 relative">
+<div class="hidden md:block absolute top-1/2 left-0 right-0 h-1 bg-slate-200 -z-10 transform -translate-y-1/2"></div>
+<div class="group flex-1 flex flex-col items-center cursor-default bg-white md:bg-transparent p-4 md:p-0 rounded border md:border-0 border-slate-200 mb-2 md:mb-0">
+<div class="w-16 h-16 rounded-full bg-slate-100 border-4 border-slate-300 flex items-center justify-center text-xl font-bold text-slate-600 group-hover:border-orange-500 group-hover:text-orange-500 transition-colors mb-3 bg-white z-10">&#128229;</div>
+<h4 class="font-bold text-slate-800 text-center">1. Collect</h4>
+<div class="mt-2 text-xs text-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white p-2 rounded w-full md:absolute md:top-28">
+Kinesis (Streaming)<br>API Gateway
+</div>
+</div>
+<div class="group flex-1 flex flex-col items-center cursor-default bg-white md:bg-transparent p-4 md:p-0 rounded border md:border-0 border-slate-200 mb-2 md:mb-0">
+<div class="w-16 h-16 rounded-full bg-slate-100 border-4 border-slate-300 flex items-center justify-center text-xl font-bold text-slate-600 group-hover:border-orange-500 group-hover:text-orange-500 transition-colors mb-3 bg-white z-10">&#128190;</div>
+<h4 class="font-bold text-slate-800 text-center">2. Store</h4>
+<div class="mt-2 text-xs text-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white p-2 rounded w-full md:absolute md:top-28">
+S3 (Data Lake)<br>EBS
+</div>
+</div>
+<div class="group flex-1 flex flex-col items-center cursor-default bg-white md:bg-transparent p-4 md:p-0 rounded border md:border-0 border-slate-200 mb-2 md:mb-0">
+<div class="w-16 h-16 rounded-full bg-slate-100 border-4 border-slate-300 flex items-center justify-center text-xl font-bold text-slate-600 group-hover:border-orange-500 group-hover:text-orange-500 transition-colors mb-3 bg-white z-10">&#9881;&#65039;</div>
+<h4 class="font-bold text-slate-800 text-center">3. Prepare</h4>
+<div class="mt-2 text-xs text-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white p-2 rounded w-full md:absolute md:top-28">
+AWS Glue (ETL)<br>Athena (SQL)<br>EMR
+</div>
+</div>
+<div class="group flex-1 flex flex-col items-center cursor-default bg-white md:bg-transparent p-4 md:p-0 rounded border md:border-0 border-slate-200 mb-2 md:mb-0">
+<div class="w-16 h-16 rounded-full bg-slate-100 border-4 border-slate-300 flex items-center justify-center text-xl font-bold text-slate-600 group-hover:border-orange-500 group-hover:text-orange-500 transition-colors mb-3 bg-white z-10">&#129416;</div>
+<h4 class="font-bold text-slate-800 text-center">4. Train</h4>
+<div class="mt-2 text-xs text-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white p-2 rounded w-full md:absolute md:top-28">
+SageMaker<br>EC2 + GPUs
+</div>
+</div>
+<div class="group flex-1 flex flex-col items-center cursor-default bg-white md:bg-transparent p-4 md:p-0 rounded border md:border-0 border-slate-200 mb-2 md:mb-0">
+<div class="w-16 h-16 rounded-full bg-slate-100 border-4 border-slate-300 flex items-center justify-center text-xl font-bold text-slate-600 group-hover:border-orange-500 group-hover:text-orange-500 transition-colors mb-3 bg-white z-10">&#128640;</div>
+<h4 class="font-bold text-slate-800 text-center">5. Deploy</h4>
+<div class="mt-2 text-xs text-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white p-2 rounded w-full md:absolute md:top-28">
+SageMaker Endpoints<br>Lambda + API GW
+</div>
+</div>
+<div class="group flex-1 flex flex-col items-center cursor-default bg-white md:bg-transparent p-4 md:p-0 rounded border md:border-0 border-slate-200">
+<div class="w-16 h-16 rounded-full bg-slate-100 border-4 border-slate-300 flex items-center justify-center text-xl font-bold text-slate-600 group-hover:border-orange-500 group-hover:text-orange-500 transition-colors mb-3 bg-white z-10">&#128202;</div>
+<h4 class="font-bold text-slate-800 text-center">6. Monitor</h4>
+<div class="mt-2 text-xs text-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white p-2 rounded w-full md:absolute md:top-28">
+CloudWatch<br>Model Monitor
+</div>
+</div>
+</div>
+<div class="mt-16 md:mt-24 text-center">
+<p class="text-sm font-medium text-slate-500 bg-slate-50 inline-block px-4 py-2 rounded-full border border-slate-200">
+S3 acts as the central hub connecting all stages, while IAM controls access throughout.
+</p>
+</div>
+</div>
+</div>
+</section>
+
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const navLinks = document.querySelectorAll('.nav-link');
+    const sections = document.querySelectorAll('section');
+
+    window.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            if (scrollY >= sectionTop - 150) {
+                current = section.getAttribute('id');
+            }
+        });
+
+        navLinks.forEach(link => {
+            link.classList.remove('active', 'bg-orange-500', 'text-white');
+            link.classList.add('hover:bg-slate-800');
+            if (link.getAttribute('href').includes(current) && current !== '') {
+                link.classList.add('active');
+                link.classList.remove('hover:bg-slate-800');
+            }
+        });
+    });
+
+    const marketCtx = document.getElementById('marketShareChart').getContext('2d');
+    new Chart(marketCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['AWS', 'Microsoft Azure', 'Google Cloud', 'Others'],
+            datasets: [{
+                data: [32, 23, 11, 34],
+                backgroundColor: ['#f97316', '#3b82f6', '#ef4444', '#cbd5e1'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { font: { family: "'Inter', sans-serif" } } },
+                tooltip: { callbacks: { label: function(context) { return context.label + ': ~' + context.parsed + '%'; } } }
+            },
+            cutout: '65%'
+        }
+    });
+
+    const breakEvenCtx = document.getElementById('breakEvenChart').getContext('2d');
+    const hours = Array.from({length: 11}, (_, i) => i * 1000); 
+    const onPremCost = hours.map(() => 4000);
+    const awsCost = hours.map(h => h * 0.53);
+
+    new Chart(breakEvenCtx, {
+        type: 'line',
+        data: {
+            labels: hours,
+            datasets: [
+                {
+                    label: 'On-Premises GPU ($4k flat)',
+                    data: onPremCost,
+                    borderColor: '#94a3b8',
+                    borderWidth: 3,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 0
+                },
+                {
+                    label: 'AWS EC2 ($0.53/hr)',
+                    data: awsCost,
+                    borderColor: '#f97316',
+                    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                x: { title: { display: true, text: 'Hours of Usage' }, grid: { display: false } },
+                y: { title: { display: true, text: 'Total Cost ($)' }, beginAtZero: true, max: 6000 }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        title: function(context) { return context[0].label + ' Hours'; },
+                        label: function(context) { return context.dataset.label + ': $' + context.parsed.y.toFixed(2); }
+                    }
+                }
+            }
+        }
+    });
+
+    const pricingCtx = document.getElementById('pricingChart').getContext('2d');
+    new Chart(pricingCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Storage (50GB)', 'GPU Train (80hrs)', 'API Server (24/7)', 'Total Monthly Cost'],
+            datasets: [
+                {
+                    label: 'On-Demand Pricing',
+                    data: [1.15, 244.80, 7.59, 253.54],
+                    backgroundColor: '#cbd5e1',
+                    borderRadius: 4
+                },
+                {
+                    label: 'Optimized (Spot + Free Tier)',
+                    data: [1.15, 73.60, 0.00, 74.75],
+                    backgroundColor: '#f97316',
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Cost (USD)' } },
+                x: { grid: { display: false } }
+            },
+            plugins: {
+                tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': $' + context.parsed.y.toFixed(2); } } }
+            }
+        }
+    });
+});
+
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    
+    const buttons = ['compute', 'storage', 'databases', 'ml', 'network'];
+    buttons.forEach(btn => {
+        const el = document.getElementById('btn-' + btn);
+        el.classList.remove('bg-orange-500', 'text-white');
+        el.classList.add('bg-white', 'text-slate-600');
+    });
+
+    document.getElementById('tab-' + tabId).classList.add('active');
+    
+    const activeBtn = document.getElementById('btn-' + tabId);
+    activeBtn.classList.remove('bg-white', 'text-slate-600');
+    activeBtn.classList.add('bg-orange-500', 'text-white');
+}
+</script>
+</body>
+</html>
+
+
+

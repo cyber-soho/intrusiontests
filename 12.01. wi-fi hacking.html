@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day 13 - Wi-Fi Hacking: The PMKID Attack</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Slate and Cyber Emerald (Light Theme) -->
+    <!-- Application Structure Plan: The application uses a dashboard-style side-navigation layout to guide students through the course material logically. It starts with foundational knowledge (Intro, Evolution), dives into the core vulnerability (Mechanics), explains the exploitation (Attack Workflow), and concludes with mitigation (Defences). This structure allows for non-linear exploration while maintaining an educational narrative. -->
+    <!-- Visualization & Content Choices: 1. Wi-Fi Evolution: Interactive cards (HTML/CSS) to show progression without clutter. 2. Attack Comparison: Tabbed interface (JS) to directly compare Traditional vs PMKID without overwhelming text. 3. PMKID Formula: Interactive hover elements (JS/HTML) to break down a complex cryptographic formula into understandable parts. 4. Password Entropy: Chart.js Bar chart to visually emphasize the exponential difficulty of cracking longer passwords (logarithmic visual abstraction). NO SVG/Mermaid used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .nav-link.active {
+            background-color: #10b981;
+            color: white;
+        }
+        .interactive-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .interactive-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-color: #10b981;
+        }
+        .formula-part {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .formula-part:hover, .formula-part.active {
+            background-color: #d1fae5;
+            color: #047857;
+            border-color: #10b981;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden bg-slate-50">
+
+    <aside class="w-64 bg-slate-900 text-slate-300 flex-shrink-0 flex flex-col hidden md:flex">
+        <div class="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950">
+            <h1 class="text-emerald-400 font-bold text-xl tracking-wider">Cyber.SoHo</h1>
+        </div>
+        <div class="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            Intrusion Testing Course
+        </div>
+        <nav class="flex-1 overflow-y-auto" id="desktop-nav">
+            <button class="nav-link active w-full text-left px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors focus:outline-none" data-target="intro">1. Introduction & Context</button>
+            <button class="nav-link w-full text-left px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors focus:outline-none" data-target="evolution">2. Wi-Fi Evolution</button>
+            <button class="nav-link w-full text-left px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors focus:outline-none" data-target="mechanics">3. Handshake Mechanics</button>
+            <button class="nav-link w-full text-left px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors focus:outline-none" data-target="attack">4. The PMKID Attack</button>
+            <button class="nav-link w-full text-left px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors focus:outline-none" data-target="defense">5. Defences & Mitigation</button>
+        </nav>
+        <div class="p-4 border-t border-slate-800 text-xs text-slate-500">
+            Day 13: March 26, 2026<br>
+            Educational Hub
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-full relative">
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shrink-0">
+            <div class="md:hidden">
+                <button id="mobile-menu-btn" class="text-slate-600 hover:text-slate-900 focus:outline-none text-2xl">
+                    &#9776;
+                </button>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800" id="header-title">Day 13 — Wi-Fi Hacking: The PMKID Attack</h2>
+            <div class="text-sm bg-rose-100 text-rose-700 px-3 py-1 rounded-full font-semibold">
+                &#9888; Authorised Networks Only
+            </div>
+        </header>
+
+        <div id="mobile-nav" class="absolute top-16 left-0 right-0 bg-slate-900 text-slate-300 z-50 hidden flex flex-col shadow-xl">
+            <button class="nav-link active w-full text-left px-6 py-4 border-b border-slate-800 focus:outline-none" data-target="intro">1. Introduction & Context</button>
+            <button class="nav-link w-full text-left px-6 py-4 border-b border-slate-800 focus:outline-none" data-target="evolution">2. Wi-Fi Evolution</button>
+            <button class="nav-link w-full text-left px-6 py-4 border-b border-slate-800 focus:outline-none" data-target="mechanics">3. Handshake Mechanics</button>
+            <button class="nav-link w-full text-left px-6 py-4 border-b border-slate-800 focus:outline-none" data-target="attack">4. The PMKID Attack</button>
+            <button class="nav-link w-full text-left px-6 py-4 border-b border-slate-800 focus:outline-none" data-target="defense">5. Defences & Mitigation</button>
+        </div>
+
+        <main class="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50">
+            
+            <section id="intro" class="section-container">
+                <p class="text-lg text-slate-600 mb-8 max-w-4xl leading-relaxed">
+                    Welcome to Day 13 of the Cyber.SoHo Intrusion Testing Course. This section sets the stage by locating our current position in the syllabus, outlining today's specific learning objectives regarding the PMKID vulnerability, and reinforcing the absolute necessity of ethical conduct and legal compliance during wireless engagements.
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
+                            <span class="text-emerald-500 mr-2">&#128205;</span> Where We Are
+                        </h3>
+                        <ul class="space-y-2 text-slate-600">
+                            <li class="flex items-center"><span class="text-slate-400 mr-2">&#10003;</span> Days 1-2: Ethics, RoE, Lab Build</li>
+                            <li class="flex items-center"><span class="text-slate-400 mr-2">&#10003;</span> Days 3-5: Attacker OPSEC, Anonymity</li>
+                            <li class="flex items-center"><span class="text-slate-400 mr-2">&#10003;</span> Days 6-7: Footprinting & OSINT</li>
+                            <li class="flex items-center"><span class="text-slate-400 mr-2">&#10003;</span> Days 8-9: Social Engineering</li>
+                            <li class="flex items-center"><span class="text-slate-400 mr-2">&#10003;</span> Days 10-12: Scanning & Enumeration</li>
+                            <li class="flex items-center text-emerald-600 font-bold bg-emerald-50 p-2 rounded"><span class="mr-2">&#10148;</span> Day 13: Wi-Fi Hacking — PMKID</li>
+                            <li class="flex items-center"><span class="text-slate-400 mr-2">&#8987;</span> Day 14-15: Mid-Term Review & Assessment</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
+                            <span class="text-emerald-500 mr-2">&#127919;</span> Today's Objectives
+                        </h3>
+                        <ul class="space-y-3 text-slate-600 list-decimal list-inside">
+                            <li>Understand IEEE 802.11 standards & security implications.</li>
+                            <li>Trace Wi-Fi encryption evolution (WEP to WPA3).</li>
+                            <li>Explain the WPA2 4-way handshake mechanism.</li>
+                            <li>Master the PMKID attack theory, methodology, and tools.</li>
+                            <li>Identify effective defences against PMKID-based attacks.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 rounded-xl shadow-sm border border-slate-700 p-6 text-white">
+                    <h3 class="text-xl font-bold mb-4 flex items-center text-rose-400">
+                        <span class="mr-2">&#9888;</span> Legal & Ethical Reminders
+                    </h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="mb-2"><strong class="text-emerald-400">Rule 1:</strong> ALWAYS obtain written authorisation (RoE) before testing.</p>
+                            <p class="mb-2"><strong class="text-emerald-400">Rule 2:</strong> Unauthorised Wi-Fi attacks violate laws such as:</p>
+                            <ul class="list-disc list-inside ml-4 text-slate-300">
+                                <li>CFAA (USA) — Computer Fraud and Abuse Act</li>
+                                <li>CMA (UK) — Computer Misuse Act 1990</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="mb-2"><strong class="text-emerald-400">Rule 3:</strong> Never retain or misuse discovered credentials.</p>
+                            <p class="mb-2"><strong class="text-emerald-400">Rule 4:</strong> Always report all findings honestly.</p>
+                            <p class="italic text-slate-400 mt-4 border-t border-slate-600 pt-2">"We learn to hack to defend — never to harm."</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="evolution" class="section-container hidden">
+                <p class="text-lg text-slate-600 mb-8 max-w-4xl leading-relaxed">
+                    To understand current vulnerabilities, you must understand the history of Wi-Fi protocols. This section details the IEEE 802.11 standard family and the evolution of encryption mechanisms. A protocol's version directly dictates its available attack surface, making reconnaissance critical.
+                </p>
+
+                <div class="mb-10">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-6 border-b pb-2">Wi-Fi Encryption Evolution</h3>
+                    <div class="grid md:grid-cols-4 gap-4">
+                        <div class="bg-white p-5 rounded-xl border-t-4 border-rose-500 shadow-sm interactive-card">
+                            <h4 class="font-bold text-xl text-slate-800 mb-1">WEP</h4>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded uppercase tracking-wide">1999</span>
+                            <ul class="mt-4 space-y-2 text-sm text-slate-600">
+                                <li>RC4 cipher, 24-bit IV</li>
+                                <li>Crackable in ~3 minutes</li>
+                                <li class="font-bold text-rose-600">Fundamentally Broken</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border-t-4 border-orange-500 shadow-sm interactive-card">
+                            <h4 class="font-bold text-xl text-slate-800 mb-1">WPA</h4>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded uppercase tracking-wide">2003</span>
+                            <ul class="mt-4 space-y-2 text-sm text-slate-600">
+                                <li>TKIP encryption</li>
+                                <li>Still uses RC4 underneath</li>
+                                <li class="font-bold text-orange-600">Deprecated. Vulnerable.</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border-t-4 border-amber-500 shadow-sm interactive-card relative overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">TARGET</div>
+                            <h4 class="font-bold text-xl text-slate-800 mb-1">WPA2</h4>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded uppercase tracking-wide">2004</span>
+                            <ul class="mt-4 space-y-2 text-sm text-slate-600">
+                                <li>AES-128 via CCMP</li>
+                                <li>4-way handshake</li>
+                                <li class="font-bold text-amber-600">Vulnerable to PMKID</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border-t-4 border-emerald-500 shadow-sm interactive-card">
+                            <h4 class="font-bold text-xl text-slate-800 mb-1">WPA3</h4>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded uppercase tracking-wide">2018</span>
+                            <ul class="mt-4 space-y-2 text-sm text-slate-600">
+                                <li>SAE (Dragonfly) handshake</li>
+                                <li>Resists offline dictionary</li>
+                                <li class="font-bold text-emerald-600">Secure (if no transition mode)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                        <h3 class="text-xl font-bold text-slate-800">The IEEE 802.11 Standard Family</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 text-sm uppercase tracking-wider">
+                                    <th class="p-4 border-b">Standard</th>
+                                    <th class="p-4 border-b">Year</th>
+                                    <th class="p-4 border-b">Speed</th>
+                                    <th class="p-4 border-b">Band</th>
+                                    <th class="p-4 border-b">Key Feature</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-slate-700 divide-y divide-slate-100">
+                                <tr class="hover:bg-slate-50 transition-colors"><td class="p-4 font-semibold">802.11b</td><td class="p-4">1999</td><td class="p-4">11 Mbps</td><td class="p-4">2.4 GHz</td><td class="p-4">Made Wi-Fi mainstream</td></tr>
+                                <tr class="hover:bg-slate-50 transition-colors"><td class="p-4 font-semibold">802.11g</td><td class="p-4">2003</td><td class="p-4">54 Mbps</td><td class="p-4">2.4 GHz</td><td class="p-4">Backward-compatible</td></tr>
+                                <tr class="hover:bg-slate-50 transition-colors"><td class="p-4 font-semibold">802.11n (Wi-Fi 4)</td><td class="p-4">2009</td><td class="p-4">600 Mbps</td><td class="p-4">Dual</td><td class="p-4">MIMO antennas</td></tr>
+                                <tr class="hover:bg-slate-50 transition-colors"><td class="p-4 font-semibold">802.11ac (Wi-Fi 5)</td><td class="p-4">2014</td><td class="p-4">Multi-Gbps</td><td class="p-4">5 GHz</td><td class="p-4">MU-MIMO</td></tr>
+                                <tr class="hover:bg-slate-50 transition-colors"><td class="p-4 font-semibold">802.11ax (Wi-Fi 6)</td><td class="p-4">2020</td><td class="p-4">9.6 Gbps</td><td class="p-4">Dual</td><td class="p-4">OFDMA, efficiency</td></tr>
+                                <tr class="bg-blue-50 hover:bg-blue-100 transition-colors"><td class="p-4 font-bold text-blue-800">802.11r</td><td class="p-4">-</td><td class="p-4">-</td><td class="p-4">-</td><td class="p-4 font-bold text-rose-600">Fast BSS Transition (Root cause of PMKID)</td></tr>
+                                <tr class="hover:bg-slate-50 transition-colors"><td class="p-4 font-semibold">802.11w</td><td class="p-4">-</td><td class="p-4">-</td><td class="p-4">-</td><td class="p-4">Protected Management Frames (PMF)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="mechanics" class="section-container hidden">
+                <p class="text-lg text-slate-600 mb-8 max-w-4xl leading-relaxed">
+                    The core of the WPA2 protocol is the 4-way handshake, used to establish session keys. The PMKID attack exploits a specific piece of data transmitted in the very first message of this handshake. Explore the formula below to understand exactly what mathematical components are captured and eventually cracked.
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h3 class="text-xl font-bold text-slate-800 mb-4">The WPA2 4-Way Handshake</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center p-3 bg-rose-50 border border-rose-200 rounded-lg relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-2 bg-rose-500"></div>
+                                <div class="ml-2 font-mono text-sm font-bold text-rose-700 w-16">Msg 1</div>
+                                <div class="flex-1 text-sm text-slate-700">AP &rarr; Client: ANonce + <strong class="text-rose-600 underline decoration-rose-300">PMKID (in RSN IE)</strong></div>
+                            </div>
+                            <div class="flex items-center p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                                <div class="font-mono text-sm font-bold text-slate-500 w-16">Msg 2</div>
+                                <div class="flex-1 text-sm text-slate-600">Client &rarr; AP: SNonce + MIC</div>
+                            </div>
+                            <div class="flex items-center p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                                <div class="font-mono text-sm font-bold text-slate-500 w-16">Msg 3</div>
+                                <div class="flex-1 text-sm text-slate-600">AP &rarr; Client: GTK (encrypted) + MIC</div>
+                            </div>
+                            <div class="flex items-center p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                                <div class="font-mono text-sm font-bold text-slate-500 w-16">Msg 4</div>
+                                <div class="flex-1 text-sm text-slate-600">Client &rarr; AP: Acknowledgement</div>
+                            </div>
+                        </div>
+                        <p class="mt-4 text-sm text-slate-600 p-3 bg-emerald-50 text-emerald-800 rounded border border-emerald-200">
+                            <strong>Key Takeaway:</strong> Traditional attacks need all 4 messages (requires connected client). The PMKID attack only needs <strong>Message 1</strong> (no client required).
+                        </p>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col justify-center">
+                        <h3 class="text-xl font-bold text-slate-800 mb-4">PMK Derivation</h3>
+                        <div class="bg-slate-900 rounded-lg p-4 text-center font-mono text-sm text-emerald-400 break-all border border-slate-700 shadow-inner">
+                            PMK = PBKDF2-SHA1(<span class="text-white">Password</span>, SSID, 4096, 256)
+                        </div>
+                        <ul class="mt-4 space-y-2 text-sm text-slate-600">
+                            <li class="flex items-start"><span class="text-slate-400 mr-2">&#10148;</span> The password itself <strong>never</strong> travels over the air.</li>
+                            <li class="flex items-start"><span class="text-slate-400 mr-2">&#10148;</span> PBKDF2's 4,096 iterations deliberately slow down brute-force attempts.</li>
+                            <li class="flex items-start"><span class="text-slate-400 mr-2">&#10148;</span> Both client and AP derive the PMK independently.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-6 text-center">Interactive PMKID Formula Breakdown</h3>
+                    <p class="text-center text-slate-500 mb-6 text-sm">Hover over or click the elements of the formula to understand what the attacker knows and what they must crack.</p>
+                    
+                    <div class="flex flex-wrap justify-center items-center gap-2 font-mono text-lg md:text-xl font-bold mb-8 bg-slate-50 p-6 rounded-xl border border-slate-200">
+                        <div class="text-slate-800">PMKID =</div>
+                        <div class="formula-part px-3 py-2 rounded border border-slate-300 bg-white" data-desc="The hashing algorithm used to compute the PMKID.">HMAC-SHA1-128</div>
+                        <div class="text-slate-800">(</div>
+                        <div class="formula-part px-3 py-2 rounded border border-rose-300 bg-rose-50 text-rose-700" data-desc="Pairwise Master Key: This is derived from the Wi-Fi Password. This is what the attacker is trying to crack.">PMK</div>
+                        <div class="text-slate-800">,</div>
+                        <div class="formula-part px-3 py-2 rounded border border-blue-300 bg-blue-50 text-blue-700" data-desc="A fixed string literal used as a seed. The attacker knows this.">&quot;PMK Name&quot;</div>
+                        <div class="text-slate-800">||</div>
+                        <div class="formula-part px-3 py-2 rounded border border-blue-300 bg-blue-50 text-blue-700" data-desc="The MAC address of the Access Point. The attacker captures this from standard beacon frames.">MAC_AP</div>
+                        <div class="text-slate-800">||</div>
+                        <div class="formula-part px-3 py-2 rounded border border-blue-300 bg-blue-50 text-blue-700" data-desc="The MAC address of the Station (the attacker's own machine). The attacker knows this.">MAC_STA</div>
+                        <div class="text-slate-800">)</div>
+                    </div>
+
+                    <div id="formula-explanation" class="bg-slate-800 text-white p-6 rounded-xl min-h-[100px] flex items-center justify-center text-center shadow-inner border border-slate-700">
+                        Select a component of the formula above to view its significance in the attack.
+                    </div>
+                </div>
+            </section>
+
+            <section id="attack" class="section-container hidden">
+                <p class="text-lg text-slate-600 mb-8 max-w-4xl leading-relaxed">
+                    The PMKID attack revolutionised Wi-Fi hacking by removing the need for an active, connected client. This section contrasts the traditional methodology with the PMKID approach and details the three-phase toolchain required to execute the attack successfully.
+                </p>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-10">
+                    <div class="flex border-b border-slate-200">
+                        <button class="flex-1 py-4 font-bold text-center bg-slate-100 text-slate-800 hover:bg-slate-200 transition-colors focus:outline-none" id="tab-comparison">Method Comparison Matrix</button>
+                        <button class="flex-1 py-4 font-bold text-center bg-white text-emerald-600 border-b-4 border-emerald-500 focus:outline-none" id="tab-workflow">Three-Phase Attack Workflow</button>
+                    </div>
+                    
+                    <div id="view-comparison" class="hidden p-6">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-slate-500 uppercase text-xs tracking-wider">
+                                    <th class="py-3 px-4 w-1/3">Factor</th>
+                                    <th class="py-3 px-4 w-1/3 bg-slate-50">Traditional WPA2 Attack</th>
+                                    <th class="py-3 px-4 w-1/3 bg-emerald-50 text-emerald-800">PMKID Attack</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm">
+                                <tr class="border-b border-slate-100"><td class="py-3 px-4 font-semibold text-slate-700">Client needed?</td><td class="py-3 px-4 bg-slate-50">Yes (must be connected)</td><td class="py-3 px-4 bg-emerald-50 font-bold text-emerald-700">No</td></tr>
+                                <tr class="border-b border-slate-100"><td class="py-3 px-4 font-semibold text-slate-700">Deauth required?</td><td class="py-3 px-4 bg-slate-50">Yes (noisy, detectable)</td><td class="py-3 px-4 bg-emerald-50 font-bold text-emerald-700">No</td></tr>
+                                <tr class="border-b border-slate-100"><td class="py-3 px-4 font-semibold text-slate-700">Messages captured</td><td class="py-3 px-4 bg-slate-50">All 4 handshake msgs</td><td class="py-3 px-4 bg-emerald-50 font-bold text-emerald-700">Only Message 1</td></tr>
+                                <tr class="border-b border-slate-100"><td class="py-3 px-4 font-semibold text-slate-700">Lost frames = failure?</td><td class="py-3 px-4 bg-slate-50">Yes</td><td class="py-3 px-4 bg-emerald-50 font-bold text-emerald-700">No</td></tr>
+                                <tr class="border-b border-slate-100"><td class="py-3 px-4 font-semibold text-slate-700">Detection risk</td><td class="py-3 px-4 bg-slate-50">High (deauth alerts)</td><td class="py-3 px-4 bg-emerald-50 font-bold text-emerald-700">Very low (silent)</td></tr>
+                                <tr><td class="py-3 px-4 font-semibold text-slate-700">Success rate</td><td class="py-3 px-4 bg-slate-50">Depends on timing</td><td class="py-3 px-4 bg-emerald-50 font-bold text-emerald-700">70-90% of routers</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="view-workflow" class="p-6">
+                        <div class="relative max-w-3xl mx-auto">
+                            <div class="absolute left-8 top-8 bottom-8 w-1 bg-slate-200"></div>
+                            
+                            <div class="relative flex items-start mb-10">
+                                <div class="w-16 h-16 rounded-full bg-blue-100 border-4 border-blue-500 flex items-center justify-center font-bold text-blue-700 text-xl z-10 shrink-0">1</div>
+                                <div class="ml-6 bg-white border border-slate-200 p-5 rounded-xl shadow-sm flex-1">
+                                    <h4 class="text-xl font-bold text-slate-800 uppercase tracking-wide mb-1">Capture</h4>
+                                    <div class="text-xs font-mono bg-slate-100 inline-block px-2 py-1 rounded text-slate-600 mb-3 border border-slate-200">Tool: hcxdumptool</div>
+                                    <p class="text-slate-600 text-sm">Sends an association request to the target AP to force it to respond with Message 1 containing the PMKID in the RSN IE. The output is a raw <code class="bg-slate-100 px-1 rounded text-rose-600">.pcapng</code> file.</p>
+                                </div>
+                            </div>
+
+                            <div class="relative flex items-start mb-10">
+                                <div class="w-16 h-16 rounded-full bg-amber-100 border-4 border-amber-500 flex items-center justify-center font-bold text-amber-700 text-xl z-10 shrink-0">2</div>
+                                <div class="ml-6 bg-white border border-slate-200 p-5 rounded-xl shadow-sm flex-1">
+                                    <h4 class="text-xl font-bold text-slate-800 uppercase tracking-wide mb-1">Convert</h4>
+                                    <div class="text-xs font-mono bg-slate-100 inline-block px-2 py-1 rounded text-slate-600 mb-3 border border-slate-200">Tool: hcxpcapngtool</div>
+                                    <p class="text-slate-600 text-sm">Parses the packet capture to extract the specific PMKID hash. It strips unnecessary network data and outputs a clean text file formatted specifically for Hashcat's unified mode 22000.</p>
+                                </div>
+                            </div>
+
+                            <div class="relative flex items-start">
+                                <div class="w-16 h-16 rounded-full bg-rose-100 border-4 border-rose-500 flex items-center justify-center font-bold text-rose-700 text-xl z-10 shrink-0">3</div>
+                                <div class="ml-6 bg-white border border-slate-200 p-5 rounded-xl shadow-sm flex-1">
+                                    <h4 class="text-xl font-bold text-slate-800 uppercase tracking-wide mb-1">Crack</h4>
+                                    <div class="text-xs font-mono bg-slate-100 inline-block px-2 py-1 rounded text-slate-600 mb-3 border border-slate-200">Tool: Hashcat (-m 22000)</div>
+                                    <p class="text-slate-600 text-sm">Utilises GPU acceleration to perform a dictionary or brute-force attack. For each guessed password, it derives a candidate PMK, calculates a candidate PMKID, and compares it to the captured hash. A match reveals the Wi-Fi password.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 rounded-xl p-6 border border-slate-800 text-slate-300">
+                    <h3 class="text-lg font-bold text-white mb-4">Supporting Requirements</h3>
+                    <ul class="grid md:grid-cols-2 gap-3 text-sm">
+                        <li class="flex items-center"><span class="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span> Hardware: Wi-Fi adapter with monitor mode & packet injection.</li>
+                        <li class="flex items-center"><span class="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span> OS: Kali Linux (tools pre-installed).</li>
+                        <li class="flex items-center"><span class="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span> Recon Tool: airodump-ng (Passive AP scanning).</li>
+                        <li class="flex items-center"><span class="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span> Validation: Wireshark (Packet inspection).</li>
+                    </ul>
+                </div>
+
+            </section>
+
+            <section id="defense" class="section-container hidden">
+                <p class="text-lg text-slate-600 mb-8 max-w-4xl leading-relaxed">
+                    Defence is the other half of penetration testing. Understanding how an attack works allows us to implement precise countermeasures. This section outlines remediation strategies and visualises the ultimate defence against offline hashing attacks: Password Entropy.
+                </p>
+
+                <div class="grid lg:grid-cols-3 gap-8 mb-8">
+                    <div class="lg:col-span-1 space-y-4">
+                        <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-emerald-500">
+                            <h4 class="font-bold text-slate-800">1. Disable 802.11r</h4>
+                            <p class="text-sm text-slate-600 mt-1">Eliminates the primary PMKID exposure mechanism. Not needed in most SOHO setups.</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-emerald-500">
+                            <h4 class="font-bold text-slate-800">2. Upgrade to WPA3-SAE</h4>
+                            <p class="text-sm text-slate-600 mt-1">SAE handshake resists offline dictionary attacks and provides forward secrecy.</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-emerald-500">
+                            <h4 class="font-bold text-slate-800">3. Disable Transition Mode</h4>
+                            <p class="text-sm text-slate-600 mt-1">If WPA3 is enabled, don't allow WPA2 fallback, which re-introduces vulnerabilities.</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-emerald-500">
+                            <h4 class="font-bold text-slate-800">4. Update Firmware</h4>
+                            <p class="text-sm text-slate-600 mt-1">Modern router firmware often suppresses PMKID in RSN IE responses automatically.</p>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col">
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">Password Entropy vs. Crack Time</h3>
+                        <p class="text-sm text-slate-500 mb-6">Estimated time using an RTX 4090 GPU via Hashcat. Note: Visual representation uses an abstract scale to display exponential time differences.</p>
+                        <div class="flex-1 w-full relative">
+                            <div class="chart-container">
+                                <canvas id="entropyChart"></canvas>
+                            </div>
+                        </div>
+                        <p class="text-center text-sm font-bold text-emerald-600 mt-4 bg-emerald-50 py-2 rounded">
+                            Lesson: Password length beats complexity every time.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('.section-container');
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const mobileNav = document.getElementById('mobile-nav');
+
+            
+            function switchSection(targetId) {
+                
+                sections.forEach(sec => sec.classList.add('hidden'));
+                navLinks.forEach(link => link.classList.remove('active'));
+
+                
+                const targetSec = document.getElementById(targetId);
+                if (targetSec) targetSec.classList.remove('hidden');
+
+                
+                navLinks.forEach(link => {
+                    if (link.getAttribute('data-target') === targetId) {
+                        link.classList.add('active');
+                    }
+                });
+
+                
+                mobileNav.classList.add('hidden');
+
+                
+                if(targetId === 'defense') {
+                    initChart();
+                }
+            }
+
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    const target = e.target.getAttribute('data-target');
+                    switchSection(target);
+                });
+            });
+
+            
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileNav.classList.toggle('hidden');
+            });
+
+            
+            const formulaParts = document.querySelectorAll('.formula-part');
+            const formulaExp = document.getElementById('formula-explanation');
+            const defaultExpText = "Select a component of the formula above to view its significance in the attack.";
+
+            formulaParts.forEach(part => {
+                part.addEventListener('mouseenter', () => {
+                    formulaParts.forEach(p => p.classList.remove('active'));
+                    part.classList.add('active');
+                    formulaExp.textContent = part.getAttribute('data-desc');
+                    formulaExp.classList.add('bg-slate-900', 'border-emerald-500');
+                    formulaExp.classList.remove('bg-slate-800', 'border-slate-700');
+                });
+                part.addEventListener('mouseleave', () => {
+                    part.classList.remove('active');
+                    formulaExp.textContent = defaultExpText;
+                    formulaExp.classList.remove('bg-slate-900', 'border-emerald-500');
+                    formulaExp.classList.add('bg-slate-800', 'border-slate-700');
+                });
+            });
+
+            
+            const tabComp = document.getElementById('tab-comparison');
+            const tabWork = document.getElementById('tab-workflow');
+            const viewComp = document.getElementById('view-comparison');
+            const viewWork = document.getElementById('view-workflow');
+
+            tabComp.addEventListener('click', () => {
+                viewWork.classList.add('hidden');
+                viewComp.classList.remove('hidden');
+                tabComp.classList.add('bg-white', 'text-emerald-600', 'border-b-4', 'border-emerald-500');
+                tabComp.classList.remove('bg-slate-100', 'text-slate-800');
+                tabWork.classList.remove('bg-white', 'text-emerald-600', 'border-b-4', 'border-emerald-500');
+                tabWork.classList.add('bg-slate-100', 'text-slate-800');
+            });
+
+            tabWork.addEventListener('click', () => {
+                viewComp.classList.add('hidden');
+                viewWork.classList.remove('hidden');
+                tabWork.classList.add('bg-white', 'text-emerald-600', 'border-b-4', 'border-emerald-500');
+                tabWork.classList.remove('bg-slate-100', 'text-slate-800');
+                tabComp.classList.remove('bg-white', 'text-emerald-600', 'border-b-4', 'border-emerald-500');
+                tabComp.classList.add('bg-slate-100', 'text-slate-800');
+            });
+
+            
+            let entropyChartInstance = null;
+            function initChart() {
+                const canvas = document.getElementById('entropyChart');
+                if(!canvas) return;
+
+                if(entropyChartInstance) {
+                    return; 
+                }
+
+                const ctx = canvas.getContext('2d');
+                
+                
+                const labels = ['8 Digits', '8 Lowercase', '10 Mixed', '15 Mixed', '20+ Passphrase'];
+                const abstractData = [1, 10, 30, 70, 100];
+                const realTimes = ['Seconds', 'Minutes', 'Days', 'Millennia', 'Heat death of universe'];
+                const backgroundColors = ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#10b981'];
+
+                entropyChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Security Level (Abstract)',
+                            data: abstractData,
+                            backgroundColor: backgroundColors,
+                            borderWidth: 0,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                display: false, 
+                                beginAtZero: true
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    font: {
+                                        family: 'system-ui, sans-serif'
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                titleFont: { size: 14 },
+                                bodyFont: { size: 14 },
+                                padding: 12,
+                                displayColors: false,
+                                callbacks: {
+                                    title: function(context) {
+                                        return context[0].label + ' Password';
+                                    },
+                                    label: function(context) {
+                                        return 'Est. Crack Time: ' + realTimes[context.dataIndex];
+                                    }
+                                }
+                            }
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    }
+                });
+            }
+
+            
+            switchSection('intro');
+        });
+    </script>
+</body>
+</html>
+
+
+

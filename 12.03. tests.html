@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PMKID Attack Study Guide</title>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f4f7f6;
+    }
+    h1 {
+        text-align: center;
+        color: #2c3e50;
+    }
+    /* Tab System */
+    .tab {
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #e0e6ed;
+        border-radius: 8px 8px 0 0;
+        display: flex;
+    }
+    .tab button {
+        background-color: inherit;
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 14px 24px;
+        transition: 0.3s;
+        font-size: 16px;
+        font-weight: bold;
+        flex: 1;
+        color: #555;
+    }
+    .tab button:hover {
+        background-color: #d1d9e6;
+    }
+    .tab button.active {
+        background-color: #fff;
+        color: #2c3e50;
+        border-bottom: 3px solid #3498db;
+    }
+    .tabcontent {
+        display: none;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-top: none;
+        background-color: #fff;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    
+    /* Flashcards Grid */
+    .flashcard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+    .flashcard {
+        background-color: transparent;
+        width: 100%;
+        height: 200px;
+        perspective: 1000px;
+        cursor: pointer;
+    }
+    .flashcard-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        text-align: center;
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-radius: 10px;
+    }
+    .flashcard.is-flipped .flashcard-inner {
+        transform: rotateY(180deg);
+    }
+    .flashcard-front, .flashcard-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
+        border-radius: 10px;
+        font-size: 15px;
+    }
+    .flashcard-front {
+        background-color: #fff;
+        color: #2c3e50;
+        border: 2px solid #3498db;
+        font-weight: bold;
+    }
+    .flashcard-back {
+        background-color: #3498db;
+        color: white;
+        transform: rotateY(180deg);
+    }
+
+    /* Quiz Styles */
+    .question-card {
+        margin-bottom: 30px;
+        padding: 20px;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        background-color: #fafafa;
+    }
+    .question-text {
+        font-weight: bold;
+        font-size: 1.1em;
+        margin-bottom: 15px;
+    }
+    .options label {
+        display: block;
+        margin-bottom: 10px;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 4px;
+        transition: background 0.2s;
+    }
+    .options label:hover {
+        background-color: #eef2f5;
+    }
+    .hint-btn, .check-btn {
+        margin-top: 10px;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    .hint-btn { background-color: #f39c12; color: white; margin-right: 10px; }
+    .hint-btn:hover { background-color: #e67e22; }
+    .check-btn { background-color: #2ecc71; color: white; }
+    .check-btn:hover { background-color: #27ae60; }
+    .hint-text {
+        display: none;
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #fdf5e6;
+        border-left: 4px solid #f39c12;
+        font-size: 0.9em;
+    }
+    .feedback {
+        display: none;
+        margin-top: 15px;
+        padding: 15px;
+        border-radius: 4px;
+        font-size: 0.95em;
+    }
+    .feedback.correct { background-color: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+    .feedback.incorrect { background-color: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
+</style>
+</head>
+<body>
+
+<h1>PMKID Attack Study Guide</h1>
+
+<div class="tab">
+  <button class="tablinks active" onclick="openTab(event, 'FlashcardsTab')">Flashcards (25)</button>
+  <button class="tablinks" onclick="openTab(event, 'QuizTab')">Practical Quiz (10)</button>
+</div>
+
+<div id="FlashcardsTab" class="tabcontent" style="display: block;">
+  <p style="text-align: center; color: #666; margin-bottom: 20px;">Click on a card to flip it and reveal the answer.</p>
+  <div class="flashcard-grid" id="flashcard-container">
+      </div>
+</div>
+
+<div id="QuizTab" class="tabcontent">
+  <p style="text-align: center; color: #666; margin-bottom: 20px;">Test your practical application of the PMKID attack.</p>
+  <div id="quiz-container">
+      </div>
+</div>
+
+<script>
+// --- Data ---
+const flashcardsData = [
+  { f: "802.11 amendment responsible for the PMKID vulnerability", b: "802.11r (Fast BSS Transition / Roaming)" },
+  { f: "Purpose of the 802.11w amendment", b: "Protected Management Frames (PMF), which prevents deauthentication attacks." },
+  { f: "First required step before executing any wireless attack", b: "Reconnaissance to identify the target's BSSID, SSID, channel, and encryption type." },
+  { f: "Encryption protocol crackable in approx. 3 minutes using FMS/PTW attacks", b: "WEP (Wired Equivalent Privacy)" },
+  { f: "Primary vulnerability associated with the deprecated WPA protocol", b: "Vulnerable to Beck-Tews injection (as it still uses RC4 underneath)." },
+  { f: "Encryption standard and protocol replacing RC4 in WPA2", b: "AES-128 via CCMP" },
+  { f: "Key exchange mechanism in WPA3 that resists offline dictionary attacks", b: "SAE (Simultaneous Authentication of Equals / Dragonfly handshake)" },
+  { f: "Security risk of enabling WPA3 transition mode", b: "It allows WPA2 fallback, re-introducing WPA2 vulnerabilities like the PMKID attack." },
+  { f: "Algorithm and iteration count used to derive the PMK in WPA2", b: "PBKDF2-SHA1 using 4096 iterations" },
+  { f: "Message in the WPA2 4-way handshake containing the PMKID", b: "Message 1 (from the AP to the Client, within the RSN IE)" },
+  { f: "Major operational advantage of the PMKID attack over traditional WPA2 attacks", b: "It does not require a connected client or deauthentication, making it client-less and silent." },
+  { f: "Variables used to compute the PMKID hash", b: "The PMK, the fixed string 'PMK Name', the AP's MAC address, and the Station's MAC address." },
+  { f: "Tool used in Phase 1 (Capture) to retrieve the PMKID", b: "hcxdumptool" },
+  { f: "Action performed by hcxdumptool to trigger a PMKID response", b: "It sends an association request to the target AP." },
+  { f: "Tool used to extract the PMKID hash from a .pcapng file into Hashcat format", b: "hcxpcapngtool" },
+  { f: "Hashcat mode number used for the unified WPA-PBKDF2-PMKID+EAPOL format", b: "Mode 22000" },
+  { f: "Cryptographic key that an attacker ultimately recovers by cracking the PMKID", b: "The PMK (Pairwise Master Key), which allows derivation of the Wi-Fi password." },
+  { f: "Most direct configuration change to eliminate PMKID exposure on a router", b: "Disable 802.11r (Fast BSS Transition)." },
+  { f: "Most effective password characteristic against offline dictionary attacks", b: "Length. A 20+ character passphrase provides far more security than a short, complex password." },
+  { f: "Meaning of BSSID in wireless networking", b: "Basic Service Set Identifier (the MAC address of the Access Point)." },
+  { f: "Purpose of the PTK (Pairwise Transient Key)", b: "It serves as the session key for unicast traffic between the client and AP." },
+  { f: "Two critical features a Wi-Fi adapter must support for wireless attacks", b: "Monitor mode and packet injection." },
+  { f: "Meaning of the acronym RSN IE", b: "Robust Security Network Information Element" },
+  { f: "Estimated success rate of the PMKID attack against consumer-grade routers", b: "70-90% of routers (primarily due to default 802.11r configurations)." },
+  { f: "Prerequisite before conducting any wireless penetration testing", b: "Obtaining written authorisation (Rules of Engagement / RoE)." }
+];
+
+const quizData = [
+  {
+    q: "A penetration tester is scanning a corporate environment and identifies four Access Points. To execute a PMKID attack, which AP configuration presents the most viable target?",
+    hint: "Consider which IEEE amendment facilitates Fast BSS Transition (roaming) and introduces the specific vulnerability being exploited.",
+    options: [
+      { text: "An AP advertising 802.11w support.", correct: false, rat: "The 802.11w amendment provides Protected Management Frames, which defend against traditional deauthentication attacks rather than enabling the PMKID vulnerability." },
+      { text: "An AP with 802.11r enabled.", correct: true, rat: "The 802.11r amendment, designed for Fast BSS Transition, is the specific mechanism that inadvertently exposes the PMKID hash in the initial association response." },
+      { text: "An AP restricted to WPA3-SAE only.", correct: false, rat: "WPA3-SAE replaces the vulnerable Pre-Shared Key exchange with the Dragonfly handshake, effectively mitigating offline dictionary attacks." },
+      { text: "An AP utilizing legacy WEP encryption.", correct: false, rat: "WEP uses the RC4 cipher and is compromised using statistical attacks like FMS or PTW, whereas PMKID specifically targets WPA2's 4-way handshake." }
+    ]
+  },
+  {
+    q: "A client recently upgraded their office network to support WPA3, but during an assessment, you successfully execute a PMKID attack against their infrastructure. What configuration flaw most likely allowed this vector to succeed?",
+    hint: "Think about how network administrators maintain backward compatibility for older devices that do not support the latest encryption standards.",
+    options: [
+      { text: "WPA2 Transition Mode was enabled.", correct: true, rat: "Transition mode permits WPA2 clients to connect to a WPA3 network, re-introducing the vulnerable 4-way handshake and the associated PMKID exposure." },
+      { text: "Protected Management Frames (PMF) were disabled.", correct: false, rat: "While disabling PMF makes traditional deauthentication attacks easier, it does not directly cause the leakage of the PMKID hash." },
+      { text: "The network was broadcasting on a 5 GHz band instead of 2.4 GHz.", correct: false, rat: "The frequency band dictates range and throughput but has no bearing on the cryptographic handshake mechanism used by the protocol." },
+      { text: "The PBKDF2 algorithm was configured with fewer than 4096 iterations.", correct: false, rat: "The number of PBKDF2 iterations in WPA2 is fixed at 4096 by the standard; altering it would break protocol compliance rather than cause a fallback to WPA2." }
+    ]
+  },
+  {
+    q: "While conducting a wireless assessment late at night, a tester notices there are no clients currently connected to the target WPA2 network. Why is the PMKID attack still a viable methodology?",
+    hint: "Consider which step of the 4-way handshake contains the targeted data and which device is responsible for generating that specific message.",
+    options: [
+      { text: "The PMKID attack relies on capturing the AP's beacon frames which constantly broadcast the hashed Wi-Fi password.", correct: false, rat: "Beacon frames broadcast network presence but do not contain sensitive key material like the PMK or PMKID." },
+      { text: "The attacker can force the AP to generate the required hash in Message 1 of the handshake by simply sending an association request.", correct: true, rat: "Because the PMKID is delivered by the AP in the very first message of the handshake, the attacker only needs to initiate a connection, making the presence of legitimate clients unnecessary." },
+      { text: "The toolchain automatically brute-forces the MAC address of previously connected clients to simulate network traffic.", correct: false, rat: "MAC spoofing is not required here because the AP will respond with the PMKID to any device attempting to associate with it." },
+      { text: "WPA2 networks cache the Pairwise Master Key of all past clients in plaintext within the Robust Security Network Information Element.", correct: false, rat: "The PMK is never transmitted over the air or cached in plaintext; the vulnerability relies on capturing a hash derived from it." }
+    ]
+  },
+  {
+    q: "An attacker wants to retrieve a network's pre-shared key with the lowest possible risk of triggering the target's Wireless Intrusion Detection System (WIDS). Why is the PMKID attack preferable to a traditional WPA2 handshake capture?",
+    hint: "Traditional WPA2 attacks require capturing all four handshake messages, which often means forcing an actively connected device to drop and reconnect.",
+    options: [
+      { text: "It bypasses the need to capture any handshake messages entirely.", correct: false, rat: "The attack still requires capturing a handshake message, specifically Message 1, which contains the RSN IE." },
+      { text: "It utilizes the 5 GHz band, which older WIDS deployments typically do not monitor.", correct: false, rat: "WIDS platforms monitor both bands; the stealth of the attack comes from the methodology, not the frequency." },
+      { text: "It avoids the need to send noisy deauthentication frames to disconnect existing clients.", correct: true, rat: "Because the attacker only needs the AP's initial response to an association request, there is no need to actively jam or disconnect legitimate users, which is the primary trigger for WIDS alerts." },
+      { text: "It encrypts the attacker's MAC address during the capture phase.", correct: false, rat: "The attacker's MAC address is sent in plaintext during the association request; the attack's stealth relies on its brevity and lack of disruption." }
+    ]
+  },
+  {
+    q: "You have just finished running hcxdumptool against a vulnerable target and acquired a .pcapng file containing the RSN IE data. What is your immediate next step in the attack workflow?",
+    hint: "The raw packet capture file contains a vast amount of network overhead and raw frame data that password cracking utilities cannot natively parse.",
+    options: [
+      { text: "Use airmon-ng to disable monitor mode on your wireless adapter.", correct: false, rat: "While monitor mode will eventually be disabled, doing so is an administrative cleanup task, not the next technical phase." },
+      { text: "Load the .pcapng file directly into Hashcat using mode 22000.", correct: false, rat: "Hashcat expects a specific, cleaned text format and will fail to process raw packet capture files." },
+      { text: "Use hcxpcapngtool to extract the PMKID hash into a unified format.", correct: true, rat: "The conversion phase strips away unnecessary 802.11 frame data and formats the captured PMKID specifically for ingestion by Hashcat." },
+      { text: "Execute aireplay-ng to verify the captured hash against the AP.", correct: false, rat: "Aireplay-ng is used for traffic injection and deauthentication, not for hash verification or offline cracking preparation." }
+    ]
+  },
+  {
+    q: "To successfully crack the PMKID offline, Hashcat must calculate candidate PMKIDs to compare against the captured hash. Which set of variables is required for Hashcat to perform this calculation?",
+    hint: "Look closely at the cryptographic formula used to generate the identifier: HMAC-SHA1-128(...).",
+    options: [
+      { text: "The AP's MAC address, the Station's MAC address, the fixed string 'PMK Name', and the derived PMK.", correct: true, rat: "The PMKID is an HMAC-SHA1 hash constructed by combining the Pairwise Master Key with a fixed string and the MAC addresses of both communicating devices." },
+      { text: "The ANonce, SNonce, PTK, and the target's SSID.", correct: false, rat: "These variables are used to derive the Pairwise Transient Key (PTK) during the full 4-way handshake, not the PMKID found in Message 1." },
+      { text: "The PBKDF2 hash, the GTK, and the target's BSSID.", correct: false, rat: "The Group Temporal Key (GTK) is used for broadcast traffic and is transmitted in Message 3, playing no role in the calculation of the PMKID." },
+      { text: "The Extensible Authentication Protocol (EAPOL) frame, the MIC, and the RC4 cipher stream.", correct: false, rat: "RC4 is the legacy cipher, and the Message Integrity Code (MIC) is used in Messages 2 and 3, none of which are involved in the PMKID formula." }
+    ]
+  },
+  {
+    q: "You are advising a small business on securing their current WPA2 Wi-Fi hardware against PMKID attacks. They cannot afford to upgrade to WPA3-capable routers. What is the most effective administrative configuration change?",
+    hint: "The vulnerability stems from an optional feature designed to help clients seamlessly roam between multiple access points without renegotiating full authentication.",
+    options: [
+      { text: "Hide the network SSID to prevent attackers from locating the network.", correct: false, rat: "Hidden SSIDs are easily revealed by capturing probe requests; it is security through obscurity." },
+      { text: "Disable 802.11r (Fast BSS Transition) in the router's configuration.", correct: true, rat: "Disabling 802.11r eliminates the mechanism that includes the PMKID in the initial association response, closing the primary exposure vector." },
+      { text: "Enable MAC address filtering to restrict allowed devices.", correct: false, rat: "MAC addresses are transmitted in plaintext and can be easily spoofed by an attacker to bypass basic filtering." },
+      { text: "Reduce the Wi-Fi transmit power so the signal does not leave the building.", correct: false, rat: "While reducing signal leakage is a good practice, an attacker with a high-gain antenna can still capture the necessary packets." }
+    ]
+  },
+  {
+    q: "A company is updating its Wi-Fi password policy to protect against offline cracking attempts. According to the course material, which password profile offers the highest resilience against a Hashcat dictionary attack?",
+    hint: "Consider the relationship between overall entropy, the size of the cryptographic search space, and what the material states is more critical than pure complexity.",
+    options: [
+      { text: "An 8-character password utilizing uppercase, lowercase, numbers, and symbols.", correct: false, rat: "Despite high complexity, an 8-character string lacks sufficient length, meaning the total search space can be exhausted rapidly." },
+      { text: "A 10-character password that is mandated to be changed every 30 days.", correct: false, rat: "Frequent password rotation does not protect against an attacker who has captured the hash and can crack a 10-character password offline quickly." },
+      { text: "A 15-character password containing exclusively random numbers.", correct: false, rat: "A numeric-only string severely limits the character set, making it highly susceptible to brute-force attacks." },
+      { text: "A 22-character passphrase consisting of four random dictionary words.", correct: true, rat: "Length is the primary driver of entropy; a long passphrase creates a search space so massive that it renders offline cracking computationally infeasible." }
+    ]
+  },
+  {
+    q: "An analyst is preparing to run Hashcat against a unified PMKID hash file extracted from a recent capture. Which specific command-line mode argument must they include to ensure Hashcat processes the data correctly?",
+    hint: "The course material notes that a legacy cracking mode was deprecated and replaced by a new, unified format for WPA-PBKDF2-PMKID+EAPOL.",
+    options: [
+      { text: "-m 16800", correct: false, rat: "Mode 16800 was the legacy mode used specifically for older PMKID formats, which has since been replaced." },
+      { text: "-m 22000", correct: true, rat: "Mode 22000 is the current unified Hashcat mode that handles both traditional WPA handshakes (EAPOL) and modern PMKID hash formats." },
+      { text: "-m 4096", correct: false, rat: "4096 refers to the number of PBKDF2 iterations used during key derivation, not the Hashcat application mode." },
+      { text: "-m 256", correct: false, rat: "256 refers to the bit-length of the derived Pairwise Master Key, not a valid Hashcat mode identifier." }
+    ]
+  },
+  {
+    q: "During a contracted penetration test of Company A, a tester detects a highly vulnerable WPA2 network belonging to Company B next door. What is the ethically and legally sound course of action?",
+    hint: "Professional penetration testing relies entirely on strict adherence to established legal boundaries and explicit client permissions.",
+    options: [
+      { text: "Exploit Company B's network to demonstrate the severity of the vulnerability in the final report for Company A.", correct: false, rat: "Attacking an unauthorized target constitutes a cybercrime and violates professional ethics." },
+      { text: "Capture the PMKID hash from Company B to verify the vulnerability, but delete the capture without cracking it.", correct: false, rat: "The act of intentionally capturing packets from a target without authorization is a violation of cyber laws." },
+      { text: "Ignore Company B's network completely as it falls outside the established Rules of Engagement (RoE).", correct: true, rat: "Ethical hackers must strictly operate within the boundaries defined by their written authorization; interacting with out-of-scope targets is strictly prohibited." },
+      { text: "Launch a silent PMKID attack against Company B, then immediately notify their IT department of the findings.", correct: false, rat: "Good intentions do not override the law; unauthorized testing is illegal, even if the findings are responsibly disclosed afterward." }
+    ]
+  }
+];
+
+// --- Render Flashcards ---
+const flashcardContainer = document.getElementById('flashcard-container');
+flashcardsData.forEach((card, index) => {
+    const cardEl = document.createElement('div');
+    cardEl.className = 'flashcard';
+    cardEl.onclick = function() { this.classList.toggle('is-flipped'); };
+    
+    cardEl.innerHTML = `
+        <div class="flashcard-inner">
+            <div class="flashcard-front">${card.f}</div>
+            <div class="flashcard-back">${card.b}</div>
+        </div>
+    `;
+    flashcardContainer.appendChild(cardEl);
+});
+
+// --- Render Quiz ---
+const quizContainer = document.getElementById('quiz-container');
+quizData.forEach((q, qIndex) => {
+    const qDiv = document.createElement('div');
+    qDiv.className = 'question-card';
+    
+    let optionsHtml = '';
+    q.options.forEach((opt, oIndex) => {
+        optionsHtml += `
+            <label>
+                <input type="radio" name="q${qIndex}" value="${oIndex}">
+                ${opt.text}
+            </label>
+        `;
+    });
+
+    qDiv.innerHTML = `
+        <div class="question-text">${qIndex + 1}. ${q.q}</div>
+        <div class="options" id="options-${qIndex}">${optionsHtml}</div>
+        <button class="hint-btn" onclick="toggleHint(${qIndex})">Show Hint</button>
+        <button class="check-btn" onclick="checkAnswer(${qIndex})">Check Answer</button>
+        <div class="hint-text" id="hint-${qIndex}"><strong>Hint:</strong> ${q.hint}</div>
+        <div class="feedback" id="feedback-${qIndex}"></div>
+    `;
+    quizContainer.appendChild(qDiv);
+});
+
+// --- Interaction Logic ---
+function openTab(evt, tabName) {
+    const tabcontent = document.getElementsByClassName("tabcontent");
+    for (let i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    const tablinks = document.getElementsByClassName("tablinks");
+    for (let i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+}
+
+function toggleHint(qIndex) {
+    const hintDiv = document.getElementById(`hint-${qIndex}`);
+    if (hintDiv.style.display === "block") {
+        hintDiv.style.display = "none";
+    } else {
+        hintDiv.style.display = "block";
+    }
+}
+
+function checkAnswer(qIndex) {
+    const selected = document.querySelector(`input[name="q${qIndex}"]:checked`);
+    const feedbackDiv = document.getElementById(`feedback-${qIndex}`);
+    
+    if (!selected) {
+        feedbackDiv.style.display = "block";
+        feedbackDiv.className = "feedback";
+        feedbackDiv.innerHTML = "Please select an answer first.";
+        return;
+    }
+
+    const selectedIdx = parseInt(selected.value);
+    const isCorrect = quizData[qIndex].options[selectedIdx].correct;
+    const rationale = quizData[qIndex].options[selectedIdx].rat;
+
+    feedbackDiv.style.display = "block";
+    if (isCorrect) {
+        feedbackDiv.className = "feedback correct";
+        feedbackDiv.innerHTML = `<strong>Correct!</strong> ${rationale}`;
+    } else {
+        feedbackDiv.className = "feedback incorrect";
+        feedbackDiv.innerHTML = `<strong>Incorrect.</strong> ${rationale}`;
+    }
+}
+</script>
+</body>
+</html>
+
+
+

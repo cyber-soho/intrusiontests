@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Hacking: Study Canvas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Flashcard Flip Animations */
+        .flip-card {
+            perspective: 1000px;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .flip-card-front {
+            background-color: #ffffff;
+            border: 2px solid #e5e7eb;
+            color: #1f2937;
+        }
+        .flip-card-back {
+            background-color: #f3f4f6;
+            border: 2px solid #3b82f6;
+            color: #1e3a8a;
+            transform: rotateY(180deg);
+        }
+        
+        /* Quiz Styling */
+        .quiz-option.selected-correct { background-color: #d1fae5; border-color: #10b981; }
+        .quiz-option.selected-incorrect { background-color: #fee2e2; border-color: #ef4444; }
+        .quiz-option.disabled { opacity: 0.6; cursor: not-allowed; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-800">
+
+    <div class="max-w-4xl mx-auto py-10 px-4">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-slate-900 mb-2">System Hacking Study Canvas</h1>
+            <p class="text-slate-600">Master Post-Exploitation techniques with Flashcards and Quizzes</p>
+        </header>
+
+        <div class="flex space-x-2 border-b border-slate-300 mb-6">
+            <button onclick="switchTab('flashcards')" id="tab-flashcards" class="px-6 py-3 font-semibold text-blue-600 border-b-2 border-blue-600 focus:outline-none transition-colors">
+                Flashcards (25)
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-700 focus:outline-none transition-colors">
+                Practice Quiz (10)
+            </button>
+        </div>
+
+        <div id="section-flashcards" class="block">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <span id="fc-counter" class="text-sm font-semibold text-slate-500">Card 1 of 25</span>
+                    <button onclick="flipCard()" class="text-sm text-blue-600 hover:text-blue-800 flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Flip Card
+                    </button>
+                </div>
+
+                <div class="flex justify-center mb-6">
+                    <div class="flip-card w-full max-w-lg h-64 cursor-pointer" onclick="flipCard()" id="flashcard-container">
+                        <div class="flip-card-inner" id="flashcard-inner">
+                            <div class="flip-card-front">
+                                <h3 id="fc-front" class="text-xl font-medium text-center"></h3>
+                            </div>
+                            <div class="flip-card-back">
+                                <p id="fc-back" class="text-lg text-center"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-center space-x-4">
+                    <button onclick="prevCard()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition font-medium">Previous</button>
+                    <button onclick="nextCard()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition font-medium">Next Card</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-quiz" class="hidden">
+            <div id="quiz-container" class="space-y-8">
+                </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DATA ---
+        const flashcards = [
+            { front: "Phase 5 of the PTES (Penetration Testing Execution Standard)", back: "Post-Exploitation" },
+            { front: "Storage location of Linux password hashes", back: "/etc/shadow (typically using SHA-512 with a salt)" },
+            { front: "Storage location of Windows NTLM hashes", back: "SAM (Security Account Manager) database" },
+            { front: "Key properties of an NTLM hash", back: "32 hex characters, no salt, and extremely fast to crack" },
+            { front: "Password cracking attack that mutates words from a wordlist", back: "Rule-Based Attack (e.g., capitalizing, appending numbers)" },
+            { front: "Password cracking attack targeting specific known password patterns", back: "Mask Attack" },
+            { front: "Primary advantage and use case for Hashcat", back: "GPU-accelerated hash cracking, fastest for single hash types" },
+            { front: "Primary advantage and use case for John the Ripper", back: "CPU-based cracking, excels with mixed hash types and automatic format detection" },
+            { front: "Linux privilege escalation vector involving binaries that execute as the file owner", back: "SUID (Set User ID) Binaries" },
+            { front: "Linux privilege escalation vector abusing scheduled tasks", back: "Cron Job Abuse (targeting world-writable scripts executed as root)" },
+            { front: "Privilege escalation vector exploiting commands called without full paths", back: "PATH Hijacking" },
+            { front: "Windows privilege escalation vector involving spaces in executable paths", back: "Unquoted Service Paths" },
+            { front: "Windows privilege escalation vector abusing service tokens to impersonate SYSTEM", back: "Token Impersonation (e.g., Potato Attacks like Juicy Potato or PrintSpoofer)" },
+            { front: "Windows Group Policy misconfiguration allowing any MSI to install as SYSTEM", back: "AlwaysInstallElevated" },
+            { front: "Online reference catalog of Unix binaries that can be exploited to bypass local security", back: "GTFOBins" },
+            { front: "Online reference catalog of Living Off The Land Binaries for Windows", back: "LOLBAS" },
+            { front: "Two primary purposes of persistence in penetration testing", back: "Operational efficiency (reliable re-access) and demonstrating real-world risk to the client" },
+            { front: "Linux persistence method using public keys for passwordless access", back: "SSH Authorized Keys" },
+            { front: "Windows persistence method that executes a payload at every user login", back: "Registry Run Keys (e.g., HKCU...\\CurrentVersion\\Run)" },
+            { front: "Secure deletion tools used for cleanup on Linux and Windows", back: "shred (Linux) and sdelete (Windows)" },
+            { front: "Three attack surfaces that create an evidence footprint for a tester", back: "Network Footprint, Disk Footprint, and Behavioral Footprint" },
+            { front: "Recommended OPSEC practice for hash cracking", back: "Extract into memory, crack offline on your own machine, and never use 3rd-party online crackers" },
+            { front: "Windows Event ID generated when the Audit Log is cleared", back: "Event ID 1102" },
+            { front: "Mandatory document specifying authorized testing scope, blackout windows, and techniques", back: "Rules of Engagement (RoE)" },
+            { front: "Modern, intentionally slow hashing algorithms recommended for Blue Teams", back: "bcrypt, Argon2id, and scrypt" }
+        ];
+
+        const quizData = [
+            {
+                qNum: 1,
+                question: "A tester has extracted the SAM database from a compromised Windows server. What type of hash should they expect to find, and what is its primary characteristic?",
+                hint: "Think about the default legacy password storage mechanism used by Microsoft.",
+                options: [
+                    { text: "NTLM hashes, which lack a salt and are extremely fast to crack.", rationale: "Windows stores local passwords as NTLM hashes in the SAM database, which are unsalted and can be cracked at billions of hashes per second.", isCorrect: true },
+                    { text: "bcrypt hashes, which use a cost factor to intentionally slow down cracking.", rationale: "While bcrypt is a modern, intentionally slow algorithm, it is not the default hash format used in the Windows SAM database.", isCorrect: false },
+                    { text: "SHA-512 hashes, which utilize a salt to prevent rainbow table attacks.", rationale: "SHA-512 with a salt is typically used in modern Linux systems (within the /etc/shadow file), not in the Windows SAM database.", isCorrect: false },
+                    { text: "MD5 hashes, which are heavily encrypted and require CPU-based cracking.", rationale: "MD5 has been broken since 2004 and is not the standard format for Windows SAM.", isCorrect: false }
+                ]
+            },
+            {
+                qNum: 2,
+                question: "You discover that the target organization enforces a strict password policy: exactly one uppercase letter, followed by five lowercase letters, and ending with two digits (e.g., 'Qwerty99'). Which cracking attack mode is the most efficient choice?",
+                hint: "Consider which attack mode allows you to define the specific character sets and positions.",
+                options: [
+                    { text: "Dictionary Attack", rationale: "A dictionary attack relies entirely on the words present in a pre-compiled list, which would be highly inefficient here.", isCorrect: false },
+                    { text: "Rule-Based Attack", rationale: "A rule-based attack mutates existing dictionary words. While useful, it is less direct than explicitly defining the known structure.", isCorrect: false },
+                    { text: "Mask Attack", rationale: "A mask attack is ideal here because it allows the attacker to specify the exact pattern when the corporate password policy is known.", isCorrect: true },
+                    { text: "Brute-Force Attack", rationale: "A brute-force attack attempts every possible combination of all characters, making it the slowest method.", isCorrect: false }
+                ]
+            },
+            {
+                qNum: 3,
+                question: "During a Windows penetration test, you find a service whose executable path contains spaces but lacks quotation marks. What privilege escalation vector does this potentially expose?",
+                hint: "Consider how the Windows operating system parses commands with spaces when boundaries aren't explicitly defined.",
+                options: [
+                    { text: "Token Impersonation", rationale: "Token impersonation involves abusing service tokens, not manipulating file paths.", isCorrect: false },
+                    { text: "Unquoted Service Paths", rationale: "An unquoted path with spaces allows an attacker to place a malicious executable in an intermediary folder, which Windows will execute before finding the intended service.", isCorrect: true },
+                    { text: "AlwaysInstallElevated", rationale: "This is a Group Policy misconfiguration related to Microsoft Software Installers (.msi).", isCorrect: false },
+                    { text: "DLL Hijacking", rationale: "DLL hijacking occurs when an application loads a library without specifying the full path, not an issue with the service's primary executable path.", isCorrect: false }
+                ]
+            },
+            {
+                qNum: 4,
+                question: "You run `sudo -l` as a low-privileged user on a Linux system and notice you can execute `/usr/bin/vim` without a password. What reference catalog should you consult to quickly find a command to leverage this into a root shell?",
+                hint: "You are looking for an online resource specifically dedicated to Unix binaries.",
+                options: [
+                    { text: "LOLBAS", rationale: "LOLBAS is the equivalent catalog for Windows systems, not Linux.", isCorrect: false },
+                    { text: "GTFOBins", rationale: "GTFOBins is a curated list of Unix binaries (like vim, awk) that can be exploited to break out of restricted shells when run via sudo or as SUID.", isCorrect: true },
+                    { text: "LinPEAS", rationale: "LinPEAS is an enumeration script, but GTFOBins is the reference catalog used to figure out how to exploit the findings.", isCorrect: false },
+                    { text: "Metasploit", rationale: "While Metasploit contains exploits, a simple sudo misconfiguration involving a standard text editor is a 'living off the land' technique.", isCorrect: false }
+                ]
+            },
+            {
+                qNum: 5,
+                question: "An attacker wants to ensure their payload executes automatically every time a specific user logs into their Windows workstation. Which persistence mechanism is the most direct and appropriate choice?",
+                hint: "Focus on the mechanism that specifically triggers based on a user profile loading at logon.",
+                options: [
+                    { text: "SSH Authorized Keys", rationale: "Appending an SSH public key is a primary persistence method for Linux systems.", isCorrect: false },
+                    { text: "Systemd Service", rationale: "Systemd is an init system and service manager for Linux.", isCorrect: false },
+                    { text: "WMI Event Subscriptions", rationale: "WMI is generally triggered by system events rather than specifically tying into a standard user's login sequence in the simplest way.", isCorrect: false },
+                    { text: "Registry Run Keys", rationale: "Modifying the HKCU Run key is the standard method for executing a payload exactly when that specific user logs in.", isCorrect: true }
+                ]
+            },
+            {
+                qNum: 6,
+                question: "Upon completing a test, a tester deletes their custom persistence scripts using the standard `rm` (Linux) and `del` (Windows) commands. Why is this insufficient according to PTES cleanup guidelines?",
+                hint: "Consider what happens at the storage disk level when a standard operating system deletion command is issued.",
+                options: [
+                    { text: "Standard deletion leaves the underlying data recoverable on the disk; secure deletion tools must be used.", rationale: "Standard commands simply remove the file pointer. PTES requires tools like shred or sdelete to overwrite the actual data.", isCorrect: true },
+                    { text: "It fails to clear the Event ID 1102 alert from the SIEM.", rationale: "Deleting a file does not generate Event ID 1102 (which is triggered by clearing the audit log).", isCorrect: false },
+                    { text: "The files will automatically be restored from shadow copies upon the next system reboot.", rationale: "Standard user files do not automatically resurrect from shadow copies simply because a system reboots.", isCorrect: false },
+                    { text: "It immediately alerts the SOC via an SNMP trap.", rationale: "It is the lack of secure wiping that violates the PTES cleanup standard, not an automatic SNMP trap.", isCorrect: false }
+                ]
+            },
+            {
+                qNum: 7,
+                question: "Which of the following actions represents the best operational security (OPSEC) practice when attempting to crack discovered password hashes?",
+                hint: "Think about minimizing the disk footprint on the target and protecting sensitive client data.",
+                options: [
+                    { text: "Extracting the hashes to memory and cracking them offline on an attacker-controlled machine.", rationale: "This approach minimizes the disk footprint on the target and ensures that sensitive hashes are not exposed to the internet.", isCorrect: true },
+                    { text: "Running Hashcat directly on the compromised server to save data transfer time.", rationale: "Installing heavy tools on a target server creates a massive footprint, alerting defenders almost immediately.", isCorrect: false },
+                    { text: "Uploading the hashes to a third-party online cracking service.", rationale: "Uploading client hashes to an uncontrolled, third-party website is a severe security violation that exposes client data.", isCorrect: false },
+                    { text: "Installing John the Ripper on the target system to automatically detect hash formats.", rationale: "Uploading any new binaries to the target system increases the likelihood of triggering an antivirus alert.", isCorrect: false }
+                ]
+            },
+            {
+                qNum: 8,
+                question: "A penetration tester decides to clear all Windows event logs to hide their tracks before concluding an engagement. Why is this considered poor OPSEC?",
+                hint: "Consider how modern SIEM systems react to sudden, massive deletions of log data.",
+                options: [
+                    { text: "It corrupts the SAM database, rendering the system unbootable.", rationale: "Clearing the event viewer logs does not interact with or corrupt the SAM database.", isCorrect: false },
+                    { text: "It prevents the client from rotating their passwords in the future.", rationale: "Event logs are historical records; deleting them has no bearing on future password policy enforcement.", isCorrect: false },
+                    { text: "It requires SYSTEM privileges, which the tester might not have obtained.", rationale: "The primary OPSEC failure is the loud alarm it triggers, not just the prerequisite permissions.", isCorrect: false },
+                    { text: "It generates Event ID 1102 (Audit Log Cleared), which immediately alerts the SOC.", rationale: "Wiping all logs is a highly suspicious activity that creates a specific, high-priority Event ID (1102) in the SIEM.", isCorrect: true }
+                ]
+            },
+            {
+                qNum: 9,
+                question: "To avoid generating alerts from uploaded custom binaries on Windows, a tester executes their privilege escalation using trusted tools already present. What reference catalog should they consult?",
+                hint: "Look for the acronym that stands for utilizing pre-installed operating system executables for malicious purposes.",
+                options: [
+                    { text: "GTFOBins", rationale: "GTFOBins is the catalog for exploiting Unix/Linux binaries, not Windows binaries.", isCorrect: false },
+                    { text: "LOLBAS", rationale: "LOLBAS (Living Off The Land Binaries and Scripts) catalogs native Windows executables that can be used by attackers to evade detection.", isCorrect: true },
+                    { text: "WinPEAS", rationale: "WinPEAS is a script used to enumerate vulnerabilities, but it is not a catalog of native binaries used for evasion.", isCorrect: false },
+                    { text: "PTES", rationale: "PTES is a procedural standard for executing a penetration test, not a catalog of binaries.", isCorrect: false }
+                ]
+            },
+            {
+                qNum: 10,
+                question: "Based on the course material, what is the most effective defensive recommendation against password cracking attacks targeting offline hashes?",
+                hint: "Identify the storage method that makes the mathematical comparison process computationally expensive.",
+                options: [
+                    { text: "Block port 445 (SMB) at the external firewall boundary.", rationale: "Blocking SMB does not protect hashes once an attacker is already inside the network and has dumped the SAM.", isCorrect: false },
+                    { text: "Clear Event ID 4624 (Successful Logon) logs on a daily basis.", rationale: "Clearing logs hinders forensic analysis and does nothing to strengthen the mathematical security of the passwords.", isCorrect: false },
+                    { text: "Use modern, intentionally slow hashing algorithms like bcrypt or Argon2id combined with salts.", rationale: "Algorithms like bcrypt require significant computational time per hash, neutralizing the speed advantage of GPU rigs.", isCorrect: true },
+                    { text: "Restrict the execution of the Hashcat executable across the corporate domain via AppLocker.", rationale: "Attackers crack the hashes offline on their own hardware, meaning corporate AppLocker policies will not affect them.", isCorrect: false }
+                ]
+            }
+        ];
+
+        // --- LOGIC ---
+
+        // Tab Switching
+        function switchTab(tabId) {
+            document.getElementById('section-flashcards').classList.add('hidden');
+            document.getElementById('section-quiz').classList.add('hidden');
+            
+            document.getElementById('tab-flashcards').className = "px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-700 focus:outline-none transition-colors";
+            document.getElementById('tab-quiz').className = "px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-700 focus:outline-none transition-colors";
+
+            document.getElementById('section-' + tabId).classList.remove('hidden');
+            document.getElementById('tab-' + tabId).className = "px-6 py-3 font-semibold text-blue-600 border-b-2 border-blue-600 focus:outline-none transition-colors";
+        }
+
+        // Flashcards Logic
+        let currentCardIndex = 0;
+        let isFlipped = false;
+
+        function loadCard() {
+            const card = flashcards[currentCardIndex];
+            document.getElementById('fc-front').innerText = card.front;
+            document.getElementById('fc-back').innerText = card.back;
+            document.getElementById('fc-counter').innerText = `Card ${currentCardIndex + 1} of ${flashcards.length}`;
+            
+            // Reset flip state
+            isFlipped = false;
+            document.getElementById('flashcard-container').classList.remove('flipped');
+        }
+
+        function flipCard() {
+            isFlipped = !isFlipped;
+            const container = document.getElementById('flashcard-container');
+            if(isFlipped) {
+                container.classList.add('flipped');
+            } else {
+                container.classList.remove('flipped');
+            }
+        }
+
+        function nextCard() {
+            if (currentCardIndex < flashcards.length - 1) {
+                currentCardIndex++;
+                loadCard();
+            }
+        }
+
+        function prevCard() {
+            if (currentCardIndex > 0) {
+                currentCardIndex--;
+                loadCard();
+            }
+        }
+
+        // Quiz Logic
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = ''; // Clear existing
+
+            quizData.forEach((q, qIndex) => {
+                // Shuffle options for this question
+                let shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+
+                let optionsHtml = '';
+                shuffledOptions.forEach((opt, optIndex) => {
+                    optionsHtml += `
+                        <div id="opt-${qIndex}-${optIndex}" class="quiz-option border border-slate-300 rounded-lg p-4 cursor-pointer hover:bg-slate-50 transition" onclick="selectAnswer(${qIndex}, ${optIndex}, ${opt.isCorrect}, '${opt.rationale.replace(/'/g, "\\'")}')">
+                            <p class="text-slate-800">${opt.text}</p>
+                        </div>
+                    `;
+                });
+
+                const qHtml = `
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <div class="mb-4">
+                            <span class="text-sm font-bold text-blue-600 uppercase tracking-wide">Question ${q.qNum}</span>
+                            <h3 class="text-lg font-semibold text-slate-900 mt-1">${q.question}</h3>
+                            <p class="text-sm text-slate-500 mt-2 italic">Hint: ${q.hint}</p>
+                        </div>
+                        <div class="space-y-3" id="options-container-${qIndex}">
+                            ${optionsHtml}
+                        </div>
+                        <div id="feedback-${qIndex}" class="mt-4 p-4 rounded-lg hidden">
+                            </div>
+                    </div>
+                `;
+                container.innerHTML += qHtml;
+            });
+        }
+
+        function selectAnswer(qIndex, optIndex, isCorrect, rationale) {
+            const optionsContainer = document.getElementById(`options-container-${qIndex}`);
+            const allOptions = optionsContainer.querySelectorAll('.quiz-option');
+            const selectedOption = document.getElementById(`opt-${qIndex}-${optIndex}`);
+            const feedbackDiv = document.getElementById(`feedback-${qIndex}`);
+
+            // Prevent multiple selections
+            if (feedbackDiv.classList.contains('hidden') === false) return;
+
+            // Disable all options
+            allOptions.forEach(opt => {
+                opt.classList.add('disabled');
+                opt.classList.remove('hover:bg-slate-50', 'cursor-pointer');
+            });
+
+            // Style selected option and show feedback
+            feedbackDiv.classList.remove('hidden');
+            if (isCorrect) {
+                selectedOption.classList.add('selected-correct');
+                feedbackDiv.classList.add('bg-green-50', 'text-green-800', 'border', 'border-green-200');
+                feedbackDiv.innerHTML = `<p class="font-bold mb-1">✓ Correct</p><p class="text-sm">${rationale}</p>`;
+            } else {
+                selectedOption.classList.add('selected-incorrect');
+                feedbackDiv.classList.add('bg-red-50', 'text-red-800', 'border', 'border-red-200');
+                feedbackDiv.innerHTML = `<p class="font-bold mb-1">✗ Incorrect</p><p class="text-sm">${rationale}</p>`;
+            }
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCard();
+            renderQuiz();
+        });
+
+    </script>
+</body>
+</html>
+
+
+

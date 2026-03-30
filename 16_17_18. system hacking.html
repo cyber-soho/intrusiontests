@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intrusion Testing: System Hacking (Days 16-18)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 40vh;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        body {
+            background-color: #faf9f6;
+            color: #2b2a27;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        .accent-bg { background-color: #3b5249; }
+        .accent-text { color: #3b5249; }
+        .accent-border { border-color: #3b5249; }
+        .secondary-bg { background-color: #8c5e45; }
+        .tab-active {
+            background-color: #3b5249;
+            color: #ffffff;
+            border-left: 4px solid #8c5e45;
+        }
+        .tab-inactive {
+            background-color: #e5e4e2;
+            color: #4a4a4a;
+            border-left: 4px solid transparent;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Chosen Palette: Warm Neutrals with Tactical Accents (Off-white/Alabaster background, Dark Charcoal text, Muted Sage Green primary accent, Muted Rust secondary accent) -->
+    <!-- Application Structure Plan: The SPA is structured as an interactive educational dashboard. It moves from high-level context (Course Timeline) into a deep-dive Interactive Lesson Hub. This hub uses a tabbed interface for the 4 core lessons, allowing students to explore the "attack chain" non-linearly while understanding how each phase connects. Subsequent sections cover the Toolkit (searchable grid) and Defensive Strategies. This structure prioritizes active exploration and logical grouping over a linear slide-by-slide presentation, making the reference material highly accessible. -->
+    <!-- Visualization & Content Choices: 
+         1. Course Progress -> Goal: Inform -> Viz: Styled HTML horizontal timeline -> Interaction: Hover states -> Justifies: Shows exactly where the student is in the syllabus without SVG.
+         2. Hash Cracking Speeds -> Goal: Compare -> Viz: Chart.js Bar Chart (Logarithmic scale) -> Interaction: Tooltips -> Justifies: A log scale is mandatory to show Billions vs Thousands effectively. No SVG.
+         3. Credential Attack Stat -> Goal: Inform/Impact -> Viz: Chart.js Doughnut Chart -> Interaction: Hover tooltips -> Justifies: Quickly visualizes the IBM X-Force 71% statistic.
+         4. Lesson Content -> Goal: Organize/Inform -> Viz: Dynamic Tabbed Interface (JS) -> Interaction: Click tabs to swap content -> Justifies: Keeps the page clean while organizing dense technical vectors into digestible chunks.
+         5. Toolkit -> Goal: Organize -> Viz: HTML Grid with JS Filter -> Interaction: Type to search -> Justifies: Allows quick lookup of tools during a lab assessment.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <nav class="accent-bg text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl">🎓</span>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight">Cyber.SoHo Educational Hub</h1>
+                        <p class="text-xs text-gray-300">Intrusion Testing • Days 16-18</p>
+                    </div>
+                </div>
+                <div class="hidden md:flex space-x-6">
+                    <button onclick="scrollToSection('overview')" class="hover:text-[#8c5e45] transition">Overview</button>
+                    <button onclick="scrollToSection('lessons')" class="hover:text-[#8c5e45] transition">The Attack Chain</button>
+                    <button onclick="scrollToSection('toolkit')" class="hover:text-[#8c5e45] transition">Toolkit</button>
+                    <button onclick="scrollToSection('defense')" class="hover:text-[#8c5e45] transition">Blue Team</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
+
+        <header class="text-center max-w-3xl mx-auto py-8">
+            <p class="text-sm font-bold tracking-widest accent-text uppercase mb-2">PTES Phase 5: Post-Exploitation</p>
+            <h2 class="text-4xl font-extrabold text-gray-900 mb-4">System Hacking: From Credentials to Cleanup</h2>
+            <p class="text-lg text-gray-600">From the Industry to the Classroom — Building the IT's Future, Today and Together! This module covers the operational chain of a physical security test applied to digital infrastructure.</p>
+        </header>
+
+        <section id="overview" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
+            <h3 class="text-2xl font-bold mb-4 flex items-center"><span class="mr-2 text-2xl">🗺️</span> Course Progress Context</h3>
+            <p class="mb-6 text-gray-700 leading-relaxed">
+                This section illustrates where the System Hacking module fits within the broader Intrusion Testing syllabus. Understanding your position in the course helps contextualize these advanced post-exploitation techniques, ensuring you apply them only after establishing initial access and solidifying your enumeration skills.
+            </p>
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center relative w-full overflow-hidden p-4 bg-[#fdfbf7] rounded-lg border border-gray-100">
+                <div class="flex-1 w-full mb-4 md:mb-0 text-center opacity-50">
+                    <div class="text-sm font-bold">Days 1-15</div>
+                    <div class="text-xs mt-1">Setup, OSINT, Scanning, Midterm</div>
+                </div>
+                <div class="hidden md:block text-2xl text-gray-300">→</div>
+                <div class="flex-1 w-full mb-4 md:mb-0 text-center accent-bg text-white py-3 rounded-md shadow-md transform scale-105 z-10">
+                    <div class="text-sm font-bold uppercase tracking-wide">Days 16-18</div>
+                    <div class="text-lg font-black mt-1">System Hacking</div>
+                    <div class="text-xs mt-1 text-gray-200">YOU ARE HERE</div>
+                </div>
+                <div class="hidden md:block text-2xl text-gray-300">→</div>
+                <div class="flex-1 w-full text-center opacity-50">
+                    <div class="text-sm font-bold">Days 19-29</div>
+                    <div class="text-xs mt-1">Sniffing, Web Apps, AD, Final</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="lessons" class="scroll-mt-20">
+            <div class="mb-6">
+                <h3 class="text-3xl font-bold mb-4 flex items-center"><span class="mr-2 text-2xl">⚔️</span> The Operational Attack Chain</h3>
+                <p class="text-gray-700 leading-relaxed text-lg">
+                    This interactive hub details the four core lessons of System Hacking. Select a phase from the menu below to explore the techniques, tools, and operational security (OPSEC) considerations required for each step. Each phase logically enables the next, moving from initial credential theft to total system control and stealth.
+                </p>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-6">
+                <div class="lg:w-1/4 flex flex-col space-y-2" id="lesson-tabs">
+                    <button onclick="switchLesson('lesson1')" id="btn-lesson1" class="tab-active text-left px-5 py-4 rounded-r-md font-bold transition flex items-center justify-between">
+                        <span>1. Credentials</span> <span class="text-xl">🔑</span>
+                    </button>
+                    <button onclick="switchLesson('lesson2')" id="btn-lesson2" class="tab-inactive text-left px-5 py-4 rounded-r-md font-bold transition flex items-center justify-between">
+                        <span>2. Priv Escalation</span> <span class="text-xl">⬆️</span>
+                    </button>
+                    <button onclick="switchLesson('lesson3')" id="btn-lesson3" class="tab-inactive text-left px-5 py-4 rounded-r-md font-bold transition flex items-center justify-between">
+                        <span>3. Persistence</span> <span class="text-xl">🧹</span>
+                    </button>
+                    <button onclick="switchLesson('lesson4')" id="btn-lesson4" class="tab-inactive text-left px-5 py-4 rounded-r-md font-bold transition flex items-center justify-between">
+                        <span>4. OPSEC</span> <span class="text-xl">🕵️</span>
+                    </button>
+                </div>
+
+                <div class="lg:w-3/4 bg-white rounded-xl shadow-md border border-gray-200 p-6 md:p-8 min-h-[500px]">
+                    
+                    <div id="content-lesson1" class="lesson-content block">
+                        <div class="border-b border-gray-200 pb-4 mb-6">
+                            <h4 class="text-2xl font-bold text-gray-900">Credentials (Hashes & Cracking)</h4>
+                            <p class="text-gray-500 italic mt-1">"I'm on the box — how do I steal passwords?"</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                            <div>
+                                <h5 class="font-bold text-lg mb-3 accent-text flex items-center"><span class="mr-2">📈</span> Valid Credential Attacks</h5>
+                                <p class="text-sm text-gray-700 mb-4">According to IBM X-Force 2024, there has been a massive year-over-year increase in attacks using valid credentials. Attackers walk through the front door with stolen keys rather than breaking windows.</p>
+                                <div class="chart-container" style="height: 200px;">
+                                    <canvas id="xforceChart"></canvas>
+                                </div>
+                            </div>
+                            <div>
+                                <h5 class="font-bold text-lg mb-3 accent-text flex items-center"><span class="mr-2">⚙️</span> The Cracking Workflow</h5>
+                                <ol class="list-decimal pl-5 space-y-2 text-gray-700 text-sm">
+                                    <li><strong>Obtain hashes:</strong> Dump <code class="bg-gray-100 px-1 rounded">/etc/shadow</code> or SAM database.</li>
+                                    <li><strong>Identify hash type:</strong> Use <code class="bg-gray-100 px-1 rounded">hashid</code>.</li>
+                                    <li><strong>Choose attack mode:</strong> Dictionary, Rule-Based, Mask, or Brute-Force.</li>
+                                    <li><strong>Run tool:</strong> Hashcat (GPU) or John the Ripper (CPU).</li>
+                                    <li><strong>Analyze:</strong> Find password reuse and weak policies.</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <div class="bg-stone-50 p-5 rounded-lg border border-stone-200">
+                            <h5 class="font-bold text-lg mb-4 flex items-center"><span class="mr-2">⚡</span> Hash Cracking Speed Comparison</h5>
+                            <p class="text-sm text-gray-600 mb-4">Demonstrating the difference between fast hashes (MD5, NTLM) and slow, salted hashes (bcrypt) using an NVIDIA RTX 4090. Note the logarithmic scale on the Y-axis.</p>
+                            <div class="chart-container">
+                                <canvas id="speedChart"></canvas>
+                            </div>
+                            <p class="text-xs text-center text-gray-500 mt-2">Values in Hashes per Second. MD5/NTLM are in the billions; bcrypt is in the thousands.</p>
+                        </div>
+
+                        <div class="mt-6 bg-[#8c5e45] text-white p-4 rounded-md shadow-inner">
+                            <h6 class="font-bold mb-1">Key Takeaway</h6>
+                            <p class="text-sm">Hash cracking is a comparison game. Weak passwords fall in milliseconds. Strong passwords (14+ chars, random) resist even GPU rigs. Defensive answer: bcrypt/Argon2 + salts + MFA.</p>
+                        </div>
+                    </div>
+
+                    <div id="content-lesson2" class="lesson-content hidden">
+                        <div class="border-b border-gray-200 pb-4 mb-6">
+                            <h4 class="text-2xl font-bold text-gray-900">Local Privilege Escalation (LPE)</h4>
+                            <p class="text-gray-500 italic mt-1">"I'm a low-privilege user — how do I become root or SYSTEM?"</p>
+                        </div>
+                        
+                        <p class="text-gray-700 mb-6">Initial access usually gives you <code class="bg-gray-100 px-1 rounded">www-data</code> or a standard user. Enumeration is 90% of privilege escalation. Use tools like LinPEAS or WinPEAS to identify the vectors below.</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+                                <h5 class="font-bold text-lg mb-4 flex items-center border-b pb-2"><span class="mr-2">🐧</span> Linux Vectors (Root)</h5>
+                                <ul class="space-y-3 text-sm text-gray-700">
+                                    <li class="flex items-start"><span class="text-[#8c5e45] mr-2">▪</span> <div><strong>SUID Binaries:</strong> Executables running as file owner (check GTFOBins).</div></li>
+                                    <li class="flex items-start"><span class="text-[#8c5e45] mr-2">▪</span> <div><strong>Sudo Misconfigs:</strong> <code class="bg-gray-100 px-1 text-xs">sudo -l</code> reveals flaws like NOPASSWD.</div></li>
+                                    <li class="flex items-start"><span class="text-[#8c5e45] mr-2">▪</span> <div><strong>Cron Jobs:</strong> World-writable scripts executed on a schedule.</div></li>
+                                    <li class="flex items-start"><span class="text-[#8c5e45] mr-2">▪</span> <div><strong>Kernel Exploits:</strong> DirtyCow, DirtyPipe (Test in lab first!).</div></li>
+                                    <li class="flex items-start"><span class="text-[#8c5e45] mr-2">▪</span> <div><strong>PATH Hijacking:</strong> Malicious binaries placed earlier in writable PATHs.</div></li>
+                                </ul>
+                            </div>
+
+                            <div class="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+                                <h5 class="font-bold text-lg mb-4 flex items-center border-b pb-2"><span class="mr-2">🪟</span> Windows Vectors (SYSTEM)</h5>
+                                <ul class="space-y-3 text-sm text-gray-700">
+                                    <li class="flex items-start"><span class="text-blue-600 mr-2">▪</span> <div><strong>Unquoted Service Paths:</strong> Spaces in paths trick OS into running intermediary binaries.</div></li>
+                                    <li class="flex items-start"><span class="text-blue-600 mr-2">▪</span> <div><strong>Token Impersonation:</strong> Potato Attacks (Juicy Potato, PrintSpoofer).</div></li>
+                                    <li class="flex items-start"><span class="text-blue-600 mr-2">▪</span> <div><strong>AlwaysInstallElevated:</strong> GPO allowing MSI installs as SYSTEM.</div></li>
+                                    <li class="flex items-start"><span class="text-blue-600 mr-2">▪</span> <div><strong>Stored Credentials:</strong> Registry, RDP sessions, cmdkey.</div></li>
+                                    <li class="flex items-start"><span class="text-blue-600 mr-2">▪</span> <div><strong>DLL Hijacking:</strong> Apps loading DLLs without full paths.</div></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 bg-[#8c5e45] text-white p-4 rounded-md shadow-inner">
+                            <h6 class="font-bold mb-1">Key Takeaway</h6>
+                            <p class="text-sm">Root/SYSTEM is the real prize. Prefer "living-off-the-land" over uploading exploit binaries. Always test kernel exploits in your lab first to avoid crashing production servers.</p>
+                        </div>
+                    </div>
+
+                    <div id="content-lesson3" class="lesson-content hidden">
+                        <div class="border-b border-gray-200 pb-4 mb-6">
+                            <h4 class="text-2xl font-bold text-gray-900">Persistence & Cleanup</h4>
+                            <p class="text-gray-500 italic mt-1">"How do I stay on this machine, and how do I leave without a trace?"</p>
+                        </div>
+
+                        <div class="flex flex-col md:flex-row gap-6 mb-8">
+                            <div class="md:w-1/3 bg-[#3b5249] text-white p-5 rounded-lg flex flex-col justify-center text-center">
+                                <div class="text-4xl mb-2">🔄</div>
+                                <h5 class="font-bold text-xl mb-2">The Cycle</h5>
+                                <p class="text-sm font-semibold text-gray-200">1. Install Mechanism</p>
+                                <p class="text-2xl text-gray-400">↓</p>
+                                <p class="text-sm font-semibold text-gray-200">2. Document Everything</p>
+                                <p class="text-2xl text-gray-400">↓</p>
+                                <p class="text-sm font-semibold text-[#f7d6ba]">3. Remove & Restore</p>
+                            </div>
+                            <div class="md:w-2/3">
+                                <h5 class="font-bold text-lg mb-3 accent-text">Why Persistence Matters</h5>
+                                <p class="text-sm text-gray-700 mb-4">Multi-day engagements require reliable re-access. It also demonstrates real-world risk to the client—proving an attacker survives a reboot or password rotation.</p>
+                                
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div class="bg-stone-100 p-3 rounded">
+                                        <div class="font-bold border-b border-gray-300 pb-1 mb-2 text-gray-800">Linux Methods</div>
+                                        <ul class="list-disc pl-4 space-y-1 text-gray-600">
+                                            <li>Cron Jobs</li>
+                                            <li>SSH Authorized Keys</li>
+                                            <li>Bash Profile Injection</li>
+                                            <li>Systemd Services</li>
+                                        </ul>
+                                    </div>
+                                    <div class="bg-stone-100 p-3 rounded">
+                                        <div class="font-bold border-b border-gray-300 pb-1 mb-2 text-gray-800">Windows Methods</div>
+                                        <ul class="list-disc pl-4 space-y-1 text-gray-600">
+                                            <li>Registry Run Keys</li>
+                                            <li>Scheduled Tasks</li>
+                                            <li>Windows Services</li>
+                                            <li>WMI Event Subs</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                            <div class="flex items-center mb-1">
+                                <span class="text-red-600 text-lg mr-2">⚠️</span>
+                                <h6 class="font-bold text-red-800">The Cleanup Imperative</h6>
+                            </div>
+                            <p class="text-sm text-red-700">A persistence mechanism left behind by a tester becomes a real vulnerability. Remove all accounts, executables, and persistence. Securely delete files (shred/sdelete) and restore original configurations.</p>
+                        </div>
+                    </div>
+
+                    <div id="content-lesson4" class="lesson-content hidden">
+                        <div class="border-b border-gray-200 pb-4 mb-6">
+                            <h4 class="text-2xl font-bold text-gray-900">OPSEC (Operations Security)</h4>
+                            <p class="text-gray-500 italic mt-1">"How do I avoid getting caught during all of this?"</p>
+                        </div>
+
+                        <p class="text-gray-700 mb-6">OPSEC wraps around every phase of system hacking. Every action creates evidence. You must manage your Network, Disk, and Behavioral footprints to remain undetected by the SOC.</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="bg-white border border-gray-200 p-4 rounded text-center shadow-sm">
+                                <div class="text-3xl mb-2">🌐</div>
+                                <h6 class="font-bold mb-1">Network Footprint</h6>
+                                <p class="text-xs text-gray-600">DNS queries, SMB traffic, scan patterns.</p>
+                            </div>
+                            <div class="bg-white border border-gray-200 p-4 rounded text-center shadow-sm">
+                                <div class="text-3xl mb-2">💾</div>
+                                <h6 class="font-bold mb-1">Disk Footprint</h6>
+                                <p class="text-xs text-gray-600">Uploaded tools, Event IDs (4688, 4624), registry changes.</p>
+                            </div>
+                            <div class="bg-white border border-gray-200 p-4 rounded text-center shadow-sm">
+                                <div class="text-3xl mb-2">📊</div>
+                                <h6 class="font-bold mb-1">Behavioral Footprint</h6>
+                                <p class="text-xs text-gray-600">Command bursts, privilege spikes, odd timing.</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="p-4 bg-stone-50 rounded-lg border border-stone-200">
+                                <h6 class="font-bold accent-text mb-2">The OPSEC Lens Applied</h6>
+                                <ul class="space-y-2 text-sm text-gray-700">
+                                    <li class="flex items-start"><span class="mr-2">🛡️</span> <strong>Credentials:</strong> Crack hashes offline. Never use 3rd-party online crackers.</li>
+                                    <li class="flex items-start"><span class="mr-2">🛡️</span> <strong>Privilege Escalation:</strong> Prefer LOLBins over custom exploits. Time attempts for low-monitoring periods.</li>
+                                    <li class="flex items-start"><span class="mr-2">🛡️</span> <strong>Persistence:</strong> Name services to blend in. Use encrypted C2 channels. Clear logs carefully (clearing all creates ID 1102).</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 bg-[#8c5e45] text-white p-4 rounded-md shadow-inner">
+                            <h6 class="font-bold mb-1 flex items-center"><span class="mr-2">📜</span> Rules of Engagement (RoE)</h6>
+                            <p class="text-sm">Without a signed RoE defining systems, allowed techniques, and blackout windows, you are not a penetration tester — you are an unauthorized intruder.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <section id="toolkit" class="bg-[#fdfbf7] p-6 md:p-8 rounded-xl border border-stone-200 shadow-sm scroll-mt-20">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold mb-2 flex items-center"><span class="mr-2 text-2xl">🧰</span> Reference Toolkit & Standards</h3>
+                    <p class="text-gray-600">Use the search box to quickly filter tools and frameworks essential for Phase 5.</p>
+                </div>
+                <div class="mt-4 md:mt-0 w-full md:w-64">
+                    <input type="text" id="toolSearch" onkeyup="filterTools()" placeholder="Search tools..." class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3b5249]">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="toolGrid">
+            </div>
+        </section>
+
+        <section id="defense" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8 scroll-mt-20">
+            <h3 class="text-2xl font-bold mb-4 flex items-center"><span class="mr-2 text-2xl">🛡️</span> Defensive Takeaways (Blue Team)</h3>
+            <p class="mb-6 text-gray-700 leading-relaxed">
+                Penetration testing is only valuable if it improves defense. This section summarizes the actionable recommendations derived from the System Hacking attack chain, designed to help network defenders and SOC analysts harden their environments.
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="flex items-start p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <div class="text-2xl mr-4 mt-1">🔐</div>
+                    <div>
+                        <h5 class="font-bold text-blue-900 mb-1">Identity & Access</h5>
+                        <p class="text-sm text-blue-800">Use modern hashing (bcrypt, Argon2id). Enforce 14+ character passwords combined with MFA everywhere.</p>
+                    </div>
+                </div>
+                <div class="flex items-start p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <div class="text-2xl mr-4 mt-1">🔍</div>
+                    <div>
+                        <h5 class="font-bold text-blue-900 mb-1">System Auditing</h5>
+                        <p class="text-sm text-blue-800">Regularly audit Linux SUID binaries, sudo rules, and Windows scheduled tasks. Patch older kernels to prevent exploits.</p>
+                    </div>
+                </div>
+                <div class="flex items-start p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <div class="text-2xl mr-4 mt-1">👁️</div>
+                    <div>
+                        <h5 class="font-bold text-blue-900 mb-1">SIEM Monitoring</h5>
+                        <p class="text-sm text-blue-800">Alert on Event IDs 4688 (Process Creation), 4624 (Logon), 7045 (Service Installed), and 1102 (Audit Log Cleared).</p>
+                    </div>
+                </div>
+                <div class="flex items-start p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <div class="text-2xl mr-4 mt-1">🚨</div>
+                    <div>
+                        <h5 class="font-bold text-blue-900 mb-1">Proactive Testing</h5>
+                        <p class="text-sm text-blue-800">Conduct regular penetration tests to identify persistence mechanisms and escalation paths that automated defenders miss.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-[#2b2a27] text-gray-400 py-8 text-center text-sm">
+        <p>© 2026 Cyber.SoHo Educational Hub. All rights reserved.</p>
+        <p class="mt-2 text-gray-500">Intrusion Testing Course Material • Internal Educational Use Only</p>
+    </footer>
+
+    <script>
+        const toolsData = [
+            { name: "Hashcat", category: "Cracking", desc: "GPU-accelerated hash cracking. 350+ hash modes." },
+            { name: "John the Ripper", category: "Cracking", desc: "CPU-based hash cracking, automatic format detection." },
+            { name: "Metasploit", category: "Framework", desc: "Exploitation and post-exploitation framework." },
+            { name: "LinPEAS", category: "Enumeration", desc: "Automated Linux privilege escalation vector scanner." },
+            { name: "WinPEAS", category: "Enumeration", desc: "Automated Windows privilege escalation vector scanner." },
+            { name: "GTFOBins", category: "Reference", desc: "Catalog of Unix binaries that can be exploited to bypass local security." },
+            { name: "LOLBAS", category: "Reference", desc: "Living Off The Land Binaries and Scripts for Windows." },
+            { name: "Mimikatz", category: "Credentials", desc: "Extracts plaintext passwords, hash, PIN code and kerberos tickets from memory." },
+            { name: "PTES", category: "Standard", desc: "Penetration Testing Execution Standard (7 phases)." },
+            { name: "MITRE ATT&CK", category: "Standard", desc: "Knowledge base of adversary tactics and techniques." }
+        ];
+
+        function populateTools() {
+            const grid = document.getElementById('toolGrid');
+            grid.innerHTML = '';
+            toolsData.forEach(tool => {
+                const card = document.createElement('div');
+                card.className = 'tool-card bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition';
+                card.innerHTML = `
+                    <div class="text-xs font-bold text-[#8c5e45] uppercase tracking-wider mb-1">${tool.category}</div>
+                    <h5 class="font-bold text-gray-900 text-lg mb-2">${tool.name}</h5>
+                    <p class="text-sm text-gray-600">${tool.desc}</p>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterTools() {
+            const query = document.getElementById('toolSearch').value.toLowerCase();
+            const cards = document.querySelectorAll('.tool-card');
+            cards.forEach((card, index) => {
+                const toolName = toolsData[index].name.toLowerCase();
+                const toolDesc = toolsData[index].desc.toLowerCase();
+                if (toolName.includes(query) || toolDesc.includes(query)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function switchLesson(lessonId) {
+            document.querySelectorAll('.lesson-content').forEach(el => el.classList.add('hidden'));
+            
+            ['lesson1', 'lesson2', 'lesson3', 'lesson4'].forEach(id => {
+                const btn = document.getElementById(`btn-${id}`);
+                btn.classList.remove('tab-active');
+                btn.classList.add('tab-inactive');
+            });
+
+            document.getElementById(`content-${lessonId}`).classList.remove('hidden');
+            
+            const activeBtn = document.getElementById(`btn-${lessonId}`);
+            activeBtn.classList.remove('tab-inactive');
+            activeBtn.classList.add('tab-active');
+        }
+
+        function scrollToSection(sectionId) {
+            document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function initCharts() {
+            const xforceCtx = document.getElementById('xforceChart').getContext('2d');
+            new Chart(xforceCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Valid Credentials', 'Other Attack Vectors'],
+                    datasets: [{
+                        data: [71, 29],
+                        backgroundColor: ['#8c5e45', '#e5e4e2'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { font: { family: "'Segoe UI', sans-serif" } } },
+                        tooltip: { callbacks: { label: function(context) { return context.label + ': ' + context.raw + '%'; } } }
+                    },
+                    cutout: '70%'
+                }
+            });
+
+            const speedCtx = document.getElementById('speedChart').getContext('2d');
+            new Chart(speedCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['MD5', 'NTLM', 'bcrypt (cost 10)'],
+                    datasets: [{
+                        label: 'Hashes per Second (RTX 4090)',
+                        data: [164000000000, 100000000000, 184000],
+                        backgroundColor: ['#e74c3c', '#e67e22', '#3b5249'],
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'logarithmic',
+                            title: { display: true, text: 'Hashes / Sec (Log Scale)' },
+                            ticks: {
+                                callback: function(value) {
+                                    if(value === 100000 || value === 100000000 || value === 100000000000) {
+                                        return value.toLocaleString();
+                                    }
+                                    return '';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let val = context.raw;
+                                    if (val >= 1000000000) return (val / 1000000000).toFixed(0) + ' Billion H/s';
+                                    return val.toLocaleString() + ' H/s';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            populateTools();
+            initCharts();
+        });
+    </script>
+</body>
+</html>
+
+

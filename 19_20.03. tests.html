@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Hacking 2 - Study Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Flashcard Flip Animation Styles */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        
+        .flashcard { cursor: pointer; }
+        .flashcard-inner { transition: transform 0.5s ease-in-out; }
+        .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+        
+        /* Smooth transitions */
+        .tab-btn { transition: all 0.2s ease-in-out; }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 font-sans antialiased min-h-screen">
+
+    <header class="bg-stone-900 text-stone-100 py-8 shadow-md">
+        <div class="max-w-5xl mx-auto px-4 text-center">
+            <h1 class="text-3xl font-extrabold tracking-tight mb-2">System Hacking 2: Study Guide</h1>
+            <p class="text-stone-400">Master Sniffing, Spoofing, PCAP Forensics, and EDR</p>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-8">
+        
+        <div class="flex justify-center mb-8 border-b border-stone-300">
+            <button id="btn-flashcards" class="tab-btn px-6 py-3 font-bold text-lg text-orange-700 border-b-4 border-orange-700 bg-orange-50 focus:outline-none rounded-t-lg" onclick="switchTab('flashcards')">
+                🗂️ Flashcards (25)
+            </button>
+            <button id="btn-quiz" class="tab-btn px-6 py-3 font-bold text-lg text-stone-500 hover:text-stone-800 hover:bg-stone-100 border-b-4 border-transparent focus:outline-none rounded-t-lg" onclick="switchTab('quiz')">
+                📝 Practice Quiz (10)
+            </button>
+        </div>
+
+        <section id="tab-flashcards" class="block">
+            <div class="mb-6 text-center">
+                <p class="text-stone-600">Click on any card to reveal the definition or answer.</p>
+            </div>
+            <div id="flashcards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+        </section>
+
+        <section id="tab-quiz" class="hidden max-w-3xl mx-auto">
+            <div class="mb-6 text-center">
+                <p class="text-stone-600">Test your knowledge. Select the best answer for each scenario.</p>
+            </div>
+            <div id="quiz-container" class="space-y-8">
+                </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-200 text-stone-500 py-6 text-center mt-12 border-t border-stone-300">
+        <p class="text-sm">Cyber.SoHo Educational Hub &copy; 2026</p>
+    </footer>
+
+    <script>
+        // --- DATA ---
+
+        const flashcardsData = [
+            { front: "Network Sniffing", back: "Intercepting and examining data packets as they cross a network." },
+            { front: "Wireshark", back: "The industry standard graphical user interface (GUI) tool for packet capture and analysis." },
+            { front: "Passive Sniffing", back: "Intercepting traffic silently on legacy hubs or wireless networks without needing to inject packets." },
+            { front: "Promiscuous Mode", back: "A network interface card setting that allows it to read all broadcast traffic on the network." },
+            { front: "Active Sniffing", back: "Manipulating a switched network using techniques like MAC flooding or ARP spoofing to force traffic interception." },
+            { front: "Man-in-the-Middle (MITM) Attack", back: "An attack where the adversary positions themselves between two parties to relay and potentially modify network traffic." },
+            { front: "HSTS (HTTP Strict Transport Security)", back: "A web security mechanism that prevents SSL/TLS stripping attacks by enforcing encrypted connections." },
+            { front: "Dynamic ARP Inspection (DAI)", back: "A network switch feature that validates ARP packets against a trusted database to prevent ARP spoofing." },
+            { front: "Address Resolution Protocol (ARP)", back: "The network protocol that maps Layer 3 IP addresses to Layer 2 MAC addresses." },
+            { front: "Primary vulnerability of the ARP protocol", back: "It lacks authentication, meaning devices accept ARP replies without verifying identity or sending requests." },
+            { front: "ARP Cache", back: "A local mapping table on a device that stores resolved IP-to-MAC address pairs." },
+            { front: "Arpwatch", back: "A detection tool that monitors MAC-to-IP changes and alerts administrators to anomalies indicative of ARP spoofing." },
+            { front: "PCAP File", back: "The standard file format for saving captured network traffic, acting like a DVR recording for network analysis." },
+            { front: "Wireshark filter for POST requests", back: "http.request.method == POST" },
+            { front: "Wireshark filter for ARP spoofing detection", back: "arp.opcode == 2" },
+            { front: "Malware", back: "Malicious software designed to harm, exploit, or compromise systems." },
+            { front: "Virus", back: "Malware that attaches itself to legitimate files and replicates upon execution." },
+            { front: "Worm", back: "Malware that self-replicates and spreads across networks autonomously without user interaction." },
+            { front: "Trojan", back: "Malicious payloads that masquerade as legitimate software to trick users into executing them." },
+            { front: "Ransomware", back: "Malware that encrypts a victim's files and demands payment for the decryption key." },
+            { front: "Rootkit", back: "Malware that hides deep in the operating system or firmware to maintain persistent, undetected access." },
+            { front: "Preferred method for tracking malware", back: "Tracking the file by its cryptographic hash (like SHA-256) rather than its filename." },
+            { front: "Endpoint Detection & Response (EDR)", back: "Security solutions that use continuous behavioral monitoring on endpoints to detect, investigate, and isolate unknown threats." },
+            { front: "Core difference between Traditional AV and EDR", back: "Traditional AV relies on static signature matching, whereas EDR relies on active behavioral analysis." },
+            { front: "Extended Detection & Response (XDR)", back: "An integrated security platform that combines telemetry from endpoints, networks, cloud, and email into a single operational system." }
+        ];
+
+        const quizData = [
+            {
+                q: "A penetration tester is attached to a modern, fully switched corporate network. Which technique must they employ to intercept traffic between two other hosts on the same VLAN?",
+                options: [
+                    { text: "Set the network interface card (NIC) to promiscuous mode and passively capture broadcast traffic.", correct: false, rationale: "Passive sniffing only works on legacy hubs or wireless networks where traffic is broadcast to all ports." },
+                    { text: "Perform an ARP spoofing attack to manipulate the local routing.", correct: true, rationale: "Active sniffing techniques, like ARP spoofing or MAC flooding, are required to force a switch to forward traffic to the attacker." },
+                    { text: "Implement a DNS stripping attack at the gateway router.", correct: false, rationale: "DNS spoofing redirects domain names, but 'DNS stripping' is not a standard technique for initial traffic interception on a switch." },
+                    { text: "Configure Wireshark with the filter 'tcp.flags.syn==1' to automatically redirect packets.", correct: false, rationale: "Wireshark filters are used for analyzing captured traffic, not for manipulating network routing or forcing traffic interception." }
+                ]
+            },
+            {
+                q: "Why is a Man-in-the-Middle (MITM) attack using ARP spoofing highly effective on a local area network (LAN)?",
+                options: [
+                    { text: "ARP requests are always encrypted, preventing the switch from reading the destination MAC address.", correct: false, rationale: "ARP requests are broadcast in cleartext, not encrypted." },
+                    { text: "Devices on a LAN accept ARP replies and update their cache even if they did not send an initial ARP request.", correct: true, rationale: "ARP lacks authentication, meaning devices blindly trust forged ARP replies and update their routing tables accordingly." },
+                    { text: "The ARP protocol automatically prioritizes traffic from newly connected devices over established connections.", correct: false, rationale: "ARP does not prioritize traffic; it simply maps IP addresses to MAC addresses." },
+                    { text: "Switches are designed to forward all ARP packets to every port regardless of network segmentation.", correct: false, rationale: "While ARP requests are broadcast, ARP spoofing is effective because of the protocol's lack of authentication, not the switch's forwarding behavior alone." }
+                ]
+            },
+            {
+                q: "During a security audit, you notice that a web application downgrades from HTTPS to HTTP when an attacker is intercepting traffic on the same network. Which mitigation should the system administrator implement to prevent this specific MITM technique?",
+                options: [
+                    { text: "Implement Dynamic ARP Inspection (DAI) on the application server.", correct: false, rationale: "DAI defends against ARP spoofing at the switch level, not SSL/TLS stripping at the application level." },
+                    { text: "Segment the web server into a separate virtual local area network (VLAN).", correct: false, rationale: "VLANs limit broadcast domains and help prevent initial MITM positioning, but they don't fix the application's vulnerability to protocol downgrades." },
+                    { text: "Install an Endpoint Detection and Response (EDR) agent on the client's machine.", correct: false, rationale: "EDR monitors endpoint behavior and malware, but it is not the primary defense against network-level SSL stripping attacks." },
+                    { text: "Enforce HTTP Strict Transport Security (HSTS) on the web application.", correct: true, rationale: "HSTS instructs the browser to never load the site over plain HTTP, effectively neutralizing SSL stripping attacks." }
+                ]
+            },
+            {
+                q: "An analyst is reviewing a large PCAP file to find cleartext credentials submitted to a web application. Which Wireshark display filter is most efficient for isolating this traffic?",
+                options: [
+                    { text: "tcp.flags.syn==1 && tcp.flags.ack==0", correct: false, rationale: "This filter identifies new TCP connection attempts (SYN packets), not the submission of web form data." },
+                    { text: "arp.opcode == 2", correct: false, rationale: "This filter isolates ARP replies, which is useful for detecting ARP spoofing, but not for finding HTTP credentials." },
+                    { text: "http.request.method == POST", correct: true, rationale: "Credentials are typically sent to web servers using HTTP POST requests, making this the best filter for finding them." },
+                    { text: "tls.handshake.type == 1", correct: false, rationale: "This filter shows TLS Client Hello packets, which initiates an encrypted session, not cleartext HTTP data." }
+                ]
+            },
+            {
+                q: "After filtering a PCAP file and identifying a suspicious HTTP request, what is the next logical step in the Wireshark workflow to view the entire back-and-forth communication between the client and server?",
+                options: [
+                    { text: "Review the Protocol Hierarchy statistics.", correct: false, rationale: "Protocol Hierarchy is used in the 'Big Picture' step to see the breakdown of protocols, not to view a specific conversation." },
+                    { text: "Use the 'Follow TCP/HTTP Stream' feature.", correct: true, rationale: "Following the stream reconstructs the packets into a readable format, showing the complete request and response exchange." },
+                    { text: "Export the HTTP objects to a dedicated folder.", correct: false, rationale: "Exporting objects extracts files (like images or malware payloads), but it doesn't show the conversational flow of the session." },
+                    { text: "Filter the traffic using '!arp && !dns && !icmp'.", correct: false, rationale: "This filter removes common background noise, but it does not stitch a specific session's packets together." }
+                ]
+            },
+            {
+                q: "A user downloads a 'free PDF converter' tool. Upon execution, the tool converts PDFs perfectly, but secretly opens a backdoor that allows an attacker remote access to the system. How is this payload best classified?",
+                options: [
+                    { text: "Virus", correct: false, rationale: "A virus attaches itself to existing files and replicates, rather than presenting itself as a standalone legitimate application." },
+                    { text: "Worm", correct: false, rationale: "A worm self-replicates across networks autonomously; it does not rely on a user executing a deceptive application." },
+                    { text: "Trojan", correct: true, rationale: "Trojans masquerade as legitimate, desirable software to trick users into executing their hidden malicious payloads." },
+                    { text: "Ransomware", correct: false, rationale: "Ransomware encrypts files and demands payment; it typically does not focus on silently maintaining a remote backdoor." }
+                ]
+            },
+            {
+                q: "What is the most reliable identifier to use when tracking a specific malware sample across different threat intelligence platforms like VirusTotal?",
+                options: [
+                    { text: "The file's original name upon download.", correct: false, rationale: "Filenames are arbitrary and easily changed by attackers to evade basic detection." },
+                    { text: "The IP address of the command and control (C2) server.", correct: false, rationale: "While useful for network blocking, C2 infrastructure changes frequently and doesn't identify the specific file payload." },
+                    { text: "The specific vulnerability the malware exploits.", correct: false, rationale: "Many different malware families can exploit the same vulnerability, making this a poor unique identifier for a file." },
+                    { text: "The cryptographic hash, such as SHA-256, of the file.", correct: true, rationale: "A cryptographic hash acts as a unique digital fingerprint for a file, remaining constant regardless of the filename." }
+                ]
+            },
+            {
+                q: "A new, custom-written ransomware strain successfully bypasses a company's Traditional Antivirus (AV) but is immediately quarantined by their Endpoint Detection & Response (EDR) solution. Why did the EDR succeed where the AV failed?",
+                options: [
+                    { text: "The EDR relies on static signature matching to identify newly compiled payloads.", correct: false, rationale: "Static signature matching is a feature of Traditional AV, and it fails against new, unknown malware strains." },
+                    { text: "The EDR automatically decrypts the files using built-in machine learning models.", correct: false, rationale: "EDR tools focus on detection and isolation to prevent encryption; they cannot magically decrypt files once the math is executed." },
+                    { text: "The AV only scans the network perimeter, while EDR inspects email attachments.", correct: false, rationale: "Traditional AV operates on the endpoint (like EDR), but its detection mechanism relies on signatures, not its location in the network." },
+                    { text: "The EDR analyzes the behavior of the file, such as rapid file encryption attempts, rather than relying on a known signature.", correct: true, rationale: "EDR detects zero-day threats by monitoring for malicious behaviors (like mass file modifications) rather than waiting for a signature update." }
+                ]
+            },
+            {
+                q: "How does Extended Detection & Response (XDR) differ from Endpoint Detection & Response (EDR)?",
+                options: [
+                    { text: "XDR integrates telemetry from multiple domains like endpoints, network, cloud, and email into a single platform.", correct: true, rationale: "While EDR focuses solely on the endpoint device, XDR aggregates data across the entire IT infrastructure for broader visibility." },
+                    { text: "XDR focuses purely on preventive measures like app control and firewalls, whereas EDR is solely detective.", correct: false, rationale: "Preventive measures are characteristic of an Endpoint Protection Platform (EPP), not XDR." },
+                    { text: "XDR is designed specifically for legacy operating systems that cannot support modern EDR agents.", correct: false, rationale: "XDR is a more advanced, modern security architecture, not a fallback for legacy systems." },
+                    { text: "XDR requires a human SOC analyst to manually isolate threats, while EDR provides fully autonomous response.", correct: false, rationale: "Both EDR and XDR offer automated response capabilities; the difference lies in the scope of the data they analyze." }
+                ]
+            },
+            {
+                q: "A penetration tester decides to practice their ARP spoofing skills on a public coffee shop Wi-Fi network without asking the owner. According to standard legal and ethical guidelines, what is the nature of this action?",
+                options: [
+                    { text: "It is an acceptable practice as long as no data is modified or stolen during the capture.", correct: false, rationale: "Passive or active interception without consent is illegal regardless of whether the data is used or modified." },
+                    { text: "It is permitted under the 'safe harbor' clause for educational cybersecurity research.", correct: false, rationale: "There is no universal 'safe harbor' clause that allows active network attacks on third-party infrastructure without permission." },
+                    { text: "It is only an ethical violation if the tester fails to restore the ARP tables afterward.", correct: false, rationale: "The violation occurs at the moment of unauthorized access and interception, not just during the cleanup phase." },
+                    { text: "It is a criminal offense because the tester lacks written authorization to intercept traffic on that network.", correct: true, rationale: "Without explicit, written authorization (Rules of Engagement), unauthorized network manipulation is a crime (e.g., under the CFAA)." }
+                ]
+            }
+        ];
+
+        // --- RENDER LOGIC ---
+
+        function renderFlashcards() {
+            const container = document.getElementById('flashcards-container');
+            container.innerHTML = '';
+            
+            flashcardsData.forEach((card, index) => {
+                const cardHTML = `
+                    <div class="flashcard perspective-1000 h-48 w-full" onclick="this.classList.toggle('flipped')">
+                        <div class="flashcard-inner relative w-full h-full text-center transform-style-3d shadow-md rounded-xl">
+                            <div class="absolute w-full h-full backface-hidden bg-white border border-stone-200 rounded-xl flex items-center justify-center p-6 hover:shadow-lg transition-shadow">
+                                <h3 class="text-lg font-bold text-stone-800">${card.front}</h3>
+                                <div class="absolute bottom-3 right-3 text-xs text-stone-400">Card ${index + 1}</div>
+                            </div>
+                            <div class="absolute w-full h-full backface-hidden rotate-y-180 bg-orange-700 text-white border border-orange-800 rounded-xl flex items-center justify-center p-6 overflow-y-auto">
+                                <p class="text-sm font-medium leading-relaxed">${card.back}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHTML;
+            });
+        }
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+
+            quizData.forEach((item, index) => {
+                let optionsHTML = '';
+                
+                // Shuffle options for rendering
+                const shuffledOptions = [...item.options].sort(() => Math.random() - 0.5);
+
+                shuffledOptions.forEach((opt, optIndex) => {
+                    // Store correct status in data attribute
+                    optionsHTML += `
+                        <button class="quiz-option block w-full text-left p-4 rounded-lg border border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-colors mb-2 text-stone-700 text-sm focus:outline-none" 
+                                data-correct="${opt.correct}" 
+                                onclick="handleQuizAnswer(this, '${escapeHtml(opt.rationale)}')">
+                            ${opt.text}
+                        </button>
+                    `;
+                });
+
+                const questionHTML = `
+                    <div class="bg-white p-6 rounded-xl shadow-md border border-stone-200" id="question-${index}">
+                        <div class="flex items-start gap-4 mb-4">
+                            <span class="flex-shrink-0 bg-stone-800 text-white w-8 h-8 flex items-center justify-center rounded-full font-bold text-sm">${index + 1}</span>
+                            <h3 class="text-lg font-bold text-stone-900 mt-1">${item.q}</h3>
+                        </div>
+                        <div class="options-container ml-12">
+                            ${optionsHTML}
+                        </div>
+                        <div class="rationale-container ml-12 mt-4 hidden p-4 rounded-lg text-sm">
+                            </div>
+                    </div>
+                `;
+                container.innerHTML += questionHTML;
+            });
+        }
+
+        // --- INTERACTION LOGIC ---
+
+        function switchTab(tabName) {
+            // Update buttons
+            document.getElementById('btn-flashcards').className = 'tab-btn px-6 py-3 font-bold text-lg focus:outline-none rounded-t-lg text-stone-500 hover:text-stone-800 hover:bg-stone-100 border-b-4 border-transparent';
+            document.getElementById('btn-quiz').className = 'tab-btn px-6 py-3 font-bold text-lg focus:outline-none rounded-t-lg text-stone-500 hover:text-stone-800 hover:bg-stone-100 border-b-4 border-transparent';
+            
+            document.getElementById('btn-' + tabName).className = 'tab-btn px-6 py-3 font-bold text-lg focus:outline-none rounded-t-lg text-orange-700 border-b-4 border-orange-700 bg-orange-50';
+
+            // Update content visibility
+            document.getElementById('tab-flashcards').classList.add('hidden');
+            document.getElementById('tab-quiz').classList.add('hidden');
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+        }
+
+        function handleQuizAnswer(buttonElement, rationale) {
+            const isCorrect = buttonElement.getAttribute('data-correct') === 'true';
+            const optionsContainer = buttonElement.parentElement;
+            const rationaleContainer = optionsContainer.nextElementSibling;
+            
+            // Disable all buttons in this question once answered
+            const allButtons = optionsContainer.querySelectorAll('.quiz-option');
+            allButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('hover:bg-stone-100', 'hover:border-stone-400', 'cursor-pointer');
+                btn.classList.add('cursor-not-allowed', 'opacity-60');
+                
+                // Highlight the correct answer universally
+                if(btn.getAttribute('data-correct') === 'true') {
+                    btn.classList.remove('border-stone-300', 'opacity-60');
+                    btn.classList.add('border-green-500', 'bg-green-50', 'text-green-800', 'font-medium', 'opacity-100');
+                }
+            });
+
+            // Style the clicked button if it was wrong
+            if (!isCorrect) {
+                buttonElement.classList.remove('opacity-60');
+                buttonElement.classList.add('border-red-500', 'bg-red-50', 'text-red-800', 'opacity-100');
+                
+                rationaleContainer.classList.remove('hidden');
+                rationaleContainer.classList.add('bg-red-100', 'text-red-800', 'border', 'border-red-200');
+                rationaleContainer.innerHTML = `<strong>Incorrect.</strong> ${rationale}`;
+            } else {
+                rationaleContainer.classList.remove('hidden');
+                rationaleContainer.classList.add('bg-green-100', 'text-green-800', 'border', 'border-green-200');
+                rationaleContainer.innerHTML = `<strong>Correct!</strong> ${rationale}`;
+            }
+        }
+
+        // Helper to escape HTML quotes in JS strings
+        function escapeHtml(unsafe) {
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderFlashcards();
+            renderQuiz();
+        });
+
+    </script>
+</body>
+</html>
+
+
+

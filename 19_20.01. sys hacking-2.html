@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Hacking 2 | Intrusion Testing Course</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 40vh;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        html { scroll-behavior: smooth; }
+        .interactive-card:hover { transform: translateY(-2px); transition: all 0.2s ease-in-out; }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 font-sans antialiased">
+
+<!-- Chosen Palette: Warm Neutrals (Stone, Sand, Deep Charcoal, Muted Rust) -->
+<!-- Application Structure Plan: The SPA is structured as an interactive learning dashboard. It uses a top navigation bar for quick access. The content is logically re-ordered from a linear slide deck into functional learning modules: 1. The full Attack Chain (Interactive overview), 2. Network Interception (Sniffing & ARP - grouping related active/passive concepts), 3. Forensics (PCAP - with searchable tools/filters), 4. Payloads & Endpoints (Malware & EDR - grouping the threat and the defense). This structure allows users to see the big picture first, then drill down into specific technical domains. -->
+<!-- Visualization & Content Choices: 1. Attack Chain -> Goal: Organize & Inform -> Interactive HTML Grid -> Justification: Shows linear progression but allows non-linear exploration of details. 2. Malware Categories -> Goal: Inform -> Chart.js Doughnut Chart -> Justification: Visually breaks down the diverse threat landscape without relying on external images or SVG. 3. Wireshark Filters -> Goal: Organize -> Interactive searchable HTML table -> Justification: Makes a static list a usable utility. Library: Chart.js for data viz, Vanilla JS for interactivity. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <nav class="sticky top-0 z-50 bg-stone-900 text-stone-100 shadow-md">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0 font-bold text-lg tracking-wide flex items-center gap-2">
+                    <span class="text-2xl">🛡️</span> Cyber.SoHo Hub
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#overview" class="hover:bg-stone-700 px-3 py-2 rounded-md text-sm font-medium transition-colors">Overview</a>
+                        <a href="#interception" class="hover:bg-stone-700 px-3 py-2 rounded-md text-sm font-medium transition-colors">Network Interception</a>
+                        <a href="#forensics" class="hover:bg-stone-700 px-3 py-2 rounded-md text-sm font-medium transition-colors">PCAP Forensics</a>
+                        <a href="#payloads" class="hover:bg-stone-700 px-3 py-2 rounded-md text-sm font-medium transition-colors">Malware & EDR</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <header class="bg-stone-800 text-stone-100 py-16 border-b-4 border-orange-700">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center md:text-left flex flex-col md:flex-row items-center justify-between">
+            <div class="md:w-2/3">
+                <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl mb-4">System Hacking 2</h1>
+                <p class="text-xl text-stone-300 mb-6">Sniffing, Spoofing, Packet Forensics, Malware & Endpoint Defence</p>
+                <div class="flex flex-wrap gap-3 text-sm text-stone-400 justify-center md:justify-start">
+                    <span class="bg-stone-700 px-3 py-1 rounded-full">Days 19 & 20</span>
+                    <span class="bg-stone-700 px-3 py-1 rounded-full">PTES Phase 4: Exploitation</span>
+                    <span class="bg-stone-700 px-3 py-1 rounded-full">CEH Modules 8, 12, 17, 20</span>
+                </div>
+            </div>
+            <div class="mt-8 md:mt-0 md:w-1/3 text-center bg-stone-700 p-6 rounded-lg shadow-inner">
+                <h3 class="font-bold text-orange-400 mb-2">Previous Sessions Covered:</h3>
+                <p class="text-sm text-stone-300 mb-2">OSINT, Phishing, Vuln Analysis, Wi-Fi Hacking, System Hacking 1</p>
+                <div class="mt-4 pt-4 border-t border-stone-600 text-xs uppercase tracking-wider text-stone-400">
+                    Next: Web Apps & APIs (Days 21-23)
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-24">
+
+        <section id="overview" class="scroll-mt-20">
+            <div class="mb-8 border-b border-stone-300 pb-4">
+                <h2 class="text-3xl font-bold text-stone-900 mb-4 flex items-center gap-3">
+                    <span class="text-orange-700 text-2xl">🔗</span> The Attack & Defence Chain
+                </h2>
+                <p class="text-lg text-stone-600 leading-relaxed max-w-4xl">
+                    This module interconnects five distinct lessons into a single, unified attack chain mapped to the MITRE ATT&CK framework. Understanding this progression is critical for both penetration testers aiming to bypass controls and SOC analysts designing detection engineering rules. Interact with the stages below to see how an attacker positions, extracts, injects, and is ultimately countered by modern endpoints.
+                </p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden">
+                <div class="grid grid-cols-1 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-stone-200" id="chain-container">
+                    <button class="chain-btn flex flex-col items-center justify-center p-6 bg-orange-50 hover:bg-orange-100 transition-colors focus:outline-none" data-step="1">
+                        <div class="text-3xl mb-2">📡</div>
+                        <div class="font-bold text-stone-800">1. Sniffing</div>
+                    </button>
+                    <button class="chain-btn flex flex-col items-center justify-center p-6 hover:bg-stone-100 transition-colors focus:outline-none" data-step="2">
+                        <div class="text-3xl mb-2">🎭</div>
+                        <div class="font-bold text-stone-800">2. ARP Spoofing</div>
+                    </button>
+                    <button class="chain-btn flex flex-col items-center justify-center p-6 hover:bg-stone-100 transition-colors focus:outline-none" data-step="3">
+                        <div class="text-3xl mb-2">🔍</div>
+                        <div class="font-bold text-stone-800">3. PCAP Analysis</div>
+                    </button>
+                    <button class="chain-btn flex flex-col items-center justify-center p-6 hover:bg-stone-100 transition-colors focus:outline-none" data-step="4">
+                        <div class="text-3xl mb-2">🦠</div>
+                        <div class="font-bold text-stone-800">4. Malware</div>
+                    </button>
+                    <button class="chain-btn flex flex-col items-center justify-center p-6 hover:bg-stone-100 transition-colors focus:outline-none" data-step="5">
+                        <div class="text-3xl mb-2">🛡️</div>
+                        <div class="font-bold text-stone-800">5. EDR Defence</div>
+                    </button>
+                </div>
+                <div class="p-8 bg-stone-50 border-t border-stone-200 min-h-[200px]" id="chain-details">
+                    <div class="flex items-center gap-4 mb-4">
+                        <span class="bg-orange-700 text-white px-3 py-1 rounded text-sm font-bold tracking-wide">Step 1</span>
+                        <h3 class="text-2xl font-bold text-stone-900">Sniffing & MITM</h3>
+                    </div>
+                    <p class="text-stone-700 text-lg mb-4">Intercepting and examining data packets as they cross a network. The attacker positions between two parties, relaying and potentially modifying all traffic.</p>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="bg-white px-4 py-2 rounded shadow-sm border border-stone-200">
+                            <span class="text-xs text-stone-500 uppercase block font-bold">MITRE ATT&CK</span>
+                            <span class="text-stone-800 font-mono text-sm">T1040, T1557</span>
+                        </div>
+                        <div class="bg-white px-4 py-2 rounded shadow-sm border border-stone-200">
+                            <span class="text-xs text-stone-500 uppercase block font-bold">Role in Chain</span>
+                            <span class="text-stone-800 text-sm">Position to intercept</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="interception" class="scroll-mt-20">
+            <div class="mb-8 border-b border-stone-300 pb-4">
+                <h2 class="text-3xl font-bold text-stone-900 mb-4 flex items-center gap-3">
+                    <span class="text-orange-700 text-2xl">🎭</span> Network Interception Dynamics
+                </h2>
+                <p class="text-lg text-stone-600 leading-relaxed max-w-4xl">
+                    Modern switched networks require active manipulation to intercept traffic, unlike legacy hubs where passive eavesdropping was sufficient. This section breaks down the transition from passive monitoring to active Man-in-the-Middle (MITM) attacks, focusing on the critical vulnerability within the 1982 ARP protocol that allows attackers to redirect LAN traffic seamlessly.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white p-8 rounded-xl shadow-md border border-stone-200">
+                    <h3 class="text-xl font-bold text-stone-900 mb-6 border-b border-stone-100 pb-2">Passive vs. Active Sniffing</h3>
+                    <div class="space-y-6">
+                        <div class="flex items-start gap-4">
+                            <div class="text-2xl mt-1">👂</div>
+                            <div>
+                                <h4 class="font-bold text-stone-800">Passive Sniffing</h4>
+                                <p class="text-sm text-stone-600 mt-1">Works on legacy hubs and wireless networks. The NIC is set to promiscuous mode to read broadcast traffic silently. No packet injection is needed.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="text-2xl mt-1">🗣️</div>
+                            <div>
+                                <h4 class="font-bold text-stone-800">Active Sniffing</h4>
+                                <p class="text-sm text-stone-600 mt-1">Required on modern switched networks. Switches only forward frames to the correct port. Attackers must manipulate the network (MAC flooding, ARP spoofing, DNS spoofing) to force traffic their way.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-stone-800 text-stone-100 p-8 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-white mb-6 border-b border-stone-600 pb-2">MITM Defence Stack</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-center gap-3"><span class="text-green-400">✓</span> <span><strong>TLS/HTTPS everywhere:</strong> Encrypt all traffic</span></li>
+                        <li class="flex items-center gap-3"><span class="text-green-400">✓</span> <span><strong>HSTS:</strong> Prevent SSL stripping</span></li>
+                        <li class="flex items-center gap-3"><span class="text-green-400">✓</span> <span><strong>Certificate pinning:</strong> Detect fake certificates</span></li>
+                        <li class="flex items-center gap-3"><span class="text-green-400">✓</span> <span><strong>VPN tunnels:</strong> Encrypt at the network layer</span></li>
+                        <li class="flex items-center gap-3"><span class="text-green-400">✓</span> <span><strong>DAI (Dynamic ARP Inspection):</strong> Validate ARP on switches</span></li>
+                        <li class="flex items-center gap-3"><span class="text-green-400">✓</span> <span><strong>Network segmentation:</strong> Limit broadcast domains via VLANs</span></li>
+                    </ul>
+                    <div class="mt-6 bg-stone-700 p-4 rounded text-sm italic">
+                        <strong>Key Takeaway:</strong> Encryption defeats content interception; network controls defeat positioning attacks.
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden">
+                <div class="bg-stone-100 px-8 py-4 border-b border-stone-200">
+                    <h3 class="text-xl font-bold text-stone-900">The Anatomy of ARP Spoofing (T1557.002)</h3>
+                    <p class="text-sm text-stone-500 mt-1">Exploiting RFC 826's lack of authentication</p>
+                </div>
+                <div class="p-8">
+                    <p class="mb-6 text-stone-700">ARP maps Layer 3 IP addresses to Layer 2 MAC addresses. Because devices accept ARP replies without verifying identity or even sending a request, an attacker can manipulate local routing.</p>
+                    
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-stone-50 p-6 rounded-lg border border-stone-200 relative">
+                        <div class="text-center p-4 bg-white rounded shadow w-full md:w-1/4 z-10">
+                            <div class="font-bold text-stone-800">Victim</div>
+                            <div class="text-xs text-stone-500 font-mono mt-1">IP: 192.168.1.10</div>
+                        </div>
+                        <div class="hidden md:flex flex-col items-center w-1/4 text-orange-600 font-bold text-sm">
+                            <span>"Gateway is at Attacker MAC"</span>
+                            <span class="text-2xl">←</span>
+                        </div>
+                        <div class="text-center p-4 bg-orange-100 border-2 border-orange-500 rounded shadow w-full md:w-1/4 z-10">
+                            <div class="font-bold text-orange-800">Attacker</div>
+                            <div class="text-xs text-orange-600 mt-1">IP Forwarding Enabled</div>
+                        </div>
+                        <div class="hidden md:flex flex-col items-center w-1/4 text-orange-600 font-bold text-sm">
+                            <span>"Victim is at Attacker MAC"</span>
+                            <span class="text-2xl">→</span>
+                        </div>
+                        <div class="text-center p-4 bg-white rounded shadow w-full md:w-1/4 z-10">
+                            <div class="font-bold text-stone-800">Gateway</div>
+                            <div class="text-xs text-stone-500 font-mono mt-1">IP: 192.168.1.1</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div class="bg-stone-50 p-3 rounded border border-stone-200">
+                            <div class="font-mono text-sm font-bold text-stone-700">Bettercap</div>
+                            <div class="text-xs text-stone-500">Modern, modular suite</div>
+                        </div>
+                        <div class="bg-stone-50 p-3 rounded border border-stone-200">
+                            <div class="font-mono text-sm font-bold text-stone-700">Ettercap</div>
+                            <div class="text-xs text-stone-500">Classic MITM tool</div>
+                        </div>
+                        <div class="bg-stone-50 p-3 rounded border border-stone-200">
+                            <div class="font-mono text-sm font-bold text-stone-700">arpspoof</div>
+                            <div class="text-xs text-stone-500">From dsniff suite</div>
+                        </div>
+                        <div class="bg-stone-50 p-3 rounded border border-stone-200">
+                            <div class="font-mono text-sm font-bold text-stone-700">Scapy</div>
+                            <div class="text-xs text-stone-500">Custom Python packets</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="forensics" class="scroll-mt-20">
+            <div class="mb-8 border-b border-stone-300 pb-4">
+                <h2 class="text-3xl font-bold text-stone-900 mb-4 flex items-center gap-3">
+                    <span class="text-orange-700 text-2xl">🔍</span> PCAP Forensic Analysis
+                </h2>
+                <p class="text-lg text-stone-600 leading-relaxed max-w-4xl">
+                    Once traffic is intercepted, it is recorded in PCAP files. Raw network captures contain immense noise. Analysts rely on rigorous methodologies and specific display filters in tools like Wireshark to isolate credentials, reconstruct transferred files, and identify malware command-and-control beacons.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 space-y-4">
+                    <div class="bg-white p-6 rounded-xl shadow-md border border-stone-200">
+                        <h3 class="font-bold text-stone-900 mb-4 uppercase tracking-wider text-sm border-b border-stone-100 pb-2">The 6-Step Workflow</h3>
+                        <ol class="list-decimal list-inside space-y-3 text-stone-700 text-sm">
+                            <li><strong>Big Picture:</strong> Statistics → Conversations.</li>
+                            <li><strong>Identify Protocols:</strong> Protocol Hierarchy.</li>
+                            <li><strong>Filter Sensitive Traffic:</strong> Apply display filters.</li>
+                            <li><strong>Follow Streams:</strong> Reconstruct full TCP/HTTP sessions.</li>
+                            <li><strong>Export Objects:</strong> Extract transferred files.</li>
+                            <li><strong>Hunt Anomalies:</strong> Beacons, suspicious DNS.</li>
+                        </ol>
+                    </div>
+                    <div class="bg-orange-50 p-6 rounded-xl border border-orange-200">
+                        <p class="text-sm text-orange-900 font-medium italic">"Structured PCAP analysis turns 80,000 raw packets into a concise report with 14 credential findings in minutes."</p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden flex flex-col">
+                    <div class="bg-stone-800 px-6 py-4 flex justify-between items-center">
+                        <h3 class="font-bold text-stone-100">Essential Wireshark Filters</h3>
+                        <input type="text" id="filterSearch" placeholder="Search filters..." class="px-3 py-1 rounded text-sm text-stone-800 outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+                    <div class="overflow-x-auto flex-grow">
+                        <table class="min-w-full text-left text-sm" id="wiresharkTable">
+                            <thead class="bg-stone-100 text-stone-600 font-bold uppercase tracking-wider">
+                                <tr>
+                                    <th class="px-6 py-3 border-b border-stone-200">Filter Syntax</th>
+                                    <th class="px-6 py-3 border-b border-stone-200">Purpose</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-stone-100 text-stone-700 font-mono text-xs">
+                                <tr class="hover:bg-stone-50">
+                                    <td class="px-6 py-3">http</td>
+                                    <td class="px-6 py-3 font-sans">All HTTP traffic</td>
+                                </tr>
+                                <tr class="hover:bg-stone-50">
+                                    <td class="px-6 py-3">http.request.method == POST</td>
+                                    <td class="px-6 py-3 font-sans">POST requests (credentials)</td>
+                                </tr>
+                                <tr class="hover:bg-stone-50">
+                                    <td class="px-6 py-3">ftp.request.command == PASS</td>
+                                    <td class="px-6 py-3 font-sans">FTP passwords</td>
+                                </tr>
+                                <tr class="hover:bg-stone-50">
+                                    <td class="px-6 py-3">dns</td>
+                                    <td class="px-6 py-3 font-sans">DNS queries/responses</td>
+                                </tr>
+                                <tr class="hover:bg-stone-50">
+                                    <td class="px-6 py-3">ip.addr == 10.0.2.5</td>
+                                    <td class="px-6 py-3 font-sans">Traffic to/from specific host</td>
+                                </tr>
+                                <tr class="hover:bg-stone-50">
+                                    <td class="px-6 py-3">tcp.flags.syn==1 && tcp.flags.ack==0</td>
+                                    <td class="px-6 py-3 font-sans">New connections (SYN)</td>
+                                </tr>
+                                <tr class="hover:bg-stone-50">
+                                    <td class="px-6 py-3">arp.opcode == 2</td>
+                                    <td class="px-6 py-3 font-sans text-orange-700 font-bold">ARP replies (spoofing detection)</td>
+                                </tr>
+                                <tr class="hover:bg-stone-50">
+                                    <td class="px-6 py-3">frame contains "password"</td>
+                                    <td class="px-6 py-3 font-sans">Frames with "password" string</td>
+                                </tr>
+                                <tr class="hover:bg-stone-50">
+                                    <td class="px-6 py-3">tls.handshake.type == 1</td>
+                                    <td class="px-6 py-3 font-sans">TLS Client Hello</td>
+                                </tr>
+                                <tr class="hover:bg-stone-50">
+                                    <td class="px-6 py-3">!arp && !dns && !icmp</td>
+                                    <td class="px-6 py-3 font-sans">Remove common noise</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="payloads" class="scroll-mt-20">
+            <div class="mb-8 border-b border-stone-300 pb-4">
+                <h2 class="text-3xl font-bold text-stone-900 mb-4 flex items-center gap-3">
+                    <span class="text-orange-700 text-2xl">🦠</span> Malware & Endpoint Defence (EDR)
+                </h2>
+                <p class="text-lg text-stone-600 leading-relaxed max-w-4xl">
+                    Once network access is established, attackers deliver weaponized payloads (Malware). Because the traditional network perimeter has dissolved (due to Cloud, BYOD, Remote work), modern security focuses on controlling the endpoints themselves. Explore the categories of malware and how Endpoint Detection & Response (EDR) platforms shift the paradigm from static signature matching to behavioral analysis.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                <div class="bg-white p-8 rounded-xl shadow-md border border-stone-200">
+                    <h3 class="text-xl font-bold text-stone-900 mb-2">Malware Threat Landscape</h3>
+                    <p class="text-sm text-stone-500 mb-6">Categorization of malicious payloads delivered via MITM, phishing, or exploits.</p>
+                    
+                    <div class="chart-container">
+                        <canvas id="malwareChart"></canvas>
+                    </div>
+                    
+                    <div class="mt-6 grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-stone-50 p-2 rounded"><strong>Vectors:</strong> Email, Drive-by, Trojanised Apps, USB.</div>
+                        <div class="bg-stone-50 p-2 rounded border-l-2 border-orange-500"><strong>Safety:</strong> Isolated VMs, Snapshots, Hash tracking.</div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col space-y-6">
+                    <div class="bg-stone-800 text-stone-100 p-8 rounded-xl shadow-md flex-grow">
+                        <h3 class="text-xl font-bold text-white mb-2">The Evolution of Defence</h3>
+                        <p class="text-sm text-stone-400 mb-6 border-b border-stone-600 pb-4">From Legacy Antivirus to modern EDR/XDR</p>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-stone-700 rounded p-4 border-l-4 border-stone-400">
+                                <h4 class="font-bold text-sm uppercase tracking-wide text-stone-300 mb-1">Traditional AV</h4>
+                                <p class="text-sm">Asks: <em>"What does the file look like?"</em> Relies on signature matching for known threats. Action: Block/Quarantine.</p>
+                            </div>
+                            <div class="bg-stone-700 rounded p-4 border-l-4 border-orange-500 shadow-lg relative transform translate-x-2">
+                                <h4 class="font-bold text-sm uppercase tracking-wide text-orange-400 mb-1">EDR (Endpoint Detection & Response)</h4>
+                                <p class="text-sm">Asks: <em>"What does the file DO?"</em> Relies on continuous behavioral monitoring across processes, network, memory. Action: Isolate, Investigate, Remediate.</p>
+                            </div>
+                            <div class="bg-stone-700 rounded p-4 border-l-4 border-stone-400">
+                                <h4 class="font-bold text-sm uppercase tracking-wide text-stone-300 mb-1">XDR (Extended Detection & Response)</h4>
+                                <p class="text-sm">Integrates telemetry from endpoint, network, cloud, email, and identity into one platform.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden">
+                <div class="bg-stone-100 px-8 py-4 border-b border-stone-200">
+                    <h3 class="text-xl font-bold text-stone-900">Leading EDR Solutions & Capabilities</h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-stone-200">
+                    <div class="p-6">
+                        <h4 class="font-bold text-stone-800 mb-3 text-sm uppercase tracking-wider">CrowdStrike</h4>
+                        <div class="text-sm text-stone-600"><strong>Product:</strong> Falcon Insight<br><strong>Strength:</strong> Cloud-native, adversary intel</div>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="font-bold text-stone-800 mb-3 text-sm uppercase tracking-wider">Microsoft</h4>
+                        <div class="text-sm text-stone-600"><strong>Product:</strong> Defender for Endpoint<br><strong>Strength:</strong> Windows/M365 integration</div>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="font-bold text-stone-800 mb-3 text-sm uppercase tracking-wider">SentinelOne</h4>
+                        <div class="text-sm text-stone-600"><strong>Product:</strong> Singularity<br><strong>Strength:</strong> AI autonomous response</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="bg-stone-200 rounded-xl p-8 mb-12 border border-stone-300">
+            <h3 class="text-xl font-bold text-stone-900 mb-4 flex items-center gap-2"><span class="text-red-600">⚖️</span> Legal & Ethical Reminders</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-stone-700">
+                <ul class="list-disc list-inside space-y-2">
+                    <li><strong>Written authorisation required</strong> before any testing.</li>
+                    <li>CFAA (U.S.) & Criminal Code of Canada, s.342.1 strictly forbid unauthorised computer use.</li>
+                    <li>Sniffing/spoofing on unauthorised networks is a criminal offence.</li>
+                </ul>
+                <ul class="list-disc list-inside space-y-2">
+                    <li><strong>Clean up after testing:</strong> restore ARP tables, remove artifacts.</li>
+                    <li><strong>Document everything:</strong> findings must be evidence-based.</li>
+                    <li class="font-bold text-red-700 mt-2">The line between penetration tester and criminal is a signed piece of paper.</li>
+                </ul>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-900 text-stone-400 py-12 text-center text-sm">
+        <div class="max-w-6xl mx-auto px-4">
+            <p class="mb-4 text-stone-300 font-bold">Cyber.SoHo Educational Hub</p>
+            <p class="italic mb-6">"From the Industry to the Classroom — Building the IT's Future, Today and Together!"</p>
+            <p>&copy; 2026 Cyber.SoHo Educational Hub. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const chainData = {
+            1: {
+                title: "Sniffing & MITM",
+                desc: "Intercepting and examining data packets as they cross a network. The attacker positions between two parties, relaying and potentially modifying all traffic.",
+                mitre: "T1040, T1557",
+                role: "Position to intercept"
+            },
+            2: {
+                title: "ARP Spoofing",
+                desc: "Exploiting the lack of authentication in Address Resolution Protocol (RFC 826) to poison ARP caches on the LAN and redirect local traffic through the attacker's machine.",
+                mitre: "T1557.002",
+                role: "Achieve MITM on LAN"
+            },
+            3: {
+                title: "PCAP Analysis",
+                desc: "Forensic examination of captured packets using tools like Wireshark. Involves applying display filters, following streams, and extracting cleartext credentials or files.",
+                mitre: "T1040",
+                role: "Extract creds & intel"
+            },
+            4: {
+                title: "Malware Basics",
+                desc: "Weaponised payloads (Trojans, RATs, Ransomware) delivered over intercepted channels or via phishing to establish persistence, control, or cause disruption.",
+                mitre: "T1204, T1566",
+                role: "Inject payload via MITM"
+            },
+            5: {
+                title: "Endpoint / EDR Overview",
+                desc: "The modern defender's response. Continuous behavioural monitoring of processes, registry, and memory to detect and isolate threats that bypass traditional perimeter controls.",
+                mitre: "Detection",
+                role: "Detect & stop 1–4"
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const buttons = document.querySelectorAll('.chain-btn');
+            const detailsContainer = document.getElementById('chain-details');
+
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    buttons.forEach(b => {
+                        b.classList.remove('bg-orange-100', 'ring-2', 'ring-orange-500');
+                        b.classList.add('bg-transparent');
+                    });
+                    btn.classList.add('bg-orange-100', 'ring-2', 'ring-orange-500');
+                    btn.classList.remove('bg-transparent');
+
+                    const step = btn.getAttribute('data-step');
+                    const data = chainData[step];
+
+                    detailsContainer.innerHTML = `
+                        <div class="flex items-center gap-4 mb-4 fade-in">
+                            <span class="bg-orange-700 text-white px-3 py-1 rounded text-sm font-bold tracking-wide">Step ${step}</span>
+                            <h3 class="text-2xl font-bold text-stone-900">${data.title}</h3>
+                        </div>
+                        <p class="text-stone-700 text-lg mb-4 fade-in">${data.desc}</p>
+                        <div class="flex flex-wrap gap-4 fade-in">
+                            <div class="bg-white px-4 py-2 rounded shadow-sm border border-stone-200">
+                                <span class="text-xs text-stone-500 uppercase block font-bold">MITRE ATT&CK</span>
+                                <span class="text-stone-800 font-mono text-sm">${data.mitre}</span>
+                            </div>
+                            <div class="bg-white px-4 py-2 rounded shadow-sm border border-stone-200">
+                                <span class="text-xs text-stone-500 uppercase block font-bold">Role in Chain</span>
+                                <span class="text-stone-800 text-sm">${data.role}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+
+            const searchInput = document.getElementById('filterSearch');
+            const tableRows = document.querySelectorAll('#wiresharkTable tbody tr');
+
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                tableRows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(term) ? '' : 'none';
+                });
+            });
+
+            const ctx = document.getElementById('malwareChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Virus', 'Worm', 'Trojan', 'Ransomware', 'Spyware', 'Rootkit', 'RAT', 'Adware/PUP'],
+                    datasets: [{
+                        data: [10, 15, 20, 25, 10, 5, 10, 5], 
+                        backgroundColor: [
+                            '#d6cece', '#b5a9a9', '#8c6b5d', '#c2410c', 
+                            '#5c6b73', '#292524', '#78716c', '#e7e5e4'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                boxWidth: 12,
+                                font: { family: 'sans-serif', size: 11 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const labels = {
+                                        'Virus': 'Attaches to files, replicates on execution',
+                                        'Worm': 'Self-replicates across networks autonomously',
+                                        'Trojan': 'Masquerades as legitimate software',
+                                        'Ransomware': 'Encrypts files, demands payment',
+                                        'Spyware': 'Covertly monitors user activity',
+                                        'Rootkit': 'Hides deep in OS/firmware for persistence',
+                                        'RAT': 'Full remote control (files, camera)',
+                                        'Adware/PUP': 'Unwanted ads, browser redirects'
+                                    };
+                                    return ` ${context.label}: ${labels[context.label]}`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '60%'
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
+
+

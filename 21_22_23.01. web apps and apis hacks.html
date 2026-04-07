@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Applications & APIs Hacking - Course Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #faf9f6; /* Warm off-white */
+            color: #333333;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        .nav-item.active {
+            background-color: #8b7355; /* Warm taupe */
+            color: white;
+            font-weight: 600;
+        }
+        .nav-item:hover:not(.active) {
+            background-color: #e5e0d8;
+        }
+
+        .tab-btn.active {
+            border-bottom: 2px solid #8b7355;
+            color: #8b7355;
+            font-weight: 600;
+        }
+
+        .hidden-section {
+            display: none;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.4s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Custom Scrollbar for inner elements */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #ccc; 
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8; 
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Chosen Palette: Warm Neutrals (Stone/Amber) -->
+    <!-- Application Structure Plan: The application uses a sidebar navigation model (dashboard style) to organize the 4 main lessons and introductory/wrap-up content. This allows non-linear exploration of the intense technical content, preventing cognitive overload from a single long scroll. Content is broken down into thematic views: Overview, Top 10, Tools, Defense, and Wrap-up. Interactive tabs and accordions are used within sections to hide/reveal details on demand. -->
+    <!-- Visualization & Content Choices: 
+        1. Course Timeline -> Goal: Contextualize the current module -> Viz: Horizontal Bar Chart (Chart.js) -> Justification: Shows relative time spent on topics visually better than a list.
+        2. OWASP Top 10 -> Goal: Inform -> Viz: Interactive HTML Table with hover states -> Justification: Cleanest way to present a structured list with notes.
+        3. Vulnerability Deep Dives (SQLi, XSS, etc.) -> Goal: Inform/Organize -> Viz: Tabbed HTML interface -> Justification: Keeps user in context while exploring specific attack vectors without scrolling.
+        4. Burp Proxy Flow -> Goal: Organize/Relationships -> Viz: Styled HTML blocks with Unicode arrows -> NO SVG -> Justification: Simple visual representation of traffic interception.
+        5. SSRF Flow -> Goal: Change/Process -> Viz: Step-by-step interactive HTML elements -> Justification: Guides the user through the attack logic sequentially.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <header class="bg-white border-b border-stone-200 shadow-sm z-10 p-4 lg:px-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-stone-800 tracking-tight">Web Applications & APIs Hacking</h1>
+            <p class="text-sm text-stone-500">Days 21&ndash;23 | Intrusion Testing Professional Course</p>
+        </div>
+        <div class="hidden md:block text-right">
+            <span class="text-xs font-semibold uppercase tracking-wider text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">Cyber.SoHo Educational Hub</span>
+        </div>
+        <button id="mobile-menu-btn" class="md:hidden text-stone-600 text-2xl p-2 focus:outline-none">&#9776;</button>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        
+        <aside id="sidebar" class="w-64 bg-stone-100 border-r border-stone-200 flex flex-col transition-transform duration-300 absolute md:relative z-20 h-full -translate-x-full md:translate-x-0 shadow-lg md:shadow-none">
+            <div class="p-4 border-b border-stone-200 flex justify-between items-center md:hidden">
+                <span class="font-bold text-stone-700">Menu</span>
+                <button id="close-sidebar-btn" class="text-stone-500 text-xl focus:outline-none">&#10005;</button>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scroll" id="nav-menu">
+                <button data-target="sec-overview" class="nav-item active w-full text-left px-4 py-3 rounded-md text-sm font-medium transition-colors duration-150 flex items-center gap-3">
+                    <span class="text-lg">&#128200;</span> Course Context
+                </button>
+                <div class="pt-4 pb-1">
+                    <p class="px-4 text-xs font-semibold text-stone-400 uppercase tracking-wider">Lessons</p>
+                </div>
+                <button data-target="sec-owasp" class="nav-item w-full text-left px-4 py-3 rounded-md text-sm font-medium transition-colors duration-150 flex items-center gap-3">
+                    <span class="text-lg">&#128721;</span> 1. OWASP Top 10
+                </button>
+                <button data-target="sec-burp" class="nav-item w-full text-left px-4 py-3 rounded-md text-sm font-medium transition-colors duration-150 flex items-center gap-3">
+                    <span class="text-lg">&#128295;</span> 2. Burp Suite Basics
+                </button>
+                <button data-target="sec-validation" class="nav-item w-full text-left px-4 py-3 rounded-md text-sm font-medium transition-colors duration-150 flex items-center gap-3">
+                    <span class="text-lg">&#128274;</span> 3. Input Validation
+                </button>
+                <button data-target="sec-ssrf" class="nav-item w-full text-left px-4 py-3 rounded-md text-sm font-medium transition-colors duration-150 flex items-center gap-3">
+                    <span class="text-lg">&#128187;</span> 4. SSRF Overview
+                </button>
+                <div class="pt-4 pb-1">
+                    <p class="px-4 text-xs font-semibold text-stone-400 uppercase tracking-wider">Wrap-up</p>
+                </div>
+                <button data-target="sec-resources" class="nav-item w-full text-left px-4 py-3 rounded-md text-sm font-medium transition-colors duration-150 flex items-center gap-3">
+                    <span class="text-lg">&#128214;</span> Labs & Resources
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto p-4 md:p-8 bg-stone-50 custom-scroll relative">
+            <div id="overlay" class="fixed inset-0 bg-stone-900 bg-opacity-50 z-10 hidden md:hidden"></div>
+
+            <!-- SECTION: Overview -->
+            <section id="sec-overview" class="content-section max-w-5xl mx-auto fade-in">
+                <div class="mb-8 bg-white p-6 rounded-xl shadow-sm border border-stone-200 border-l-4 border-l-amber-600">
+                    <h2 class="text-2xl font-bold mb-2">Where We Are</h2>
+                    <p class="text-stone-600 leading-relaxed">
+                        Welcome to Days 21&ndash;23 of the Intrusion Testing Professional Course. We are pivoting from network and system-level attacks to the application layer. This section contextualizes our current focus within the broader 25-day syllabus.
+                    </p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-8">
+                    <h3 class="text-lg font-semibold mb-4 text-stone-800">Course Journey Timeline</h3>
+                    <div class="chart-container">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: OWASP -->
+            <section id="sec-owasp" class="content-section max-w-5xl mx-auto hidden-section">
+                <div class="mb-8 bg-white p-6 rounded-xl shadow-sm border border-stone-200 border-l-4 border-l-red-600">
+                    <h2 class="text-2xl font-bold mb-2">Lesson 1: OWASP Top 10 (2025 Edition)</h2>
+                    <p class="text-stone-600 leading-relaxed">
+                        The Open Worldwide Application Security Project (OWASP) Top 10 is a data-driven prioritisation framework representing the most critical security risks to web applications. Here we explore the latest list and deep-dive into the four most prevalent vulnerabilities you will encounter in penetration tests.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    <!-- Top 10 List -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+                        <h3 class="text-lg font-semibold mb-4 text-stone-800 border-b pb-2">The Full List</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs text-stone-500 uppercase bg-stone-50">
+                                    <tr><th class="px-3 py-2">#</th><th class="px-3 py-2">Category</th><th class="px-3 py-2">Notes</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-stone-100">
+                                    <tr class="hover:bg-amber-50 transition-colors"><td class="px-3 py-2 font-medium text-amber-700">A01</td><td class="px-3 py-2 font-semibold">Broken Access Control</td><td class="px-3 py-2 text-stone-500 text-xs">#1 since 2021; now includes SSRF</td></tr>
+                                    <tr class="hover:bg-stone-50"><td class="px-3 py-2 text-stone-500">A02</td><td class="px-3 py-2">Security Misconfiguration</td><td class="px-3 py-2 text-stone-500 text-xs">Rose from #5</td></tr>
+                                    <tr class="hover:bg-stone-50"><td class="px-3 py-2 text-stone-500">A03</td><td class="px-3 py-2">Software Supply Chain Failures</td><td class="px-3 py-2 text-stone-500 text-xs">New scope</td></tr>
+                                    <tr class="hover:bg-stone-50"><td class="px-3 py-2 text-stone-500">A04</td><td class="px-3 py-2">Cryptographic Failures</td><td class="px-3 py-2 text-stone-500 text-xs">Dropped 2 spots</td></tr>
+                                    <tr class="hover:bg-amber-50 transition-colors"><td class="px-3 py-2 font-medium text-amber-700">A05</td><td class="px-3 py-2 font-semibold">Injection</td><td class="px-3 py-2 text-stone-500 text-xs">SQLi, XSS, command injection</td></tr>
+                                    <tr class="hover:bg-stone-50"><td class="px-3 py-2 text-stone-500">A06</td><td class="px-3 py-2">Insecure Design</td><td class="px-3 py-2 text-stone-500 text-xs">Threat-modelling improvements</td></tr>
+                                    <tr class="hover:bg-amber-50 transition-colors"><td class="px-3 py-2 font-medium text-amber-700">A07</td><td class="px-3 py-2 font-semibold">Authentication Failures</td><td class="px-3 py-2 text-stone-500 text-xs">Stable</td></tr>
+                                    <tr class="hover:bg-stone-50"><td class="px-3 py-2 text-stone-500">A08</td><td class="px-3 py-2">Software/Data Integrity Failures</td><td class="px-3 py-2 text-stone-500 text-xs">Stable</td></tr>
+                                    <tr class="hover:bg-stone-50"><td class="px-3 py-2 text-stone-500">A09</td><td class="px-3 py-2">Security Logging & Alerting Failures</td><td class="px-3 py-2 text-stone-500 text-xs">Name updated</td></tr>
+                                    <tr class="hover:bg-stone-50"><td class="px-3 py-2 text-stone-500">A10</td><td class="px-3 py-2">Mishandling of Exceptional Conditions</td><td class="px-3 py-2 text-stone-500 text-xs">Brand new</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="text-xs text-stone-400 mt-3 text-center italic">Based on analysis of 2.8 million+ applications using incidence rate.</p>
+                    </div>
+
+                    <!-- Vulnerability Deep Dive Tabs -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 flex flex-col">
+                        <h3 class="text-lg font-semibold mb-4 text-stone-800">Key Vulnerabilities Deep Dive</h3>
+                        
+                        <div class="flex border-b border-stone-200 mb-4 overflow-x-auto custom-scroll">
+                            <button class="tab-btn active px-4 py-2 text-sm font-medium text-stone-500 whitespace-nowrap" data-tab="tab-sqli">SQLi</button>
+                            <button class="tab-btn px-4 py-2 text-sm font-medium text-stone-500 whitespace-nowrap" data-tab="tab-xss">XSS</button>
+                            <button class="tab-btn px-4 py-2 text-sm font-medium text-stone-500 whitespace-nowrap" data-tab="tab-idor">IDOR</button>
+                            <button class="tab-btn px-4 py-2 text-sm font-medium text-stone-500 whitespace-nowrap" data-tab="tab-auth">Auth</button>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto custom-scroll pr-2 relative">
+                            <!-- SQLi -->
+                            <div id="tab-sqli" class="tab-pane fade-in block">
+                                <h4 class="font-bold text-red-700 mb-2">SQL Injection</h4>
+                                <p class="text-sm text-stone-600 mb-3">Attacker inserts malicious SQL into user-facing input, application concatenates it, database executes modified query.</p>
+                                <div class="bg-stone-800 text-green-400 p-2 rounded text-xs font-mono mb-3">
+                                    ' OR '1'='1' --
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <h5 class="font-semibold text-stone-700 mb-1">Impact</h5>
+                                        <ul class="list-disc pl-4 text-stone-600 space-y-1 text-xs">
+                                            <li>Full DB dump</li><li>Auth bypass</li><li>Data modification</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-semibold text-stone-700 mb-1">Defence</h5>
+                                        <p class="text-stone-600 text-xs">Never concatenate input. Always use <strong>parameterised queries</strong> (prepared statements).</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- XSS -->
+                            <div id="tab-xss" class="tab-pane fade-in hidden">
+                                <h4 class="font-bold text-amber-600 mb-2">Cross-Site Scripting</h4>
+                                <table class="w-full text-xs text-left mb-3">
+                                    <thead class="bg-stone-50"><tr><th class="p-1">Type</th><th class="p-1">Where</th></tr></thead>
+                                    <tbody>
+                                        <tr class="border-t"><td class="p-1 font-semibold">Reflected</td><td class="p-1">HTTP request (URL param) - One-shot</td></tr>
+                                        <tr class="border-t"><td class="p-1 font-semibold">Stored</td><td class="p-1">Saved on server (DB) - Permanent</td></tr>
+                                        <tr class="border-t"><td class="p-1 font-semibold">DOM-based</td><td class="p-1">Client-side JS manipulates DOM</td></tr>
+                                    </tbody>
+                                </table>
+                                <h5 class="font-semibold text-stone-700 mb-1 text-sm">Impact</h5>
+                                <p class="text-sm text-stone-600">Session cookie theft, account takeover, defacement, malware delivery.</p>
+                            </div>
+                            <!-- IDOR -->
+                            <div id="tab-idor" class="tab-pane fade-in hidden">
+                                <h4 class="font-bold text-blue-600 mb-2">Insecure Direct Object Reference</h4>
+                                <p class="text-sm text-stone-600 mb-3">App exposes internal IDs in URLs without checking if the user owns the resource.</p>
+                                <div class="bg-stone-100 p-2 rounded border border-stone-200 text-xs mb-3 font-mono">
+                                    <span class="text-green-600">bank.example/doc?id=10042</span> (Yours)<br>
+                                    <span class="text-red-600">bank.example/doc?id=10043</span> (Someone else's!)
+                                </div>
+                                <h5 class="font-semibold text-stone-700 mb-1 text-sm">Defence</h5>
+                                <p class="text-sm text-stone-600">Always verify authorisation server-side. Use indirect references (mapping tables).</p>
+                            </div>
+                            <!-- Auth -->
+                            <div id="tab-auth" class="tab-pane fade-in hidden">
+                                <h4 class="font-bold text-purple-600 mb-2">Authentication Failures</h4>
+                                <ul class="list-disc pl-5 text-sm text-stone-600 space-y-1 mb-3">
+                                    <li>Weak/default passwords permitted</li>
+                                    <li>Missing or broken MFA</li>
+                                    <li>Session IDs in URLs</li>
+                                    <li>No rate-limiting on login endpoints</li>
+                                </ul>
+                                <h5 class="font-semibold text-stone-700 mb-1 text-sm">Defence</h5>
+                                <p class="text-sm text-stone-600">Enforce strong policies, implement MFA everywhere, use secure random session tokens.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: Burp Suite -->
+            <section id="sec-burp" class="content-section max-w-5xl mx-auto hidden-section">
+                <div class="mb-8 bg-white p-6 rounded-xl shadow-sm border border-stone-200 border-l-4 border-l-stone-600">
+                    <h2 class="text-2xl font-bold mb-2">Lesson 2: Burp Suite Basics</h2>
+                    <p class="text-stone-600 leading-relaxed">
+                        Burp Suite (by PortSwigger) is the industry standard intercepting proxy. It sits between your browser and the web server, making the invisible visible. Every header, cookie, hidden field, and POST parameter is exposed and editable.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <!-- Workflow Diagram -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 flex flex-col items-center justify-center">
+                        <h3 class="text-lg font-semibold mb-6 text-stone-800 w-full text-left">The Interception Workflow</h3>
+                        
+                        <div class="flex items-center gap-2 w-full max-w-md">
+                            <!-- Browser -->
+                            <div class="flex-1 bg-stone-100 p-3 rounded text-center border border-stone-300">
+                                <div class="text-2xl mb-1">&#127760;</div>
+                                <div class="text-xs font-semibold">Browser</div>
+                            </div>
+                            <!-- Arrow -->
+                            <div class="text-stone-400 text-xl font-bold px-2">&#8644;</div>
+                            <!-- Burp -->
+                            <div class="flex-1 bg-amber-100 p-4 rounded text-center border-2 border-amber-500 shadow-inner relative group cursor-help">
+                                <div class="text-2xl mb-1">&#128269;</div>
+                                <div class="text-xs font-bold text-amber-800">Burp Proxy</div>
+                                <div class="absolute inset-0 bg-stone-900 text-white text-[10px] p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center text-left pointer-events-none">
+                                    Intercept, modify, or drop requests here before they reach the server.
+                                </div>
+                            </div>
+                            <!-- Arrow -->
+                            <div class="text-stone-400 text-xl font-bold px-2">&#8644;</div>
+                            <!-- Server -->
+                            <div class="flex-1 bg-stone-100 p-3 rounded text-center border border-stone-300">
+                                <div class="text-2xl mb-1">&#128423;</div>
+                                <div class="text-xs font-semibold">Server</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 bg-stone-800 text-green-400 p-3 rounded w-full font-mono text-xs overflow-x-auto">
+                            POST /api/login HTTP/1.1<br>
+                            Host: target.local<br>
+                            <span class="text-yellow-400">Cookie: session=123</span><br><br>
+                            username=admin&amp;<span class="text-red-400 line-through">role=viewer</span><span class="text-red-500 font-bold">role=admin</span>
+                        </div>
+                        <p class="text-xs text-stone-500 mt-2 text-center">Attacker alters hidden fields en route.</p>
+                    </div>
+
+                    <!-- Core Modules -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h3 class="text-lg font-semibold mb-4 text-stone-800">Core Modules Explorer</h3>
+                        <p class="text-sm text-stone-500 mb-4">Click a module to see its purpose.</p>
+                        
+                        <div class="grid grid-cols-2 gap-2 mb-4" id="burp-module-btns">
+                            <button class="bg-stone-100 hover:bg-amber-50 border border-stone-200 rounded py-2 text-sm font-semibold transition-colors focus:ring-2 focus:ring-amber-500 focus:outline-none" data-desc="Intercept & edit live HTTP/S traffic between browser and server.">Proxy</button>
+                            <button class="bg-stone-100 hover:bg-amber-50 border border-stone-200 rounded py-2 text-sm font-semibold transition-colors focus:ring-2 focus:ring-amber-500 focus:outline-none" data-desc="Manually re-send modified requests and analyze responses.">Repeater</button>
+                            <button class="bg-stone-100 hover:bg-amber-50 border border-stone-200 rounded py-2 text-sm font-semibold transition-colors focus:ring-2 focus:ring-amber-500 focus:outline-none" data-desc="Automate payload insertion (fuzzing, brute-forcing parameters).">Intruder</button>
+                            <button class="bg-stone-100 hover:bg-amber-50 border border-stone-200 rounded py-2 text-sm font-semibold transition-colors focus:ring-2 focus:ring-amber-500 focus:outline-none" data-desc="Encode/decode payloads (Base64, URL, Hex) for testing constraints.">Decoder</button>
+                        </div>
+                        
+                        <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg min-h-[80px] flex items-center justify-center text-center">
+                            <p id="burp-module-desc" class="text-sm text-amber-800 font-medium">Select a module above.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: Input Validation -->
+            <section id="sec-validation" class="content-section max-w-5xl mx-auto hidden-section">
+                <div class="mb-8 bg-white p-6 rounded-xl shadow-sm border border-stone-200 border-l-4 border-l-green-600">
+                    <h2 class="text-2xl font-bold mb-2">Lesson 3: Input Validation</h2>
+                    <p class="text-stone-600 leading-relaxed">
+                        The root cause of almost all injection vulnerabilities is trusting user input. Fixing input validation drastically reduces the entire attack surface. This section outlines the principles of proper validation and the necessary multi-layered defense approach.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <!-- Layered Defense -->
+                    <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h3 class="text-lg font-semibold mb-4 text-stone-800">3-Layer Defence Model</h3>
+                        <div class="space-y-3 relative">
+                            <!-- Connection Line -->
+                            <div class="absolute left-6 top-6 bottom-6 w-0.5 bg-stone-200 z-0"></div>
+                            
+                            <div class="relative z-10 flex items-start gap-3">
+                                <div class="w-12 h-12 rounded-full bg-stone-100 border-2 border-stone-300 flex items-center justify-center text-lg shrink-0">1</div>
+                                <div>
+                                    <h4 class="font-bold text-stone-800 text-sm">Client (Browser)</h4>
+                                    <p class="text-xs text-stone-500">Usability feedback. <span class="text-red-500 font-semibold">Trivially bypassed.</span></p>
+                                </div>
+                            </div>
+                            <div class="relative z-10 flex items-start gap-3">
+                                <div class="w-12 h-12 rounded-full bg-amber-100 border-2 border-amber-500 flex items-center justify-center text-lg shrink-0 text-amber-700">2</div>
+                                <div>
+                                    <h4 class="font-bold text-amber-800 text-sm">Server (Backend)</h4>
+                                    <p class="text-xs text-stone-500">Security enforcement. Validation happens here.</p>
+                                </div>
+                            </div>
+                            <div class="relative z-10 flex items-start gap-3">
+                                <div class="w-12 h-12 rounded-full bg-green-100 border-2 border-green-500 flex items-center justify-center text-lg shrink-0 text-green-700">3</div>
+                                <div>
+                                    <h4 class="font-bold text-green-800 text-sm">Output (Render)</h4>
+                                    <p class="text-xs text-stone-500">Context-specific encoding (HTML, SQL, URL).</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Validation Strategies -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h3 class="text-lg font-semibold mb-4 text-stone-800">Validation Strategies Matrix</h3>
+                        
+                        <div class="grid grid-cols-2 gap-4 h-full">
+                            <div class="bg-green-50 border border-green-200 p-4 rounded-lg flex flex-col">
+                                <div class="text-green-700 font-bold mb-2 flex items-center gap-2"><span class="text-xl">&#10004;</span> Allow-list</div>
+                                <p class="text-sm text-stone-600 mb-2 flex-1">Define exactly what IS permitted. Reject everything else.</p>
+                                <div class="bg-white p-2 text-xs font-mono border border-green-200 rounded mt-auto text-stone-700">
+                                    "Only digits 0-9, length 5"
+                                </div>
+                                <span class="mt-2 text-xs font-bold text-green-800 uppercase tracking-wide">Preferred & Robust</span>
+                            </div>
+
+                            <div class="bg-red-50 border border-red-200 p-4 rounded-lg flex flex-col">
+                                <div class="text-red-700 font-bold mb-2 flex items-center gap-2"><span class="text-xl">&#10006;</span> Deny-list</div>
+                                <p class="text-sm text-stone-600 mb-2 flex-1">Define what IS NOT permitted. Accept everything else.</p>
+                                <div class="bg-white p-2 text-xs font-mono border border-red-200 rounded mt-auto text-stone-700">
+                                    "Block inputs containing &lt;script&gt;"
+                                </div>
+                                <span class="mt-2 text-xs font-bold text-red-800 uppercase tracking-wide">Fragile & Bypassable</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: SSRF -->
+            <section id="sec-ssrf" class="content-section max-w-5xl mx-auto hidden-section">
+                <div class="mb-8 bg-white p-6 rounded-xl shadow-sm border border-stone-200 border-l-4 border-l-blue-600">
+                    <h2 class="text-2xl font-bold mb-2">Lesson 4: SSRF Overview</h2>
+                    <p class="text-stone-600 leading-relaxed">
+                        Server-Side Request Forgery (SSRF) occurs when an attacker tricks a server into making HTTP requests to unintended destinations. The server effectively মজbecomes an unwitting proxy, often used to access internal networks or cloud metadata APIs.
+                    </p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-8">
+                    <h3 class="text-lg font-semibold mb-4 text-stone-800 flex justify-between items-center">
+                        The Attack Pattern
+                        <span class="text-xs font-normal text-stone-400">Interactive Flow</span>
+                    </h3>
+                    
+                    <div class="flex flex-col md:flex-row gap-6 items-stretch">
+                        <!-- Controls & Details -->
+                        <div class="flex-1 flex flex-col justify-between">
+                            <div class="space-y-3 mb-6" id="ssrf-steps-list">
+                                <div class="p-3 border border-blue-200 bg-blue-50 rounded cursor-pointer transition-colors" data-step="1">
+                                    <span class="font-bold text-blue-800 mr-2">1.</span> App accepts URL param
+                                </div>
+                                <div class="p-3 border border-stone-200 bg-white opacity-50 rounded cursor-pointer transition-colors" data-step="2">
+                                    <span class="font-bold text-stone-600 mr-2">2.</span> Attacker alters URL to internal IP
+                                </div>
+                                <div class="p-3 border border-stone-200 bg-white opacity-50 rounded cursor-pointer transition-colors" data-step="3">
+                                    <span class="font-bold text-stone-600 mr-2">3.</span> Server fetches internal resource
+                                </div>
+                                <div class="p-3 border border-stone-200 bg-white opacity-50 rounded cursor-pointer transition-colors" data-step="4">
+                                    <span class="font-bold text-stone-600 mr-2">4.</span> Server returns data to attacker
+                                </div>
+                            </div>
+                            
+                            <div class="mt-auto p-4 bg-stone-100 rounded border border-stone-200">
+                                <h4 class="font-bold text-stone-800 text-sm mb-1">Key Defences</h4>
+                                <ul class="text-xs text-stone-600 list-disc pl-4 space-y-1">
+                                    <li>Allow-list outbound destinations</li>
+                                    <li>Block private IP ranges (127.0.0.0/8, 10.x.x.x, etc.)</li>
+                                    <li>Enable IMDSv2 in Cloud environments</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Visual Area -->
+                        <div class="flex-1 bg-stone-800 rounded-lg p-6 flex flex-col items-center justify-center relative min-h-[250px] overflow-hidden">
+                            <!-- Visual State 1 -->
+                            <div id="ssrf-viz-1" class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-4 transition-opacity duration-300">
+                                <div class="text-3xl mb-2">&#128187;</div>
+                                <div class="text-sm font-mono text-green-400 bg-stone-900 p-2 rounded">POST /preview?url=https://news.com</div>
+                                <p class="text-xs text-stone-400 mt-4">User inputs valid external URL.</p>
+                            </div>
+                            <!-- Visual State 2 -->
+                            <div id="ssrf-viz-2" class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-4 opacity-0 transition-opacity duration-300">
+                                <div class="text-3xl mb-2 text-red-500">&#128128;</div>
+                                <div class="text-sm font-mono text-red-400 bg-stone-900 p-2 rounded">POST /preview?url=http://169.254.169.254</div>
+                                <p class="text-xs text-stone-400 mt-4">Attacker inputs AWS Metadata IP.</p>
+                            </div>
+                            <!-- Visual State 3 -->
+                            <div id="ssrf-viz-3" class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-4 opacity-0 transition-opacity duration-300">
+                                <div class="flex items-center gap-4 text-2xl">
+                                    <div class="text-stone-300">&#128423;<br><span class="text-[10px]">App Server</span></div>
+                                    <div class="text-yellow-500">&#8594;</div>
+                                    <div class="text-blue-400">&#9729;<br><span class="text-[10px]">Cloud API</span></div>
+                                </div>
+                                <p class="text-xs text-stone-400 mt-4">App server fetches credentials blindly.</p>
+                            </div>
+                             <!-- Visual State 4 -->
+                             <div id="ssrf-viz-4" class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-4 opacity-0 transition-opacity duration-300">
+                                <div class="text-3xl mb-2 text-red-500">&#128273;</div>
+                                <div class="text-xs font-mono text-yellow-400 bg-stone-900 p-2 rounded w-full break-all">
+                                    {"AccessKeyId":"ASIA...", "SecretAccessKey":"..."}
+                                </div>
+                                <p class="text-xs text-stone-400 mt-4">IAM Creds returned to attacker!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: Resources & Wrap-up -->
+            <section id="sec-resources" class="content-section max-w-5xl mx-auto hidden-section">
+                 <div class="mb-8 bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                    <h2 class="text-2xl font-bold mb-4 border-b pb-2">Tools & Frameworks Summary</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="font-semibold text-stone-700 mb-3 text-lg">Your Toolkit</h3>
+                            <ul class="space-y-2 text-sm">
+                                <li class="flex items-start"><span class="text-amber-600 mr-2">&#9654;</span> <strong>Burp Suite Comm.</strong> - Proxy, Repeater, Intruder</li>
+                                <li class="flex items-start"><span class="text-amber-600 mr-2">&#9654;</span> <strong>sqlmap</strong> - Automated SQLi detection</li>
+                                <li class="flex items-start"><span class="text-amber-600 mr-2">&#9654;</span> <strong>DVWA & Juice Shop</strong> - Vulnerable training labs</li>
+                                <li class="flex items-start"><span class="text-amber-600 mr-2">&#9654;</span> <strong>Browser DevTools</strong> - DOM inspection, JS console</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-stone-700 mb-3 text-lg">Key References</h3>
+                            <ul class="space-y-2 text-sm">
+                                <li class="flex items-start"><span class="text-stone-400 mr-2">&#128218;</span> <strong>OWASP Top 10 & ASVS</strong></li>
+                                <li class="flex items-start"><span class="text-stone-400 mr-2">&#128218;</span> <strong>MITRE ATT&CK</strong> - Tactics & techniques</li>
+                                <li class="flex items-start"><span class="text-stone-400 mr-2">&#128218;</span> <strong>PTES</strong> - Execution standard</li>
+                                <li class="flex items-start"><span class="text-stone-400 mr-2">&#128218;</span> <strong>CVSS / CWE</strong> - Scoring and enumeration</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 p-6 rounded-xl border border-amber-200 flex justify-between items-center flex-wrap gap-4">
+                    <div>
+                        <h3 class="font-bold text-amber-900">Up Next: Days 24–25</h3>
+                        <p class="text-sm text-amber-800">Active Directory & Lateral Movement (Kerberos, Pass-the-Hash, BloodHound)</p>
+                    </div>
+                    <span class="text-2xl text-amber-300">&#10145;</span>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Navigation Logic
+            const navItems = document.querySelectorAll('.nav-item');
+            const sections = document.querySelectorAll('.content-section');
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const closeSidebarBtn = document.getElementById('close-sidebar-btn');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+
+            function switchSection(targetId) {
+                // Update nav styling
+                navItems.forEach(btn => {
+                    if (btn.dataset.target === targetId) {
+                        btn.classList.add('active');
+                        btn.classList.replace('text-stone-600', 'text-white');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+
+                // Update content visibility
+                sections.forEach(sec => {
+                    if (sec.id === targetId) {
+                        sec.classList.remove('hidden-section');
+                        // Re-trigger animation
+                        sec.classList.remove('fade-in');
+                        void sec.offsetWidth; // trigger reflow
+                        sec.classList.add('fade-in');
+                    } else {
+                        sec.classList.add('hidden-section');
+                    }
+                });
+
+                // Close mobile menu if open
+                if (window.innerWidth < 768) {
+                    toggleMobileMenu(false);
+                }
+            }
+
+            navItems.forEach(item => {
+                item.addEventListener('click', () => switchSection(item.dataset.target));
+            });
+
+            // Mobile Menu Toggle
+            function toggleMobileMenu(show) {
+                if (show) {
+                    sidebar.classList.remove('-translate-x-full');
+                    overlay.classList.remove('hidden');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('hidden');
+                }
+            }
+
+            mobileMenuBtn.addEventListener('click', () => toggleMobileMenu(true));
+            closeSidebarBtn.addEventListener('click', () => toggleMobileMenu(false));
+            overlay.addEventListener('click', () => toggleMobileMenu(false));
+
+            // OWASP Tabs Logic
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const target = btn.dataset.tab;
+                    
+                    tabBtns.forEach(b => b.classList.remove('active', 'border-amber-700', 'text-amber-800'));
+                    btn.classList.add('active');
+
+                    tabPanes.forEach(pane => {
+                        if (pane.id === target) {
+                            pane.classList.remove('hidden');
+                            pane.classList.add('block');
+                        } else {
+                            pane.classList.add('hidden');
+                            pane.classList.remove('block');
+                        }
+                    });
+                });
+            });
+
+            // Burp Modules Interactivity
+            const burpBtns = document.querySelectorAll('#burp-module-btns button');
+            const burpDesc = document.getElementById('burp-module-desc');
+
+            burpBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Reset others
+                    burpBtns.forEach(b => {
+                        b.classList.remove('bg-amber-100', 'border-amber-500');
+                        b.classList.add('bg-stone-100');
+                    });
+                    // Highlight selected
+                    btn.classList.remove('bg-stone-100');
+                    btn.classList.add('bg-amber-100', 'border-amber-500');
+                    // Update text
+                    burpDesc.textContent = btn.dataset.desc;
+                });
+            });
+
+            // SSRF Interactive Flow Logic
+            const ssrfSteps = document.querySelectorAll('#ssrf-steps-list > div');
+            const ssrfViz = [
+                document.getElementById('ssrf-viz-1'),
+                document.getElementById('ssrf-viz-2'),
+                document.getElementById('ssrf-viz-3'),
+                document.getElementById('ssrf-viz-4')
+            ];
+
+            function setSsrfStep(stepIndex) { // 1-based index
+                // Update List UI
+                ssrfSteps.forEach((el, idx) => {
+                    if (idx + 1 === stepIndex) {
+                        el.classList.remove('opacity-50', 'border-stone-200', 'bg-white');
+                        el.classList.add('border-blue-200', 'bg-blue-50');
+                        el.querySelector('span').classList.replace('text-stone-600', 'text-blue-800');
+                    } else {
+                        el.classList.add('opacity-50', 'border-stone-200', 'bg-white');
+                        el.classList.remove('border-blue-200', 'bg-blue-50');
+                        el.querySelector('span').classList.replace('text-blue-800', 'text-stone-600');
+                    }
+                });
+
+                // Update Viz
+                ssrfViz.forEach((el, idx) => {
+                    if (idx + 1 === stepIndex) {
+                        el.classList.remove('opacity-0');
+                    } else {
+                        el.classList.add('opacity-0');
+                    }
+                });
+            }
+
+            ssrfSteps.forEach(step => {
+                step.addEventListener('click', () => {
+                    setSsrfStep(parseInt(step.dataset.step));
+                });
+            });
+
+            // Initialize Charts
+            const ctxTimeline = document.getElementById('timelineChart').getContext('2d');
+            
+            // Timeline Data based on Slide 2
+            const timelineData = {
+                labels: ['Days 1-2', 'Days 3-5', 'Days 6-7', 'Days 8-9', 'Day 10', 'Days 11-13', 'Days 14-15', 'Days 16-18', 'Days 19-20', 'Days 21-23'],
+                datasets: [{
+                    label: 'Course Topics',
+                    data: [2, 3, 2, 2, 1, 3, 2, 3, 2, 3], // Duration in days approx
+                    backgroundColor: [
+                        '#e5e7eb', '#e5e7eb', '#e5e7eb', '#e5e7eb', '#e5e7eb', 
+                        '#e5e7eb', '#e5e7eb', '#e5e7eb', '#e5e7eb', '#b45309' // Highlight target day
+                    ],
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            };
+
+            const timelineChart = new Chart(ctxTimeline, {
+                type: 'bar',
+                data: timelineData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y', // Horizontal bar chart
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const topics = [
+                                        'Ethics, RoE, Lab', 'Attacker OPSEC', 'OSINT & Recon', 
+                                        'Social Engineering', 'Vuln Analysis', 'Active Recon/Wi-Fi', 
+                                        'Midterm', 'System Hacking', 'Sniffing/MITM/Malware', 
+                                        'Web Apps & APIs (Current)'
+                                    ];
+                                    return topics[context.dataIndex];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            display: false,
+                            grid: { display: false }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { family: 'Inter', size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Handle window resize for charts
+            window.addEventListener('resize', () => {
+                timelineChart.resize();
+            });
+        });
+    </script>
+</body>
+</html>

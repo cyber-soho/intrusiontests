@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Applications & APIs Hacking - Study Materials</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #faf9f6;
+            color: #333333;
+        }
+
+        /* Tab Styles */
+        .tab-btn.active {
+            border-bottom: 3px solid #b45309; /* amber-700 */
+            color: #b45309;
+            font-weight: 700;
+            background-color: #fef3c7; /* amber-50 */
+        }
+
+        /* Flashcard 3D Flip Styles */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        .flip-transition {
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+        }
+
+        /* Quiz Styles */
+        .quiz-option {
+            transition: all 0.2s ease-in-out;
+        }
+        .quiz-option.disabled {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        .quiz-option.correct {
+            background-color: #dcfce7; /* green-100 */
+            border-color: #22c55e; /* green-500 */
+            color: #166534; /* green-800 */
+        }
+        .quiz-option.incorrect {
+            background-color: #fee2e2; /* red-100 */
+            border-color: #ef4444; /* red-500 */
+            color: #991b1b; /* red-800 */
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-8 px-4 sm:px-8">
+
+    <header class="w-full max-w-4xl mb-8 text-center">
+        <h1 class="text-3xl font-bold text-stone-800 mb-2">Web Apps & APIs Hacking</h1>
+        <p class="text-stone-500">Interactive Study Materials & Knowledge Check</p>
+    </header>
+
+    <main class="w-full max-w-4xl bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+        
+        <div class="flex border-b border-stone-200 bg-stone-50">
+            <button id="tab-flashcards" class="tab-btn active flex-1 py-4 text-center font-semibold text-stone-600 hover:bg-stone-100 transition-colors focus:outline-none">
+                &#127891; Flashcards (25)
+            </button>
+            <button id="tab-quiz" class="tab-btn flex-1 py-4 text-center font-semibold text-stone-600 hover:bg-stone-100 transition-colors focus:outline-none">
+                &#128221; Practice Quiz (10)
+            </button>
+        </div>
+
+        <div id="view-flashcards" class="p-6 md:p-12 block">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-stone-800">Concept Review</h2>
+                <span id="card-counter" class="text-sm font-semibold text-stone-400 bg-stone-100 px-3 py-1 rounded-full">1 / 25</span>
+            </div>
+
+            <div class="w-full h-64 md:h-80 perspective-1000 cursor-pointer group mb-8" id="flashcard-container">
+                <div id="flashcard-inner" class="relative w-full h-full transform-style-3d flip-transition shadow-lg rounded-xl border border-stone-200">
+                    
+                    <div class="absolute inset-0 w-full h-full backface-hidden bg-white rounded-xl flex flex-col items-center justify-center p-8 text-center border-t-4 border-amber-600">
+                        <span class="absolute top-4 left-4 text-xs font-bold text-amber-600 uppercase tracking-widest">Front</span>
+                        <p id="card-front" class="text-xl md:text-2xl font-semibold text-stone-800"></p>
+                        <p class="absolute bottom-4 text-xs text-stone-400 font-medium">Click to flip</p>
+                    </div>
+
+                    <div class="absolute inset-0 w-full h-full backface-hidden bg-stone-50 rounded-xl flex flex-col items-center justify-center p-8 text-center rotate-y-180 border-t-4 border-stone-800">
+                        <span class="absolute top-4 left-4 text-xs font-bold text-stone-500 uppercase tracking-widest">Back</span>
+                        <p id="card-back" class="text-lg md:text-xl text-stone-700 leading-relaxed"></p>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center gap-4">
+                <button id="btn-prev" class="px-6 py-3 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    &larr; Previous
+                </button>
+                <button id="btn-flip" class="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg shadow-sm transition-colors">
+                    Flip Card
+                </button>
+                <button id="btn-next" class="px-6 py-3 bg-stone-800 hover:bg-stone-900 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Next &rarr;
+                </button>
+            </div>
+        </div>
+
+        <div id="view-quiz" class="p-6 md:p-12 hidden">
+            <div class="mb-8 border-b border-stone-200 pb-4">
+                <h2 class="text-2xl font-bold text-stone-800">Knowledge Check</h2>
+                <p class="text-stone-500 text-sm mt-1">Select the best answer for each scenario. Instant feedback will be provided.</p>
+            </div>
+
+            <div id="quiz-container" class="space-y-10">
+                </div>
+        </div>
+
+    </main>
+
+    <script>
+        // ==========================================
+        // DATA SETS
+        // ==========================================
+        const flashcardsData = [
+            { front: "OWASP abbreviation meaning", back: "Open Worldwide Application Security Project." },
+            { front: "Primary metric used for OWASP Top 10 rankings (2025)", back: "Incidence rate (the percentage of applications affected)." },
+            { front: "Number 1 vulnerability in OWASP Top 10 since 2021", back: "Broken Access Control (which now includes SSRF)." },
+            { front: "SQL Injection (SQLi) mechanism", back: "An attacker inserts malicious SQL into user-facing input, which the application directly concatenates into a database query." },
+            { front: "Primary defense against SQL Injection", back: "Parameterized queries (also known as prepared statements)." },
+            { front: "Three flavors of Cross-Site Scripting (XSS)", back: "Reflected, Stored, and DOM-based." },
+            { front: "Characteristics of Stored XSS", back: "The malicious script is saved permanently on the server (e.g., in a database) until it is manually removed." },
+            { front: "Insecure Direct Object Reference (IDOR) concept", back: "An application exposes internal IDs in URLs without verifying on the server side if the user actually owns that resource." },
+            { front: "Recommended defenses against Authentication Failures", back: "Enforce strong password policies, implement MFA everywhere, and use secure, random session tokens." },
+            { front: "Primary function of Burp Suite", back: "It acts as an intercepting proxy that sits between the browser and web server to inspect, modify, and replay traffic." },
+            { front: "Burp Suite module for manual request modification and resending", back: "Repeater." },
+            { front: "Burp Suite module for automated payload insertion and fuzzing", back: "Intruder." },
+            { front: "Attacker visibility with Burp Suite", back: "Every header, cookie, hidden form field, and POST parameter is exposed and editable before reaching the server." },
+            { front: "Root cause of most injection vulnerabilities", back: "The application inherently trusted user input without properly validating it." },
+            { front: "Syntactic vs. Semantic validation", back: "Syntactic checks format and pattern (e.g., email contains an @ symbol); Semantic checks logical correctness (e.g., quantity is not negative)." },
+            { front: "Purpose of Client-side vs. Server-side validation", back: "Client-side validation is solely for usability/UX, while Server-side validation is required for actual security enforcement." },
+            { front: "Allow-list vs. Deny-list validation approach", back: "Allow-lists define exactly what is permitted and reject everything else (robust); Deny-lists define what is blocked and accept the rest (fragile)." },
+            { front: "Three-Layer Defense Model for input", back: "1. Client (Usability), 2. Server (Security enforcement), 3. Output (Context-specific encoding)." },
+            { front: "Server-Side Request Forgery (SSRF) concept", back: "An attacker tricks the server into making HTTP requests to unintended destinations, effectively turning the server into a proxy." },
+            { front: "High-value target IP for SSRF in cloud environments", back: "169.254.169.254 (The Cloud metadata API used to steal IAM credentials)." },
+            { front: "Key mitigations for SSRF", back: "Allow-list outbound destinations, block private IP ranges, disable unnecessary URL schemes, and use a dedicated egress proxy." },
+            { front: "OWASP ASVS abbreviation meaning", back: "Application Security Verification Standard." },
+            { front: "PTES framework purpose", back: "Penetration Testing Execution Standard." },
+            { front: "Purpose of the tool sqlmap", back: "Automated SQL Injection detection and exploitation." },
+            { front: "New category introduced in OWASP Top 10 (2025 Edition) at A10", back: "Mishandling of Exceptional Conditions." }
+        ];
+
+        const quizData = [
+            {
+                question: "A developer is fixing a vulnerable login script: `SELECT * FROM users WHERE username='` + input + `'`. Which approach effectively mitigates this SQL injection vulnerability?",
+                hint: "Consider the approach that treats user input strictly as a literal value rather than executable code.",
+                options: [
+                    { text: "Using parameterized queries.", rationale: "This method separates code from data, treating input strictly as a literal value rather than executable SQL syntax.", isCorrect: true },
+                    { text: "Escaping single quotes in the input.", rationale: "While historically used, escaping mechanisms can often be bypassed based on character set encoding and specific database quirks.", isCorrect: false },
+                    { text: "Implementing client-side JavaScript validation.", rationale: "Checks that run in the browser can be easily bypassed by an attacker using an intercepting proxy before the request reaches the server.", isCorrect: false },
+                    { text: "Filtering out SQL keywords like SELECT and UNION.", rationale: "Attackers can frequently bypass these filters by using alternative SQL syntax, encoding, or commands not explicitly on the blocked list.", isCorrect: false }
+                ]
+            },
+            {
+                question: "An e-commerce application successfully ensures a user's phone number input contains exactly 10 digits, but allows a user to order -5 laptops, resulting in a refund. Which validation layer failed?",
+                hint: "Think about the difference between checking the format of data versus checking the business logic of data.",
+                options: [
+                    { text: "Semantic validation", rationale: "This type of validation checks the logical meaning and business rules of the data, such as ensuring product quantities are positive integers.", isCorrect: true },
+                    { text: "Syntactic validation", rationale: "This layer correctly validated the format and pattern, such as enforcing the 10-digit requirement for the phone number.", isCorrect: false },
+                    { text: "Output encoding", rationale: "This step protects against injection attacks during rendering, but does not validate incoming business logic or state changes.", isCorrect: false },
+                    { text: "Client-side validation", rationale: "Browser checks focus on user experience and can be bypassed, meaning the backend must independently verify the logic.", isCorrect: false }
+                ]
+            },
+            {
+                question: "During an engagement, you identify a login endpoint that does not implement rate limiting. Which Burp Suite module is best suited to automate testing a list of common passwords against this endpoint?",
+                hint: "You need a tool designed to take a base request and rapidly inject different payloads into specific parameters.",
+                options: [
+                    { text: "Intruder", rationale: "This module is designed specifically to automate customized payload insertion, making it ideal for fuzzing and brute-forcing.", isCorrect: true },
+                    { text: "Repeater", rationale: "This is used for manually modifying and resending individual requests one at a time to analyze specific responses.", isCorrect: false },
+                    { text: "Decoder", rationale: "This provides tools to manually encode and decode data formats like Base64 or URL encoding, not for sending HTTP requests.", isCorrect: false },
+                    { text: "Proxy", rationale: "This acts as the interception layer to view and manually modify live traffic, but does not natively automate repetitive payload testing.", isCorrect: false }
+                ]
+            },
+            {
+                question: "You discover that injecting a JavaScript payload into a profile description field causes the script to execute for any user who subsequently views that profile. What type of vulnerability is this?",
+                hint: "Focus on where the malicious payload resides after the initial injection.",
+                options: [
+                    { text: "Stored XSS", rationale: "The payload is saved permanently on the server's database and executed whenever a user requests the affected resource.", isCorrect: true },
+                    { text: "Reflected XSS", rationale: "This type requires a victim to click a specially crafted link containing the payload, which is then immediately echoed back in the response.", isCorrect: false },
+                    { text: "DOM-based XSS", rationale: "This occurs entirely within the browser when client-side scripts improperly handle untrusted data, without the payload necessarily going to the server.", is: false },
+                    { text: "Server-Side Request Forgery", rationale: "This involves tricking the server into making backend HTTP requests, rather than executing scripts in a user's browser.", isCorrect: false }
+                ]
+            },
+            {
+                question: "While intercepting traffic, you notice the application fetches user receipts using the endpoint `/api/receipt?id=5092`. Modifying the ID to `5093` returns another user's receipt. What is the most robust defense against this vulnerability?",
+                hint: "Simply changing the ID format won't stop an attacker who finds a valid ID; the server needs to confirm ownership.",
+                options: [
+                    { text: "Verify authorization server-side for the requested ID.", rationale: "Ensuring the authenticated user actually has permissions to access the requested resource ID prevents unauthorized retrieval.", isCorrect: true },
+                    { text: "Encrypt the HTTP traffic using HTTPS.", rationale: "This encrypts the traffic in transit to prevent eavesdropping, but does not perform authorization checks within the application logic.", isCorrect: false },
+                    { text: "Change the ID format from numeric to alphabetic.", rationale: "Obscuring the ID slightly through a different format does not prevent an attacker from accessing the resource if they discover a valid ID.", isCorrect: false },
+                    { text: "Add client-side validation to restrict ID modifications.", rationale: "Browser-based checks can be trivially bypassed using an intercepting proxy before the request ever reaches the server.", isCorrect: false }
+                ]
+            },
+            {
+                question: "An application features a 'fetch external image by URL' tool. An attacker inputs `http://169.254.169.254/latest/meta-data/` and receives an AWS IAM credential JSON response. What vulnerability was exploited?",
+                hint: "The application took an attacker-supplied URL and made a request on the attacker's behalf.",
+                options: [
+                    { text: "Server-Side Request Forgery (SSRF)", rationale: "The application was tricked into acting as a proxy, fetching sensitive internal metadata on behalf of the external attacker.", isCorrect: true },
+                    { text: "Cross-Site Scripting (XSS)", rationale: "This involves executing malicious scripts in a user's browser, not tricking the backend server into making new HTTP requests.", isCorrect: false },
+                    { text: "Insecure Direct Object Reference (IDOR)", rationale: "This involves manipulating object references to access unauthorized internal data, but does not involve the server making network requests to external/internal URLs.", isCorrect: false },
+                    { text: "SQL Injection", rationale: "This targets backend database execution through malicious query manipulation rather than utilizing server-side HTTP fetching mechanisms.", isCorrect: false }
+                ]
+            },
+            {
+                question: "To mitigate the SSRF vulnerability in the 'fetch external image' tool, the development team wants to implement network-level restrictions. Which IP range must be blocked to specifically protect internal cloud metadata services?",
+                hint: "This specific IP address is an unroutable link-local address used universally by major cloud providers for instance metadata.",
+                options: [
+                    { text: "169.254.0.0/16", rationale: "This is the link-local address block specifically used by cloud providers (like AWS, GCP, Azure) for internal instance metadata APIs.", isCorrect: true },
+                    { text: "192.168.0.0/16", rationale: "This is a standard private network range often used for internal corporate networks, but not specifically the cloud metadata service.", isCorrect: false },
+                    { text: "10.0.0.0/8", rationale: "This represents a massive block of private IP space used for internal routing, distinct from the designated cloud metadata IP.", isCorrect: false },
+                    { text: "127.0.0.0/8", rationale: "This represents the local loopback address (localhost), targeting services running directly on the application server itself.", isCorrect: false }
+                ]
+            },
+            {
+                question: "A security team implements a Web Application Firewall (WAF) rule to block any HTTP requests containing `&lt;script&gt;` or `OR 1=1`. What validation strategy is this, and what is its primary weakness?",
+                hint: "Consider how easy it is for attackers to change the syntax of their payload slightly to avoid exact string matches.",
+                options: [
+                    { text: "Deny-list strategy; it is fragile and can often be bypassed with encoded or novel payloads.", rationale: "Trying to anticipate and block all malicious inputs is nearly impossible due to the vast array of encoding techniques and alternative payloads attackers can use.", isCorrect: true },
+                    { text: "Allow-list strategy; it blocks legitimate traffic too frequently.", rationale: "An allow-list exclusively defines what is permitted, whereas this scenario describes explicitly defining what is blocked.", isCorrect: false },
+                    { text: "Syntactic strategy; it cannot check the logical meaning of the data.", rationale: "While it doesn't check logical meaning, blocking specific strings is a characteristic of a deny-list rather than general syntactic formatting checks.", isCorrect: false },
+                    { text: "Output encoding strategy; it only protects against XSS.", rationale: "Securing data as it is rendered to the browser is a separate process from filtering incoming request parameters.", isCorrect: false }
+                ]
+            },
+            {
+                question: "A web application successfully validates that a user's forum post uses only allowed alphanumeric characters and basic punctuation. However, the data must also be displayed back to the browser safely. What is the necessary final step before rendering this data?",
+                hint: "The data needs to be translated so the browser knows it's strictly content to display, not code to execute.",
+                options: [
+                    { text: "Apply context-specific output encoding.", rationale: "Translating special characters into safe representations (like HTML entities) ensures the browser interprets the data as content, not executable code.", isCorrect: true },
+                    { text: "Re-validate the data using a server-side deny-list.", rationale: "Validation ensures the data is clean upon entry, but does not prepare it for safe execution within a browser DOM context.", isCorrect: false },
+                    { text: "Encrypt the data using AES-256 before sending it to the client.", rationale: "Encryption secures data in transit over the network, but leaves it executable once the browser decrypts and renders it.", isCorrect: false },
+                    { text: "Pass the data through the Burp Suite Decoder.", rationale: "This is a tool used for manual payload manipulation by penetration testers, not a mechanism for securing dynamic application output.", isCorrect: false }
+                ]
+            },
+            {
+                question: "Based on the 2025 OWASP Top 10 data, if you discover an SSRF vulnerability during an assessment, under which broader category does this vulnerability now officially fall?",
+                hint: "SSRF allows an attacker to bypass intended network restrictions and reach internal endpoints.",
+                options: [
+                    { text: "Broken Access Control", rationale: "As of the 2021 and 2025 updates, SSRF is officially grouped under this category due to its nature of bypassing intended network access boundaries.", isCorrect: true },
+                    { text: "Security Misconfiguration", rationale: "This category focuses on unpatched flaws, default accounts, and unprotected files, not the specific exploitation of URL-fetching features.", isCorrect: false },
+                    { text: "Insecure Design", rationale: "This relates to broad architectural flaws and lack of threat modeling, whereas SSRF is considered a specific implementation and access control vulnerability.", isCorrect: false },
+                    { text: "Injection", rationale: "This covers flaws where untrusted data is sent to an interpreter as part of a command or query, distinct from server-side request manipulation.", isCorrect: false }
+                ]
+            }
+        ];
+
+        // ==========================================
+        // TAB LOGIC
+        // ==========================================
+        const tabFlashcards = document.getElementById('tab-flashcards');
+        const tabQuiz = document.getElementById('tab-quiz');
+        const viewFlashcards = document.getElementById('view-flashcards');
+        const viewQuiz = document.getElementById('view-quiz');
+
+        tabFlashcards.addEventListener('click', () => {
+            tabFlashcards.classList.add('active', 'bg-amber-50');
+            tabFlashcards.classList.remove('bg-stone-50');
+            tabQuiz.classList.remove('active', 'bg-amber-50');
+            tabQuiz.classList.add('bg-stone-50');
+            
+            viewFlashcards.classList.remove('hidden');
+            viewQuiz.classList.add('hidden');
+        });
+
+        tabQuiz.addEventListener('click', () => {
+            tabQuiz.classList.add('active', 'bg-amber-50');
+            tabQuiz.classList.remove('bg-stone-50');
+            tabFlashcards.classList.remove('active', 'bg-amber-50');
+            tabFlashcards.classList.add('bg-stone-50');
+            
+            viewQuiz.classList.remove('hidden');
+            viewFlashcards.classList.add('hidden');
+        });
+
+        // ==========================================
+        // FLASHCARD LOGIC
+        // ==========================================
+        let currentCardIndex = 0;
+        let isFlipped = false;
+
+        const cardFrontEl = document.getElementById('card-front');
+        const cardBackEl = document.getElementById('card-back');
+        const cardInnerEl = document.getElementById('flashcard-inner');
+        const cardContainer = document.getElementById('flashcard-container');
+        const counterEl = document.getElementById('card-counter');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const btnFlip = document.getElementById('btn-flip');
+
+        function updateCardContent() {
+            cardFrontEl.textContent = flashcardsData[currentCardIndex].front;
+            cardBackEl.textContent = flashcardsData[currentCardIndex].back;
+            counterEl.textContent = `${currentCardIndex + 1} / ${flashcardsData.length}`;
+            
+            btnPrev.disabled = currentCardIndex === 0;
+            btnNext.disabled = currentCardIndex === flashcardsData.length - 1;
+        }
+
+        function flipCard() {
+            isFlipped = !isFlipped;
+            if (isFlipped) {
+                cardInnerEl.classList.add('rotate-y-180');
+            } else {
+                cardInnerEl.classList.remove('rotate-y-180');
+            }
+        }
+
+        function changeCard(direction) {
+            if (isFlipped) {
+                flipCard();
+                // Wait for flip animation to finish before changing text
+                setTimeout(() => {
+                    currentCardIndex += direction;
+                    updateCardContent();
+                }, 300); 
+            } else {
+                currentCardIndex += direction;
+                updateCardContent();
+            }
+        }
+
+        cardContainer.addEventListener('click', flipCard);
+        btnFlip.addEventListener('click', flipCard);
+        btnPrev.addEventListener('click', () => changeCard(-1));
+        btnNext.addEventListener('click', () => changeCard(1));
+
+        // Initialize first card
+        updateCardContent();
+
+        // ==========================================
+        // QUIZ LOGIC
+        // ==========================================
+        const quizContainer = document.getElementById('quiz-container');
+
+        // Helper to shuffle answer options
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function renderQuiz() {
+            quizData.forEach((q, qIndex) => {
+                const questionBlock = document.createElement('div');
+                questionBlock.className = 'bg-white border border-stone-200 rounded-xl p-6 shadow-sm';
+
+                // Question Header
+                const qHeader = document.createElement('div');
+                qHeader.innerHTML = `
+                    <h3 class="text-lg font-semibold text-stone-800 mb-2">
+                        <span class="text-amber-600 mr-2">${qIndex + 1}.</span> 
+                        ${q.question}
+                    </h3>
+                    <p class="text-xs text-stone-500 italic mb-4">Hint: ${q.hint}</p>
+                `;
+                questionBlock.appendChild(qHeader);
+
+                // Options Container
+                const optionsContainer = document.createElement('div');
+                optionsContainer.className = 'space-y-3';
+                
+                // Rationale Box (Hidden initially)
+                const rationaleBox = document.createElement('div');
+                rationaleBox.className = 'mt-4 p-4 rounded-lg hidden text-sm font-medium';
+
+                // Shuffle options for this question
+                const shuffledOptions = shuffle([...q.options]);
+
+                shuffledOptions.forEach((opt, optIndex) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'quiz-option w-full text-left p-4 rounded-lg border border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700';
+                    btn.innerHTML = `<span class="font-bold mr-2 opacity-50">${String.fromCharCode(65 + optIndex)}.</span> ${opt.text}`;
+
+                    btn.addEventListener('click', () => {
+                        // Disable all buttons in this question
+                        const allBtns = optionsContainer.querySelectorAll('button');
+                        allBtns.forEach(b => b.classList.add('disabled'));
+
+                        // Apply styling based on correctness
+                        if (opt.isCorrect) {
+                            btn.classList.add('correct');
+                            rationaleBox.classList.add('bg-green-50', 'text-green-800', 'border', 'border-green-200', 'block');
+                            rationaleBox.classList.remove('hidden');
+                            rationaleBox.innerHTML = `<strong>Correct!</strong> ${opt.rationale}`;
+                        } else {
+                            btn.classList.add('incorrect');
+                            
+                            // Highlight the correct one
+                            allBtns.forEach((b, idx) => {
+                                if(shuffledOptions[idx].isCorrect) {
+                                    b.classList.add('correct');
+                                }
+                            });
+
+                            rationaleBox.classList.add('bg-red-50', 'text-red-800', 'border', 'border-red-200', 'block');
+                            rationaleBox.classList.remove('hidden');
+                            rationaleBox.innerHTML = `<strong>Incorrect.</strong> ${opt.rationale}`;
+                        }
+                    });
+
+                    optionsContainer.appendChild(btn);
+                });
+
+                questionBlock.appendChild(optionsContainer);
+                questionBlock.appendChild(rationaleBox);
+                quizContainer.appendChild(questionBlock);
+            });
+        }
+
+        // Initialize quiz
+        renderQuiz();
+
+    </script>
+</body>
+</html>
+
+
+
+

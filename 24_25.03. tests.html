@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AD & Lateral Movement | Study Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .perspective-1000 { perspective: 1000px; }
+        .card-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        .card-flipped { transform: rotateY(180deg); }
+        .card-face {
+            backface-visibility: hidden;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        .card-back { transform: rotateY(180deg); }
+        .hide { display: none; }
+        .tab-active { border-bottom: 4px solid #4f46e5; color: #4f46e5; }
+        .tab-inactive { color: #64748b; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-900 font-sans">
+
+    <header class="bg-white border-b border-slate-200 py-6 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Active Directory Study Portal</h1>
+                <p class="text-sm text-slate-500">Mastering Lateral Movement & Kerberos Defense</p>
+            </div>
+            <nav class="flex space-x-8">
+                <button onclick="switchTab('flashcards')" id="btn-tab-flashcards" class="pb-2 font-bold transition-all tab-active">Flashcards</button>
+                <button onclick="switchTab('quiz')" id="btn-tab-quiz" class="pb-2 font-bold transition-all tab-inactive">Practice Quiz</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-12">
+        
+        <section id="flashcards-section">
+            <div class="mb-8 text-center">
+                <p class="text-slate-600 max-w-2xl mx-auto">Active recall is the most effective way to memorize the 25 key concepts of AD security. Click the card to flip it, and use the navigation buttons below to move through the set.</p>
+            </div>
+
+            <div class="perspective-1000 w-full max-w-xl mx-auto h-80 md:h-96 mb-8 cursor-pointer" onclick="flipCard()">
+                <div id="flashcard-inner" class="card-inner">
+                    <div class="card-face bg-white border-2 border-indigo-100">
+                        <div id="card-front-text" class="text-xl md:text-2xl font-bold text-slate-800">Loading...</div>
+                    </div>
+                    <div class="card-face card-back bg-indigo-600 text-white">
+                        <div id="card-back-text" class="text-lg md:text-xl font-medium">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-center space-x-6">
+                <button onclick="prevCard()" class="p-3 rounded-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors">
+                    <span class="text-xl">⬅️</span>
+                </button>
+                <div class="text-slate-500 font-mono font-bold">
+                    Card <span id="card-index">1</span> / 25
+                </div>
+                <button onclick="nextCard()" class="p-3 rounded-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors">
+                    <span class="text-xl">➡️</span>
+                </button>
+            </div>
+        </section>
+
+        <section id="quiz-section" class="hide">
+            <div class="mb-8 text-center">
+                <p class="text-slate-600 max-w-2xl mx-auto">Test your practical knowledge with 10 multiple-choice questions. Each question includes a hint if you get stuck, and a detailed rationale for every answer.</p>
+            </div>
+
+            <div id="quiz-container" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-50 px-8 py-4 border-b border-slate-200 flex justify-between items-center">
+                    <span class="text-sm font-bold text-slate-500 uppercase tracking-wider">Question <span id="quiz-q-num">1</span> of 10</span>
+                    <div class="h-2 w-32 bg-slate-200 rounded-full overflow-hidden">
+                        <div id="quiz-progress" class="h-full bg-indigo-600 transition-all duration-300" style="width: 10%"></div>
+                    </div>
+                </div>
+
+                <div class="p-8">
+                    <h3 id="quiz-question-text" class="text-xl font-bold text-slate-900 mb-6">Loading Question...</h3>
+                    
+                    <div id="quiz-options" class="space-y-3 mb-8">
+                        </div>
+
+                    <div id="quiz-feedback" class="hide mb-8 p-4 rounded-lg border">
+                        <div id="feedback-header" class="font-bold mb-1"></div>
+                        <div id="feedback-rationale" class="text-sm"></div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <button id="btn-hint" onclick="showHint()" class="text-indigo-600 font-bold hover:text-indigo-800 text-sm">💡 Need a hint?</button>
+                        <div id="hint-text" class="hide text-sm italic text-slate-500 bg-slate-50 p-3 rounded border border-slate-100"></div>
+                        <button id="btn-next-q" onclick="handleNextQuestion()" class="w-full sm:w-auto px-8 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors" disabled>Next Question</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="quiz-results" class="hide bg-white p-12 rounded-xl shadow-sm border border-slate-200 text-center">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Quiz Complete!</h2>
+                <div class="text-6xl font-black text-indigo-600 my-6"><span id="final-score">0</span>/10</div>
+                <p id="score-message" class="text-slate-600 mb-8"></p>
+                <button onclick="restartQuiz()" class="px-8 py-3 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition-colors">Try Again</button>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- DATA ---
+        const flashcards = [
+            { front: "Percentage of Fortune 1000 companies using Windows Active Directory", back: "Over 90%" },
+            { front: "Ultimate goal of an attacker in an Active Directory environment", back: "To obtain Domain Admin or equivalent privileges." },
+            { front: "Three primary parties in the Kerberos authentication protocol", back: "Client, Key Distribution Center (KDC), and Service Server." },
+            { front: "Key Distribution Center (KDC)", back: "A service that runs on every Domain Controller and handles authentication and ticket granting." },
+            { front: "Ticket Granting Ticket (TGT)", back: "An encrypted 'passport' issued by the Authentication Service, encrypted with the KRBTGT hash." },
+            { front: "Service Ticket (ST) encryption", back: "It is encrypted with the target service account's NTLM hash." },
+            { front: "Privilege Attribute Certificate (PAC)", back: "A component of a Kerberos ticket that carries a user's group memberships and Security Identifiers (SIDs)." },
+            { front: "First step of the Kerberos exchange (AS-REQ)", back: "The client sends their username and an encrypted timestamp to the Key Distribution Center." },
+            { front: "AS-REP Roasting target vulnerability", back: "Accounts that have the 'Do not require Kerberos preauthentication' (DONT_REQ_PREAUTH) flag enabled." },
+            { front: "Kerberoasting target vulnerability", back: "Weak passwords on service accounts with a Service Principal Name (SPN), allowing offline cracking of requested Service Tickets." },
+            { front: "Pass-the-Hash (PTH)", back: "Extracting an NTLM hash from LSASS memory to authenticate directly to other systems without needing the plaintext password." },
+            { front: "Over-Pass-the-Hash (Over-PTH)", back: "Using a stolen NTLM hash to request a legitimate Kerberos TGT from the KDC, bypassing the network's NTLM restrictions." },
+            { front: "BloodHound", back: "An open-source tool that uses graph theory and a Neo4j database to discover hidden attack paths in Active Directory." },
+            { front: "BloodHound 'HasSession' relationship", back: "Indicates that there is an active logon session for a specific user on a specific computer." },
+            { front: "BloodHound 'DCSync' relationship", back: "Indicates the right to replicate directory data, allowing an attacker to extract all password hashes from the Domain Controller." },
+            { front: "Unconstrained Delegation", back: "A setting where a service receives a user's TGT and can impersonate that user to any other service in the domain." },
+            { front: "Golden Ticket", back: "A forged Ticket Granting Ticket (TGT) created using a stolen KRBTGT hash, granting unauthorized access to any resource in the domain." },
+            { front: "Silver Ticket", back: "A forged Service Ticket (ST) created using a stolen service account's hash, granting unauthorized access only to that specific service." },
+            { front: "Tier 0 in the Microsoft Enterprise Access Model", back: "The Control Plane, containing highly sensitive assets like Domain Controllers, the KRBTGT account, and PKI." },
+            { front: "Core rule of Tiered Administration", back: "Higher-tier administrators (like Domain Admins) must never log into lower-tier systems (like user workstations) to prevent credential theft." },
+            { front: "Credential Guard", back: "A defense mechanism that isolates LSASS in a virtualized container on Windows endpoints to prevent tools like Mimikatz from extracting hashes." },
+            { front: "Local Administrator Password Solution (LAPS)", back: "A defense that ensures unique, automatically rotating local administrator passwords for every machine, breaking lateral movement." },
+            { front: "Group Managed Service Accounts (gMSAs)", back: "Service accounts that use 240-character auto-rotated passwords, effectively neutralizing Kerberoasting attacks." },
+            { front: "Event ID 4624 Logon Type 9", back: "An event log indicator often associated with NewCredentials and Pass-the-Hash (PTH) attacks." },
+            { front: "Four phases of a complete AD attack chain", back: "Initial Access, Credential Harvesting, Lateral Movement, and Domain Compromise." }
+        ];
+
+        const quizQuestions = [
+            {
+                question: "In the Kerberos authentication process, what is the primary function of a Ticket Granting Ticket (TGT)?",
+                options: [
+                    { text: "It proves the user's identity to the Authentication Service.", correct: false, rationale: "The initial identity proof is established using the user's encrypted timestamp in the AS-REQ, not the TGT itself." },
+                    { text: "It acts as an encrypted passport used to request access to specific resources.", correct: true, rationale: "The TGT is issued by the KDC and is presented to the Ticket Granting Service to request Service Tickets for specific network resources." },
+                    { text: "It grants direct, immediate access to a target application server.", correct: false, rationale: "Direct access to an application server requires a Service Ticket (ST), not the initial TGT." },
+                    { text: "It carries the Service Principal Name (SPN) of the target application.", correct: false, rationale: "The SPN is an identifier for a service instance, not the function of the Ticket Granting Ticket." }
+                ],
+                hint: "Think of this as the initial 'master pass' you receive after logging in, which you then use to acquire more specific passes later."
+            },
+            {
+                question: "Which specific misconfiguration allows an attacker to perform AS-REP Roasting?",
+                options: [
+                    { text: "Using over-privileged service accounts with Service Principal Names (SPNs).", correct: false, rationale: "This configuration enables Kerberoasting, where attackers target the Service Ticket, rather than AS-REP Roasting." },
+                    { text: "Storing NTLM hashes in LSASS memory in plaintext.", correct: false, rationale: "While extracting hashes from LSASS is a critical vulnerability (enabling Pass-the-Hash), it is unrelated to the Kerberos AS-REP process." },
+                    { text: "Disabling Kerberos pre-authentication on a user account.", correct: true, rationale: "When DONT_REQ_PREAUTH is set, the KDC will send an AS-REP containing encrypted data to anyone who asks, without requiring them to prove their identity first." },
+                    { text: "Allowing unconstrained delegation on a web server.", correct: false, rationale: "Unconstrained delegation is a dangerous setting that allows impersonation, but it is not the root cause of AS-REP Roasting." }
+                ],
+                hint: "This attack takes advantage of a setting that bypasses the normal requirement for a user to prove they know their password before the KDC responds."
+            },
+            {
+                question: "During a Kerberoasting attack, what specific data does the attacker attempt to crack offline?",
+                options: [
+                    { text: "The KRBTGT hash encrypting the Ticket Granting Ticket.", correct: false, rationale: "Cracking the KRBTGT hash would allow the creation of Golden Tickets, but Kerberoasting targets individual service accounts, not the entire domain's master key." },
+                    { text: "The NTLM hash of the target service account encrypting the Service Ticket.", correct: true, rationale: "Because the KDC encrypts the Service Ticket using the password hash of the service account, attackers can request these tickets and attempt to brute-force the hash offline." },
+                    { text: "The Privilege Attribute Certificate (PAC) containing the user's group memberships.", correct: false, rationale: "The PAC is a component inside the ticket that carries authorization data, not the encrypted hash that is targeted for offline cracking." },
+                    { text: "The encrypted timestamp sent during the AS-REQ phase.", correct: false, rationale: "The encrypted timestamp is part of the initial authentication step, whereas Kerberoasting occurs during the TGS-REQ/TGS-REP phase." }
+                ],
+                hint: "The attacker requests access to a specific service and attacks the credential used to lock the ticket returned by the KDC."
+            },
+            {
+                question: "Why is password cracking unnecessary when performing a standard Pass-the-Hash (PTH) attack?",
+                options: [
+                    { text: "Windows natively supports passwordless Kerberos tickets for lateral movement.", correct: false, rationale: "While Kerberos uses tickets, a standard PTH attack specifically exploits the NTLM authentication protocol, not Kerberos." },
+                    { text: "The attacker uses a forged Golden Ticket instead of a password.", correct: false, rationale: "Forging a Golden Ticket is a separate, more advanced attack that relies on possessing the KRBTGT hash." },
+                    { text: "The KDC bypasses authentication if the request originates from a local administrator.", correct: false, rationale: "The KDC does not arbitrarily bypass authentication rules based on local admin status; PTH relies on passing the cryptographic proof itself." },
+                    { text: "The extracted NTLM hash functions as the actual cryptographic credential for authentication.", correct: true, rationale: "In NTLM authentication, the hash itself is what the system expects to see for verification, meaning possessing the hash grants the same access as knowing the plaintext password." }
+                ],
+                hint: "Consider how Windows operating systems handle authentication under the hood and what exact data they verify against the domain controller."
+            },
+            {
+                question: "In an environment where NTLM authentication is completely disabled, which technique allows an attacker who has dumped local hashes to continue moving laterally?",
+                options: [
+                    { text: "Standard Pass-the-Hash using Impacket's psexec.py.", correct: false, rationale: "Standard PTH relies entirely on the NTLM protocol, which would be blocked in this scenario." },
+                    { text: "Over-Pass-the-Hash (Over-PTH).", correct: true, rationale: "Over-PTH uses the stolen NTLM hash to request a legitimate Kerberos TGT from the KDC, bypassing the network's NTLM restrictions." },
+                    { text: "Forging a Silver Ticket.", correct: false, rationale: "A Silver Ticket requires the specific hash of a service account, not the typical user hashes dumped from a workstation's LSASS memory." },
+                    { text: "Executing a DCSync attack.", correct: false, rationale: "DCSync requires highly privileged domain rights (like Domain Admin or specific Replication rights) to execute, not just local workstation hashes." }
+                ],
+                hint: "If you cannot use the hash directly due to protocol restrictions, think about how an attacker might 'trade it in' for a credential format that the network does accept."
+            },
+            {
+                question: "When analyzing a BloodHound graph, what does the 'HasSession' relationship indicate?",
+                options: [
+                    { text: "A user has local administrator rights on a specific machine.", correct: false, rationale: "Local administrator rights are represented by the 'AdminTo' relationship in BloodHound." },
+                    { text: "A group has full, unrestricted control over a target Active Directory object.", correct: false, rationale: "Full control over an object is represented by the 'GenericAll' relationship." },
+                    { text: "A user is actively logged into a specific computer.", correct: true, rationale: "This indicates an active logon session, which is critical for attackers because it means the user's credentials or hashes are likely stored in the machine's memory." },
+                    { text: "A user has the right to replicate directory data from the Domain Controller.", correct: false, rationale: "The right to replicate directory data is represented by the 'DCSync' relationship." }
+                ],
+                hint: "This specific edge in the graph is highly sought after by attackers looking to dump high-value credentials from a compromised workstation's memory."
+            },
+            {
+                question: "What is the primary difference between a Golden Ticket and a Silver Ticket in Active Directory attacks?",
+                options: [
+                    { text: "A Golden Ticket requires a service account hash, while a Silver Ticket requires the KRBTGT hash.", correct: false, rationale: "This statement reverses the requirements; Golden Tickets use KRBTGT, and Silver Tickets use a service account hash." },
+                    { text: "A Golden Ticket uses NTLM authentication, while a Silver Ticket uses Kerberos.", correct: false, rationale: "Both Golden and Silver tickets are forged Kerberos tickets, neither relies on NTLM." },
+                    { text: "A Golden Ticket is requested from the KDC, while a Silver Ticket is intercepted on the network.", correct: false, rationale: "Both types of tickets are forged completely offline by the attacker using stolen hashes, bypassing standard KDC requests." },
+                    { text: "A Golden Ticket grants access to any resource in the domain, while a Silver Ticket is limited to a specific service.", correct: true, rationale: "Because the Golden Ticket is forged using the master KRBTGT hash, it acts as a universal TGT, whereas a Silver Ticket only impersonates the specific service whose hash was compromised." }
+                ],
+                hint: "One ticket is forged using the ultimate domain secret, giving unlimited access, while the other is forged using a specific application's secret."
+            },
+            {
+                question: "Which attack technique is specifically mitigated by migrating service accounts to Group Managed Service Accounts (gMSAs)?",
+                options: [
+                    { text: "Pass-the-Hash (PTH).", correct: false, rationale: "PTH is mitigated by Credential Guard and LAPS, which protect local hashes, rather than gMSAs." },
+                    { text: "Kerberoasting.", correct: true, rationale: "gMSAs automatically generate and rotate complex, 240-character passwords, making the offline cracking required for Kerberoasting computationally unfeasible." },
+                    { text: "AS-REP Roasting.", correct: false, rationale: "AS-REP Roasting is mitigated by ensuring the 'Do not require preauthentication' flag is disabled, not necessarily by using gMSAs." },
+                    { text: "DCSync.", correct: false, rationale: "DCSync is mitigated by strictly controlling who has directory replication privileges (Tier 0 admin control), not by the password complexity of service accounts." }
+                ],
+                hint: "This defense ensures that the passwords protecting Service Tickets are too long and complex to be practically cracked via brute-force methods."
+            },
+            {
+                question: "What is the primary purpose of enabling Credential Guard on Windows 10/11 endpoints?",
+                options: [
+                    { text: "To enforce unique local administrator passwords across all machines.", correct: false, rationale: "Enforcing unique local admin passwords is the specific function of the Local Administrator Password Solution (LAPS)." },
+                    { text: "To monitor and alert on abnormal Service Ticket requests to the SIEM.", correct: false, rationale: "Monitoring for abnormal ticket requests is handled by tools like Microsoft Defender for Identity or SIEM event forwarding." },
+                    { text: "To isolate LSASS in a virtualized container, preventing hash extraction.", correct: true, rationale: "By utilizing virtualization-based security to isolate the Local Security Authority Subsystem Service (LSASS), Credential Guard stops tools like Mimikatz from dumping plaintext passwords and NTLM hashes." },
+                    { text: "To prevent higher-tier administrators from logging into lower-tier workstations.", correct: false, rationale: "Restricting where administrators can log in is an operational policy known as the Tiered Administration Model." }
+                ],
+                hint: "This defense mechanism creates a secure boundary at the OS level to directly stop post-exploitation tools from grabbing secrets out of system memory."
+            },
+            {
+                question: "According to the course's 4-phase attack chain, which technique is most likely utilized during the 'Credential Harvesting' phase immediately following initial access?",
+                options: [
+                    { text: "Golden Ticket creation.", correct: false, rationale: "Creating a Golden Ticket represents total domain compromise and occurs at the very end of the attack chain." },
+                    { text: "Kerberoasting.", correct: true, rationale: "Once an attacker has initial access as a regular domain user, Kerberoasting allows them to silently query and extract encrypted service tickets to crack offline for higher privileges." },
+                    { text: "DCSync.", correct: false, rationale: "DCSync requires the attacker to have already obtained Domain Admin or equivalent rights, placing it in the final 'Domain Compromise' phase." },
+                    { text: "Pass-the-Hash to the Domain Controller.", correct: false, rationale: "While PTH is used for lateral movement, executing it against a Domain Controller implies the attacker has already harvested highly privileged credentials." }
+                ],
+                hint: "After gaining a low-privilege foothold, an attacker needs a stealthy way to find accounts with higher privileges without needing administrative access to the machine they landed on."
+            }
+        ];
+
+        // --- STATE ---
+        let currentCardIndex = 0;
+        let quizCurrentIndex = 0;
+        let quizScore = 0;
+        let quizAnswered = false;
+
+        // --- TAB LOGIC ---
+        function switchTab(tab) {
+            const fSection = document.getElementById('flashcards-section');
+            const qSection = document.getElementById('quiz-section');
+            const fBtn = document.getElementById('btn-tab-flashcards');
+            const qBtn = document.getElementById('btn-tab-quiz');
+
+            if (tab === 'flashcards') {
+                fSection.classList.remove('hide');
+                qSection.classList.add('hide');
+                fBtn.classList.replace('tab-inactive', 'tab-active');
+                qBtn.classList.replace('tab-active', 'tab-inactive');
+            } else {
+                fSection.classList.add('hide');
+                qSection.classList.remove('hide');
+                fBtn.classList.replace('tab-active', 'tab-inactive');
+                qBtn.classList.replace('tab-inactive', 'tab-active');
+            }
+        }
+
+        // --- FLASHCARD LOGIC ---
+        function updateCard() {
+            const cardInner = document.getElementById('flashcard-inner');
+            cardInner.classList.remove('card-flipped'); // Always reset to front on change
+            
+            setTimeout(() => {
+                document.getElementById('card-front-text').innerText = flashcards[currentCardIndex].front;
+                document.getElementById('card-back-text').innerText = flashcards[currentCardIndex].back;
+                document.getElementById('card-index').innerText = currentCardIndex + 1;
+            }, 150);
+        }
+
+        function flipCard() {
+            document.getElementById('flashcard-inner').classList.toggle('card-flipped');
+        }
+
+        function nextCard() {
+            currentCardIndex = (currentCardIndex + 1) % flashcards.length;
+            updateCard();
+        }
+
+        function prevCard() {
+            currentCardIndex = (currentCardIndex - 1 + flashcards.length) % flashcards.length;
+            updateCard();
+        }
+
+        // --- QUIZ LOGIC ---
+        function renderQuestion() {
+            quizAnswered = false;
+            const q = quizQuestions[quizCurrentIndex];
+            document.getElementById('quiz-q-num').innerText = quizCurrentIndex + 1;
+            document.getElementById('quiz-progress').style.width = ((quizCurrentIndex + 1) / 10 * 100) + '%';
+            document.getElementById('quiz-question-text').innerText = q.question;
+            document.getElementById('btn-next-q').disabled = true;
+            document.getElementById('btn-next-q').innerText = quizCurrentIndex === 9 ? "Finish Quiz" : "Next Question";
+            document.getElementById('quiz-feedback').classList.add('hide');
+            document.getElementById('btn-hint').classList.remove('hide');
+            document.getElementById('hint-text').classList.add('hide');
+            document.getElementById('hint-text').innerText = q.hint;
+
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+
+            // Shuffle options locally
+            const shuffled = [...q.options].sort(() => Math.random() - 0.5);
+
+            shuffled.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all quiz-opt-btn group";
+                btn.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full border-2 border-slate-200 group-hover:border-indigo-400 flex items-center justify-center mr-4 text-xs font-bold text-slate-400 group-hover:text-indigo-500">${String.fromCharCode(65 + idx)}</div>
+                        <div class="flex-grow text-slate-700 font-medium">${opt.text}</div>
+                    </div>
+                `;
+                btn.onclick = () => handleAnswer(opt, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(opt, btn) {
+            if (quizAnswered) return;
+            quizAnswered = true;
+
+            const feedback = document.getElementById('quiz-feedback');
+            const header = document.getElementById('feedback-header');
+            const rationale = document.getElementById('feedback-rationale');
+            const nextBtn = document.getElementById('btn-next-q');
+
+            // Disable all buttons
+            document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.add('opacity-50', 'cursor-not-allowed'));
+            btn.classList.remove('opacity-50');
+
+            if (opt.correct) {
+                quizScore++;
+                btn.classList.add('bg-emerald-50', 'border-emerald-500', 'ring-2', 'ring-emerald-200');
+                header.innerText = "✅ Correct!";
+                header.className = "font-bold mb-1 text-emerald-700";
+                feedback.classList.add('bg-emerald-50', 'border-emerald-200');
+                feedback.classList.remove('bg-rose-50', 'border-rose-200');
+            } else {
+                btn.classList.add('bg-rose-50', 'border-rose-500', 'ring-2', 'ring-rose-200');
+                header.innerText = "❌ Not quite...";
+                header.className = "font-bold mb-1 text-rose-700";
+                feedback.classList.add('bg-rose-50', 'border-rose-200');
+                feedback.classList.remove('bg-emerald-50', 'border-emerald-200');
+            }
+
+            rationale.innerText = opt.rationale;
+            feedback.classList.remove('hide');
+            nextBtn.disabled = false;
+        }
+
+        function showHint() {
+            document.getElementById('btn-hint').classList.add('hide');
+            document.getElementById('hint-text').classList.remove('hide');
+        }
+
+        function handleNextQuestion() {
+            if (quizCurrentIndex < 9) {
+                quizCurrentIndex++;
+                renderQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('quiz-container').classList.add('hide');
+            document.getElementById('quiz-results').classList.remove('hide');
+            document.getElementById('final-score').innerText = quizScore;
+            
+            let msg = "";
+            if (quizScore === 10) msg = "Perfect! You are ready to defend the Domain!";
+            else if (quizScore >= 7) msg = "Great job! You have a strong grasp of AD security.";
+            else msg = "Good effort. Review the flashcards to strengthen your foundational knowledge.";
+            document.getElementById('score-message').innerText = msg;
+        }
+
+        function restartQuiz() {
+            quizCurrentIndex = 0;
+            quizScore = 0;
+            document.getElementById('quiz-container').classList.remove('hide');
+            document.getElementById('quiz-results').classList.add('hide');
+            renderQuestion();
+        }
+
+        // --- INIT ---
+        window.onload = () => {
+            updateCard();
+            renderQuestion();
+        };
+    </script>
+</body>
+</html>
+
+

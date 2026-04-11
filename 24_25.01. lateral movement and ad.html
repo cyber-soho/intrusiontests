@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Directory & Lateral Movement | Intrusion Testing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Slate & Indigo - Warm slate neutrals (slate-50 to slate-900) for a clean, highly legible professional base, accented with Indigo (indigo-600) for primary interactions and Emerald/Rose for defensive/offensive highlights. -->
+    <!-- Application Structure Plan: The SPA is structured as an interactive educational dashboard with a sidebar navigation. This allows students to non-linearly explore the 'Intrusion Testing Course' material. Sections are chunked logically: Overview (context & RoE), Kerberos Engine (foundational theory with interactive stepper), Attack Vectors (tabbed interface for specific techniques), Attack Paths (visualizing Bloodhound), and Kill Chain & Defenses (synthesizing the attack lifecycle and mitigations). This design moves from theory to specific attacks, and finally to holistic defense, maximizing comprehension. -->
+    <!-- Visualization & Content Choices: 
+         1. Overview: Text & Warning Cards -> Inform -> Sets rules of engagement (RoE).
+         2. Kerberos Protocol: Interactive Stepper (HTML/JS) -> Process -> Breaks down the complex 6-step exchange into digestible, interactive chunks. Justification: Better retention than a static table.
+         3. Attack Vectors: Tabbed Interface (HTML/JS) -> Organize -> Groups related attacks (AS-REP, Kerberoasting, PTH) without overwhelming the user.
+         4. Bloodhound Paths: CSS Flex/Grid Node Diagram (HTML/CSS) -> Relationships -> Visually demonstrates the '3-hop' attack path example. Justification: Shows graph theory concepts without external SVG/Mermaid libraries.
+         5. Root Causes/Defenses: Polar Area Chart (Chart.js) & Timeline -> Compare/Inform -> Highlights the compounding nature of AD vulnerabilities and maps the 4-phase total compromise. 
+         Library/Method: Tailwind CSS for layout, Vanilla JS for state, Chart.js for data viz. NO SVG or Mermaid used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; color: #0f172a; }
+        .chart-container { position: relative; width: 100%; max-width: 500px; margin-left: auto; margin-right: auto; height: 350px; max-height: 400px; }
+        .tab-active { border-bottom: 4px solid #4f46e5; color: #4f46e5; font-weight: bold; }
+        .tab-inactive { border-bottom: 4px solid transparent; color: #64748b; }
+        .tab-inactive:hover { color: #334155; border-bottom: 4px solid #cbd5e1; }
+        .step-active { background-color: #e0e7ff; border-left: 4px solid #4f46e5; }
+        .step-inactive { background-color: #ffffff; border-left: 4px solid transparent; opacity: 0.6; }
+        .node-circle { display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; border-radius: 50%; background-color: #312e81; color: white; font-weight: bold; font-size: 1.2rem; z-index: 10; }
+        .node-line { height: 4px; background-color: #94a3b8; flex-grow: 1; min-width: 20px; z-index: 0; }
+        @media (max-width: 768px) {
+            .path-container { flex-direction: column; }
+            .node-line { width: 4px; height: 30px; min-width: 4px; }
+        }
+        .hide { display: none; }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row min-h-screen">
+
+    <nav class="w-full md:w-64 bg-slate-900 text-slate-100 flex-shrink-0 sticky top-0 md:h-screen overflow-y-auto">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold text-indigo-400 mb-2">Cyber.SoHo</h1>
+            <p class="text-xs text-slate-400 italic mb-6">"Building the IT's Future, Today and Together!"</p>
+            <h2 class="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-4">Course Modules</h2>
+            <ul class="space-y-2">
+                <li><button onclick="navTo('overview')" class="w-full text-left px-4 py-2 rounded hover:bg-slate-800 focus:bg-slate-800 transition-colors">📍 Overview & RoE</button></li>
+                <li><button onclick="navTo('kerberos')" class="w-full text-left px-4 py-2 rounded hover:bg-slate-800 focus:bg-slate-800 transition-colors">🔑 Kerberos Basics</button></li>
+                <li><button onclick="navTo('attacks')" class="w-full text-left px-4 py-2 rounded hover:bg-slate-800 focus:bg-slate-800 transition-colors">⚔️ Attack Vectors</button></li>
+                <li><button onclick="navTo('bloodhound')" class="w-full text-left px-4 py-2 rounded hover:bg-slate-800 focus:bg-slate-800 transition-colors">🕸️ Graphing Paths</button></li>
+                <li><button onclick="navTo('killchain')" class="w-full text-left px-4 py-2 rounded hover:bg-slate-800 focus:bg-slate-800 transition-colors">💀 Kill Chain & Defense</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="flex-grow p-6 md:p-12 overflow-y-auto">
+        
+        <section id="overview" class="mb-16">
+            <h2 class="text-4xl font-extrabold text-slate-900 mb-4">Active Directory & Lateral Movement</h2>
+            <p class="text-lg text-slate-700 mb-8 border-l-4 border-indigo-500 pl-4">
+                Welcome to Days 24 & 25 of the Intrusion Testing Course. This module covers the core of enterprise network compromise. Over 90% of Fortune 1000 companies rely on Windows Active Directory (AD). It is the single most valuable target in any enterprise environment.
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                    <h3 class="text-xl font-bold text-slate-800 mb-3">🎯 Why Active Directory Matters</h3>
+                    <ul class="space-y-2 text-slate-600">
+                        <li>✔️ Compromising one account rarely stays limited to one account.</li>
+                        <li>✔️ Attackers exploit trust relationships, abuse tickets, and reuse hashes to move laterally.</li>
+                        <li>✔️ The ultimate objective is always <strong>Domain Admin</strong> or equivalent privileges.</li>
+                    </ul>
+                </div>
+                <div class="bg-rose-50 p-6 rounded-lg shadow-sm border border-rose-200">
+                    <h3 class="text-xl font-bold text-rose-800 mb-3">⚠️ Rules of Engagement (RoE)</h3>
+                    <p class="text-rose-700 text-sm mb-2">All techniques demonstrated must be executed in the isolated Mini-AD lab ONLY.</p>
+                    <ul class="space-y-1 text-rose-700 text-sm list-disc pl-5">
+                        <li>Criminal Code of Canada, Section 342.1 applies to unauthorized access.</li>
+                        <li>Your signed RoE strictly defines the scope of this course.</li>
+                        <li><strong>Never</strong> attack production systems without written, explicit authorization.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="bg-indigo-50 p-6 rounded-lg shadow-sm text-center">
+                <p class="text-indigo-900 font-medium">This module maps directly to the Penetration Testing Execution Standard (PTES) and CEH certification objectives, following our previous sessions on System Hacking and Web Apps.</p>
+            </div>
+        </section>
+
+        <section id="kerberos" class="mb-16 hide">
+            <h2 class="text-3xl font-bold text-slate-900 mb-4">Kerberos Authentication Engine</h2>
+            <p class="text-lg text-slate-700 mb-6">
+                Kerberos is the backbone of AD authentication. Understanding its mechanics is non-negotiable for intrusion testing. Every ticket is encrypted with a password hash — if you control the hash, you control the ticket. Below, explore the core components and the standard 6-step authentication exchange.
+            </p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">Core Components</h3>
+                    <div class="space-y-4 text-sm text-slate-700" id="kerb-components">
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">The 6-Step Exchange</h3>
+                    <p class="text-sm text-slate-500 mb-4">Click through the steps to understand how a client authenticates to a network service.</p>
+                    
+                    <div class="flex items-center justify-between mb-6 bg-slate-100 p-4 rounded-lg text-center font-bold text-slate-700">
+                        <div class="w-1/3">💻 Client</div>
+                        <div class="w-1/3 border-l border-r border-slate-300">🏰 KDC (Domain Controller)</div>
+                        <div class="w-1/3">🖥️ Application Server</div>
+                    </div>
+
+                    <div id="kerb-steps-container" class="space-y-3 mb-6">
+                    </div>
+
+                    <div class="flex justify-between mt-4">
+                        <button id="btn-prev-kerb" class="px-4 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 disabled:opacity-50">⬅️ Previous Step</button>
+                        <span id="step-counter" class="font-bold text-indigo-600 self-center">Step 1 of 6</span>
+                        <button id="btn-next-kerb" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50">Next Step ➡️</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="attacks" class="mb-16 hide">
+            <h2 class="text-3xl font-bold text-slate-900 mb-4">Primary Attack Vectors</h2>
+            <p class="text-lg text-slate-700 mb-6">
+                Attackers exploit misconfigurations in the Kerberos protocol and Windows credential caching to extract hashes and forge tickets. Explore the primary lateral movement and privilege escalation techniques below.
+            </p>
+
+            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                <div class="flex border-b border-slate-200 bg-slate-50 overflow-x-auto">
+                    <button onclick="switchTab('asrep')" id="tab-asrep" class="flex-1 py-4 px-6 text-center font-medium tab-active whitespace-nowrap">AS-REP Roasting</button>
+                    <button onclick="switchTab('kerb')" id="tab-kerb" class="flex-1 py-4 px-6 text-center font-medium tab-inactive whitespace-nowrap">Kerberoasting</button>
+                    <button onclick="switchTab('pth')" id="tab-pth" class="flex-1 py-4 px-6 text-center font-medium tab-inactive whitespace-nowrap">Pass-the-Hash (PTH)</button>
+                    <button onclick="switchTab('opth')" id="tab-opth" class="flex-1 py-4 px-6 text-center font-medium tab-inactive whitespace-nowrap">Over-Pass-the-Hash</button>
+                </div>
+
+                <div class="p-6 md:p-8">
+                    <div id="content-asrep" class="tab-content">
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3">AS-REP Roasting</h3>
+                        <p class="mb-4 text-slate-700">Exploits accounts that have the <code>DONT_REQ_PREAUTH</code> flag enabled. Anyone can request an AS-REP for these accounts, which contains data encrypted with the account's NTLM hash, allowing for offline cracking.</p>
+                        <div class="bg-slate-50 p-4 rounded border border-slate-200 mb-4">
+                            <h4 class="font-bold text-slate-800 mb-2">The Attack Chain:</h4>
+                            <ol class="list-decimal list-inside space-y-1 text-slate-700">
+                                <li>Enumerate accounts with DONT_REQ_PREAUTH via LDAP queries or Impacket (GetNPUsers.py).</li>
+                                <li>Send an unauthenticated AS-REQ for each vulnerable account.</li>
+                                <li>Receive the AS-REP and extract the encrypted portion.</li>
+                                <li>Crack the hash offline using Hashcat (mode 18200) or John the Ripper.</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div id="content-kerb" class="tab-content hide">
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3">Kerberoasting</h3>
+                        <p class="mb-4 text-slate-700">Any domain-authenticated user can request a Service Ticket for any Service Principal Name (SPN). Because the ticket is encrypted with the target service account's NTLM hash, weak service account passwords can be extracted and cracked offline.</p>
+                        <div class="bg-slate-50 p-4 rounded border border-slate-200 mb-4">
+                            <h4 class="font-bold text-slate-800 mb-2">The Attack Chain:</h4>
+                            <ol class="list-decimal list-inside space-y-1 text-slate-700">
+                                <li>Authenticate to the domain with any low-privilege account.</li>
+                                <li>Query AD for all SPNs (via setspn or Impacket's GetUserSPNs.py).</li>
+                                <li>Request Service Tickets (TGS-REQ) for interesting SPNs (e.g., highly privileged accounts).</li>
+                                <li>Extract tickets from memory and crack offline (Hashcat mode 13100).</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div id="content-pth" class="tab-content hide">
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3">Pass-the-Hash (PTH)</h3>
+                        <p class="mb-4 text-slate-700">Windows uses NTLM hashes for authentication and caches them in LSASS memory. If an attacker extracts a hash, they don't need to crack it — the hash <strong>is</strong> the credential and can be passed directly to authenticate to other systems.</p>
+                        <div class="bg-slate-50 p-4 rounded border border-slate-200 mb-4">
+                            <h4 class="font-bold text-slate-800 mb-2">The Attack Chain:</h4>
+                            <ol class="list-decimal list-inside space-y-1 text-slate-700">
+                                <li>Compromise an initial workstation (e.g., via phishing).</li>
+                                <li>Escalate privileges to local administrator.</li>
+                                <li>Run Mimikatz (<code>sekurlsa::logonpasswords</code>) to dump NTLM hashes from LSASS.</li>
+                                <li>Identify a privileged hash (like a help-desk user with local admin on multiple machines).</li>
+                                <li>Use tools like Impacket psexec.py or CrackMapExec to authenticate to other machines using only the hash.</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div id="content-opth" class="tab-content hide">
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3">Over-Pass-the-Hash</h3>
+                        <p class="mb-4 text-slate-700">When networks enforce Kerberos-only authentication, standard PTH (which relies on NTLM) is blocked. Over-PTH bypasses this by using the stolen NTLM hash to request a legitimate Ticket Granting Ticket (TGT) from the KDC.</p>
+                        <div class="bg-slate-50 p-4 rounded border border-slate-200 mb-4">
+                            <h4 class="font-bold text-slate-800 mb-2">How it works:</h4>
+                            <ul class="list-disc list-inside space-y-1 text-slate-700">
+                                <li>Converts an NTLM Hash into a Kerberos TGT.</li>
+                                <li>All subsequent authentication on the network uses standard Kerberos traffic, making it much harder for defenders to detect.</li>
+                                <li>Requires Mimikatz: <code>sekurlsa::pth /user:admin /domain:corp.local /ntlm:[hash]</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="bloodhound" class="mb-16 hide">
+            <h2 class="text-3xl font-bold text-slate-900 mb-4">Graphing Attack Paths (BloodHound)</h2>
+            <p class="text-lg text-slate-700 mb-6">
+                Active Directory security relies heavily on graph theory. Tools like BloodHound map complex permissions, sessions, and group memberships to reveal hidden paths from unprivileged users to Domain Admin. Defenders use this to find and sever "choke points."
+            </p>
+
+            <div class="bg-white p-8 rounded-lg shadow-sm border border-slate-200">
+                <h3 class="text-xl font-bold text-slate-800 mb-6 text-center">Interactive Path Example: 3 Hops to Domain Admin</h3>
+                
+                <div class="path-container flex items-center justify-center space-x-2 md:space-x-4 mb-8 relative">
+                    
+                    <div class="flex flex-col items-center group cursor-pointer" onclick="showPathDetail('student')">
+                        <div class="node-circle shadow-lg group-hover:bg-indigo-500 transition-colors">👤</div>
+                        <span class="mt-2 text-xs font-bold text-slate-700">j.doe.student</span>
+                    </div>
+
+                    <div class="node-line group cursor-pointer relative" onclick="showPathDetail('memberof')">
+                        <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">MemberOf</div>
+                    </div>
+
+                    <div class="flex flex-col items-center group cursor-pointer" onclick="showPathDetail('helpdesk')">
+                        <div class="node-circle shadow-lg group-hover:bg-indigo-500 transition-colors bg-slate-600">👥</div>
+                        <span class="mt-2 text-xs font-bold text-slate-700">IT-HelpDesk</span>
+                    </div>
+
+                    <div class="node-line group cursor-pointer relative" onclick="showPathDetail('adminto')">
+                        <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">AdminTo</div>
+                    </div>
+
+                    <div class="flex flex-col items-center group cursor-pointer" onclick="showPathDetail('ws')">
+                        <div class="node-circle shadow-lg group-hover:bg-indigo-500 transition-colors bg-slate-600">💻</div>
+                        <span class="mt-2 text-xs font-bold text-slate-700">WS-042</span>
+                    </div>
+
+                    <div class="node-line group cursor-pointer relative" onclick="showPathDetail('session')">
+                        <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">HasSession</div>
+                    </div>
+
+                    <div class="flex flex-col items-center group cursor-pointer" onclick="showPathDetail('admin')">
+                        <div class="node-circle shadow-lg group-hover:bg-indigo-500 transition-colors bg-rose-600">🛡️</div>
+                        <span class="mt-2 text-xs font-bold text-rose-700">admin.jones</span>
+                    </div>
+
+                    <div class="node-line bg-rose-300 group cursor-pointer relative" onclick="showPathDetail('da')">
+                        <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-rose-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">MemberOf</div>
+                    </div>
+
+                    <div class="flex flex-col items-center group cursor-pointer" onclick="showPathDetail('domain')">
+                        <div class="node-circle shadow-lg shadow-rose-200 group-hover:bg-rose-500 transition-colors bg-rose-700 ring-4 ring-rose-200">👑</div>
+                        <span class="mt-2 text-xs font-bold text-rose-800">Domain Admins</span>
+                    </div>
+                </div>
+
+                <div id="path-details" class="bg-indigo-50 border border-indigo-100 p-4 rounded text-center min-h-[80px] flex items-center justify-center">
+                    <p class="text-indigo-900">Click any node or relationship line above to analyze the attack path.</p>
+                </div>
+            </div>
+            
+            <div class="mt-8 bg-slate-800 text-slate-200 p-6 rounded-lg shadow-sm">
+                <h3 class="text-xl font-bold text-white mb-4">Key BloodHound Relationships</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm" id="bh-relationships">
+                </div>
+            </div>
+        </section>
+
+        <section id="killchain" class="mb-16 hide">
+            <h2 class="text-3xl font-bold text-slate-900 mb-4">Total Compromise: The Full Kill Chain</h2>
+            <p class="text-lg text-slate-700 mb-6">
+                Active Directory attacks chain together. A single misconfiguration combined with password reuse and missing protections leads to rapid domain compromise. Below, analyze the 4 phases of an attack and the critical defenses required to stop them.
+            </p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">The 4-Phase Attack Lifecycle</h3>
+                    <div class="space-y-4">
+                        <div class="p-4 border-l-4 border-slate-400 bg-slate-50">
+                            <span class="text-xs font-bold uppercase text-slate-500">Phase 1</span>
+                            <h4 class="font-bold text-slate-800">Initial Access</h4>
+                            <p class="text-sm text-slate-600">Phishing leads to local escalation. Attacker runs Mimikatz.</p>
+                        </div>
+                        <div class="p-4 border-l-4 border-indigo-400 bg-indigo-50">
+                            <span class="text-xs font-bold uppercase text-indigo-500">Phase 2</span>
+                            <h4 class="font-bold text-indigo-900">Credential Harvesting</h4>
+                            <p class="text-sm text-indigo-800">Kerberoasting is executed. A service account password is cracked offline.</p>
+                        </div>
+                        <div class="p-4 border-l-4 border-purple-400 bg-purple-50">
+                            <span class="text-xs font-bold uppercase text-purple-500">Phase 3</span>
+                            <h4 class="font-bold text-purple-900">Lateral Movement</h4>
+                            <p class="text-sm text-purple-800">Pass-the-Hash with the service account hash to the finance server. CFO's hash is dumped from LSASS.</p>
+                        </div>
+                        <div class="p-4 border-l-4 border-rose-500 bg-rose-50">
+                            <span class="text-xs font-bold uppercase text-rose-500">Phase 4</span>
+                            <h4 class="font-bold text-rose-900">Domain Compromise</h4>
+                            <p class="text-sm text-rose-800">Over-PTH with CFO hash allows DCSync. KRBTGT hash extracted. Golden Ticket created.</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center p-3 bg-slate-900 text-red-400 font-bold rounded">
+                        Result: Total domain compromise in ~3.5 hours
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 flex flex-col justify-center">
+                    <h3 class="text-xl font-bold text-slate-800 mb-2 text-center">Root Causes of Failure</h3>
+                    <p class="text-sm text-slate-500 mb-4 text-center">Relative impact of missing defenses enabling the kill chain.</p>
+                    <div class="chart-container">
+                        <canvas id="rootCauseChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-bold text-slate-900 mb-4 mt-12">Defence-in-Depth Strategy</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="defenses-container">
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        const kerberosSteps = [
+            { step: 1, name: "AS-REQ", dir: "Client ➡️ KDC", desc: "Client sends username + encrypted timestamp to the Authentication Service." },
+            { step: 2, name: "AS-REP", dir: "KDC ➡️ Client", desc: "KDC validates identity and returns a Ticket Granting Ticket (TGT) + session key." },
+            { step: 3, name: "TGS-REQ", dir: "Client ➡️ KDC", desc: "Client presents the TGT to the Ticket Granting Service and requests access to a specific SPN." },
+            { step: 4, name: "TGS-REP", dir: "KDC ➡️ Client", desc: "KDC returns a Service Ticket (encrypted with the target service's hash)." },
+            { step: 5, name: "AP-REQ", dir: "Client ➡️ Server", desc: "Client presents the Service Ticket directly to the target application server." },
+            { step: 6, name: "AP-REP", dir: "Server ➡️ Client", desc: "Server confirms mutual authentication (Optional but common)." }
+        ];
+
+        let currentStep = 0;
+
+        const kerbComponents = [
+            { label: "KDC", desc: "Key Distribution Center; runs on every Domain Controller." },
+            { label: "TGT", desc: "Ticket Granting Ticket; encrypted 'passport' via KRBTGT hash." },
+            { label: "Service Ticket", desc: "One-time token encrypted with the target service account's hash." },
+            { label: "PAC", desc: "Privilege Attribute Certificate; carries group memberships/SIDs." },
+            { label: "SPN", desc: "Service Principal Name; unique identifier for a service instance." }
+        ];
+
+        const bhPaths = {
+            'student': "The starting point. An unprivileged student account compromised via phishing.",
+            'memberof': "Edge: MemberOf. The student was erroneously placed in the IT-HelpDesk group.",
+            'helpdesk': "Node: IT-HelpDesk Security Group.",
+            'adminto': "Edge: AdminTo. The IT-HelpDesk group has local administrator rights on workstation WS-042.",
+            'ws': "Node: Workstation WS-042. The attacker uses their rights to access this machine.",
+            'session': "Edge: HasSession. Domain Admin 'admin.jones' forgot to log off, leaving credentials in LSASS memory.",
+            'admin': "Node: admin.jones. The attacker extracts this user's NTLM hash using Mimikatz.",
+            'da': "Edge: MemberOf. admin.jones is a member of the highest privileged group.",
+            'domain': "Node: Domain Admins. Total domain compromise achieved in just three steps."
+        };
+
+        const relationships = [
+            { name: "AdminTo", desc: "Has local admin rights on a computer" },
+            { name: "HasSession", desc: "Active logon session on a computer" },
+            { name: "GenericAll", desc: "Full control over target object" },
+            { name: "WriteDacl", desc: "Can modify DACL on target" },
+            { name: "DCSync", desc: "Can replicate directory (extract all hashes)" },
+            { name: "ForceChangePassword", desc: "Can reset target user's password" }
+        ];
+
+        const defenses = [
+            { title: "Tiered Administration", icon: "🏢", desc: "Domain Admins never log into lower-tier workstations. Prevents privileged credential caching." },
+            { title: "Credential Guard", icon: "🛡️", desc: "Isolates LSASS in a virtualized container on Win10/11 endpoints, preventing Mimikatz hash extraction." },
+            { title: "LAPS Deployment", icon: "🔑", desc: "Local Administrator Password Solution ensures unique, rotating passwords per machine, breaking lateral movement." },
+            { title: "gMSA Migration", icon: "🤖", desc: "Group Managed Service Accounts use 240-character auto-rotated passwords, completely neutralizing Kerberoasting." },
+            { title: "Disable NTLM", icon: "🚫", desc: "Enforcing Kerberos with AES-256 prevents standard Pass-the-Hash attacks." },
+            { title: "SIEM Monitoring", icon: "👁️", desc: "Monitor Event ID 4769 (TGS requests) and Event 4624 Type 9 to detect anomalies." }
+        ];
+
+        function initData() {
+            const compContainer = document.getElementById('kerb-components');
+            kerbComponents.forEach(c => {
+                compContainer.innerHTML += `<div class="flex justify-between border-b border-slate-100 pb-2"><span class="font-bold text-indigo-700">${c.label}</span> <span class="text-right w-2/3">${c.desc}</span></div>`;
+            });
+
+            const relContainer = document.getElementById('bh-relationships');
+            relationships.forEach(r => {
+                relContainer.innerHTML += `<div class="bg-slate-700 p-3 rounded border border-slate-600"><div class="font-bold text-indigo-300 mb-1">${r.name}</div><div>${r.desc}</div></div>`;
+            });
+
+            const defContainer = document.getElementById('defenses-container');
+            defenses.forEach(d => {
+                defContainer.innerHTML += `
+                    <div class="bg-white p-5 rounded-lg border border-emerald-200 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <span class="text-2xl">${d.icon}</span>
+                            <h4 class="font-bold text-slate-800">${d.title}</h4>
+                        </div>
+                        <p class="text-sm text-slate-600">${d.desc}</p>
+                    </div>`;
+            });
+
+            renderKerbSteps();
+            updateKerbStepState();
+            initChart();
+        }
+
+        function renderKerbSteps() {
+            const container = document.getElementById('kerb-steps-container');
+            container.innerHTML = '';
+            kerberosSteps.forEach((s, index) => {
+                const el = document.createElement('div');
+                el.id = `kstep-${index}`;
+                el.className = 'p-3 rounded transition-all duration-300 step-inactive';
+                el.innerHTML = `
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-slate-800 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold flex-shrink-0">${s.step}</div>
+                        <div>
+                            <div class="font-bold text-slate-800">${s.name} <span class="text-xs text-indigo-600 ml-2 font-mono bg-indigo-50 px-1 rounded">${s.dir}</span></div>
+                            <div class="text-sm text-slate-600 mt-1">${s.desc}</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function updateKerbStepState() {
+            kerberosSteps.forEach((s, index) => {
+                const el = document.getElementById(`kstep-${index}`);
+                if (index === currentStep) {
+                    el.classList.remove('step-inactive');
+                    el.classList.add('step-active');
+                } else {
+                    el.classList.remove('step-active');
+                    el.classList.add('step-inactive');
+                }
+            });
+            document.getElementById('step-counter').innerText = `Step ${currentStep + 1} of 6`;
+            document.getElementById('btn-prev-kerb').disabled = currentStep === 0;
+            document.getElementById('btn-next-kerb').disabled = currentStep === kerberosSteps.length - 1;
+        }
+
+        document.getElementById('btn-next-kerb').addEventListener('click', () => {
+            if (currentStep < kerberosSteps.length - 1) { currentStep++; updateKerbStepState(); }
+        });
+
+        document.getElementById('btn-prev-kerb').addEventListener('click', () => {
+            if (currentStep > 0) { currentStep--; updateKerbStepState(); }
+        });
+
+        function navTo(sectionId) {
+            ['overview', 'kerberos', 'attacks', 'bloodhound', 'killchain'].forEach(id => {
+                document.getElementById(id).classList.add('hide');
+            });
+            document.getElementById(sectionId).classList.remove('hide');
+            window.scrollTo(0,0);
+        }
+
+        function switchTab(tabId) {
+            ['asrep', 'kerb', 'pth', 'opth'].forEach(id => {
+                document.getElementById('content-' + id).classList.add('hide');
+                document.getElementById('tab-' + id).classList.remove('tab-active');
+                document.getElementById('tab-' + id).classList.add('tab-inactive');
+            });
+            document.getElementById('content-' + tabId).classList.remove('hide');
+            document.getElementById('tab-' + tabId).classList.remove('tab-inactive');
+            document.getElementById('tab-' + tabId).classList.add('tab-active');
+        }
+
+        function showPathDetail(key) {
+            document.getElementById('path-details').innerHTML = `<p class="text-indigo-900 font-medium">${bhPaths[key]}</p>`;
+        }
+
+        let myChart = null;
+        function initChart() {
+            const ctx = document.getElementById('rootCauseChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'polarArea',
+                data: {
+                    labels: [
+                        'DA Service Accounts', 
+                        'Local Password Reuse', 
+                        'No Credential Guard', 
+                        'Flat Admin Tiers', 
+                        'Lack of SIEM Alerts'
+                    ],
+                    datasets: [{
+                        label: 'Severity / Impact',
+                        data: [90, 85, 80, 75, 60],
+                        backgroundColor: [
+                            'rgba(244, 63, 94, 0.7)',
+                            'rgba(168, 85, 247, 0.7)',
+                            'rgba(99, 102, 241, 0.7)',
+                            'rgba(14, 165, 233, 0.7)',
+                            'rgba(100, 116, 139, 0.7)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12 } }
+                    },
+                    scales: {
+                        r: { ticks: { display: false } }
+                    }
+                }
+            });
+        }
+
+        window.onload = initData;
+
+    </script>
+</body>
+</html>
+
+
+

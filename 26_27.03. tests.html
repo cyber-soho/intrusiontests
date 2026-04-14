@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perimeter Hacking: Study Canvas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Flashcard Flip Animations */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        
+        .flashcard-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+
+        /* Tab Active State */
+        .tab-active {
+            border-bottom-width: 4px;
+            border-blue-600;
+            color: #2563eb;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-extrabold text-slate-900 mb-2">Perimeter Hacking: Study Canvas</h1>
+            <p class="text-slate-600">Review concepts with flashcards and test your knowledge with the interactive quiz.</p>
+        </header>
+
+        <div class="flex justify-center border-b border-slate-200 mb-8">
+            <button onclick="switchTab('flashcards')" id="btn-flashcards" class="px-6 py-3 text-lg text-slate-500 hover:text-blue-600 transition-colors tab-active">
+                Flashcards (25)
+            </button>
+            <button onclick="switchTab('quiz')" id="btn-quiz" class="px-6 py-3 text-lg text-slate-500 hover:text-blue-600 transition-colors">
+                Practice Quiz (10)
+            </button>
+        </div>
+
+        <section id="tab-flashcards" class="block">
+            <div class="mb-6 text-center">
+                <p class="text-sm text-slate-500">Click on any card to reveal the answer.</p>
+            </div>
+            <div id="flashcards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+        </section>
+
+        <section id="tab-quiz" class="hidden">
+            <div class="max-w-3xl mx-auto" id="quiz-container">
+                </div>
+            <div class="max-w-3xl mx-auto mt-8 text-center" id="quiz-actions">
+                <button onclick="checkQuiz()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-colors">
+                    Check Answers
+                </button>
+                <button onclick="resetQuiz()" class="ml-4 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-8 rounded-lg shadow-md transition-colors hidden" id="btn-reset-quiz">
+                    Retake Quiz
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // --- Data ---
+        const flashcardsData = [
+            { front: "Packet-Filtering Firewall", back: "A firewall type that checks only packet headers to decide whether to allow or block traffic." },
+            { front: "Stateful Inspection Firewall", back: "A firewall type that tracks connection states to make allow or block decisions." },
+            { front: "NIDS (Network-based Intrusion Detection System)", back: "A detection system that monitors an entire subnet for suspicious activity (e.g., Snort, Suricata)." },
+            { front: "Anomaly-based Detection", back: "An IDS approach that flags deviations from a baseline of normal network behavior." },
+            { front: "Packet Fragmentation Evasion", back: "Splitting packets into tiny fragments so the IDS skips reassembly and signatures do not match." },
+            { front: "TTL (Time To Live) Manipulation", back: "Using crafted TTL values so a benign packet reaches the IDS but expires before the target, allowing a trailing malicious packet to bypass detection." },
+            { front: "Nmap Decoy Scanning Flag", back: "-D RND:10 (Generates fake source IPs so the defender cannot identify the real scanner)." },
+            { front: "Source Port Manipulation", back: "Setting the source port to a trusted service (like port 53 for DNS) to exploit poorly configured firewall trust rules." },
+            { front: "HTTP Tunneling", back: "Hiding traffic in TCP ports 80 or 443 because web ports are almost never blocked (commonly done with tools like Chisel)." },
+            { front: "ptunnel", back: "A key tool used for ICMP tunneling (hiding traffic within Ping echo requests)." },
+            { front: "Port Redirection", back: "Forwarding traffic from one port or machine to another; considered the cornerstone of network pivoting." },
+            { front: "Banner Grabbing", back: "An attacker technique used to identify software versions from service connection strings to search for vulnerabilities." },
+            { front: "Banner Spoofing", back: "A defender technique that changes the service banner (e.g., making Apache appear as Nginx) to mislead attackers and waste their time." },
+            { front: "Honeypot", back: "A decoy system designed to look like a real target in order to attract attackers and capture intelligence." },
+            { front: "Tarpit", back: "A defensive system that accepts connections but responds extremely slowly to trap automated scanning tools." },
+            { front: "Volumetric DoS Attack", back: "An attack that floods network bandwidth, such as UDP or ICMP floods." },
+            { front: "Protocol DoS Attack", back: "An attack that exploits protocol weaknesses, such as a SYN Flood creating thousands of half-open connections." },
+            { front: "Application-Layer DoS Attack", back: "An attack targeting specific applications (Layer 7), such as HTTP floods sending legitimate-looking complex requests." },
+            { front: "Amplification Attack Mechanism", back: "The attacker spoofs the victim's IP and sends small queries to servers, causing the servers to send massive responses to the victim." },
+            { front: "Memcached Amplification Factor", back: "Approximately 51,000x." },
+            { front: "Primary Rule of DoS Penetration Testing", back: "Never perform DoS testing without explicit, written, and scoped authorization." },
+            { front: "SIEM Process Steps", back: "Collects logs, normalizes them, correlates events, and applies rules to generate prioritized alerts." },
+            { front: "True Positive (Alert Triage)", back: "An alert representing a real attack correctly flagged by the system." },
+            { front: "False Positive (Alert Triage)", back: "An alert generated when a benign event incorrectly matches a detection rule." },
+            { front: "Solutions to Alert Fatigue", back: "Continuous rule tuning, SOAR (automation), and UEBA (User & Entity Behavior Analytics)." }
+        ];
+
+        const quizData = [
+            {
+                question: "You need to scan a target network but notice your scans are being dropped by a basic firewall that strictly checks the incoming traffic's originating service. You decide to make your traffic look like it's coming from a standard Domain Name System response. Which Nmap command achieves this?",
+                hint: "Think about how you can manipulate the packet headers to mimic a highly trusted and necessary network protocol's originating channel.",
+                options: [
+                    { text: "Run Nmap with the --source-port 53 flag.", isCorrect: true, rationale: "Setting the origination point to port 53 directly exploits firewall trust rules that blindly allow inbound traffic appearing to originate from DNS servers." },
+                    { text: "Run Nmap with the -D RND:10 flag.", isCorrect: false, rationale: "This technique obscures the true origin IP by blending it with random IP addresses, but it does not alter the port information evaluated by the firewall." },
+                    { text: "Use the tool ptunnel.", isCorrect: false, rationale: "This tool is used to encapsulate data inside ICMP echo packets, which is a different protocol entirely than what is required for DNS mimicking." },
+                    { text: "Run Nmap with the -f flag.", isCorrect: false, rationale: "Fragmenting packets is a technique used to break up signatures to bypass Intrusion Detection Systems, not to spoof port numbers on basic firewalls." }
+                ]
+            },
+            {
+                question: "You are trying to deliver a payload past an anomaly-based NIDS. You craft a packet sequence where the first packet is harmless but has a very specific Time To Live (TTL) value, and the second packet contains the actual exploit. What is the operational goal of this evasion technique?",
+                hint: "Consider the journey of a packet and what happens when its lifespan counter expires on a network before reaching its final destination.",
+                options: [
+                    { text: "The harmless packet reaches the IDS for inspection but drops before the target, letting the malicious packet pass unseen.", isCorrect: true, rationale: "By carefully calculating hops, the benign packet satisfies the IDS's inspection engine but dies in transit, leaving the target system to only process the subsequent malicious packet." },
+                    { text: "The IDS is overwhelmed by the sheer volume of packets and fails open, allowing the exploit to pass.", isCorrect: false, rationale: "Overwhelming a system to cause a failure state is characteristic of a Denial of Service attack, not a calculated routing manipulation." },
+                    { text: "The TTL forces the IDS to fragment the packet, destroying the signature pattern.", isCorrect: false, rationale: "Time To Live determines how many hops a packet can take, whereas fragmentation deals with the Maximum Transmission Unit (MTU) size limits of the network." },
+                    { text: "The harmless packet satisfies the firewall state table, while the TTL on the second packet bypasses the state check.", isCorrect: false, rationale: "This technique specifically exploits the difference in how an IDS and a target host process a packet stream, rather than manipulating standard firewall state tracking." }
+                ]
+            },
+            {
+                question: "During a red team engagement, you find that outbound traffic on all standard ports is blocked by a strict firewall, except for basic ping connectivity testing which is allowed for network troubleshooting. Which tool would you select to establish a covert command and control channel?",
+                hint: "You need a utility specifically designed to encapsulate your data payload within standard network troubleshooting requests and replies.",
+                options: [
+                    { text: "ptunnel", isCorrect: true, rationale: "This specific utility is designed to proxy TCP connections through ICMP echo request and reply packets, bypassing strict port filtering." },
+                    { text: "Chisel", isCorrect: false, rationale: "This tool is highly effective for tunneling over HTTP or HTTPS, but requires web ports (80 or 443) to be open and accessible." },
+                    { text: "Iodine", isCorrect: false, rationale: "This application creates a tunnel over the DNS protocol, requiring UDP port 53 to be permitted through the perimeter." },
+                    { text: "Cowrie", isCorrect: false, rationale: "This is a defensive honeypot designed to log brute force attacks and shell interaction, not a tool for establishing offensive tunnels." }
+                ]
+            },
+            {
+                question: "As a SOC analyst, you notice repeated connection attempts to your public-facing web server. The attacker is capturing the initial connection string to identify that the server is running an outdated version of Apache. To waste the attacker's time on future scans, what defensive technique should you implement?",
+                hint: "Think about how you can alter the system's automated 'greeting' to deceive the reconnaissance phase without breaking functionality.",
+                options: [
+                    { text: "Configure banner spoofing so the server presents itself as Nginx instead.", isCorrect: true, rationale: "Altering the service identification string misleads attackers, forcing them to attempt exploits that are incompatible with the actual underlying architecture." },
+                    { text: "Perform banner grabbing on the attacker's IP to identify their tools.", isCorrect: false, rationale: "Investigating the attacker's infrastructure is an offensive action that does not protect the vulnerable web server from ongoing reconnaissance." },
+                    { text: "Deploy an SSH honeypot on a different port.", isCorrect: false, rationale: "While a decoy system might gather intelligence, it does nothing to mask the identity of the actual production web server currently being targeted." },
+                    { text: "Implement session splicing to confuse the attacker's scanner.", isCorrect: false, rationale: "Dividing traffic into micro-packets is an offensive technique used by attackers to bypass detection, not a defensive measure for web servers." }
+                ]
+            },
+            {
+                question: "Your network perimeter is constantly being hit by automated scanning scripts that consume bandwidth and fill up log space. You want to deploy a defensive mechanism specifically designed to bog down these automated tools by keeping their connections open indefinitely. Which solution is best suited for this?",
+                hint: "You are looking for a trap that acts like a sticky surface, intentionally delaying network responses to exhaust the scanner's resources.",
+                options: [
+                    { text: "A tarpit.", isCorrect: true, rationale: "This system operates by accepting incoming connections but responding at an incredibly slow rate, intentionally breaking the timing mechanisms of automated tools." },
+                    { text: "A honeynet.", isCorrect: false, rationale: "An entire network of decoy systems is designed for deep intelligence gathering and observing lateral movement, rather than simply stalling a scanner." },
+                    { text: "An application-level gateway.", isCorrect: false, rationale: "This type of firewall inspects deep content and proxies traffic securely, but it processes connections normally rather than intentionally stalling them." },
+                    { text: "A stateful inspection firewall.", isCorrect: false, rationale: "While this device tracks active connections to block malicious traffic, it is designed to drop bad packets quickly, not hold connections open to punish scanners." }
+                ]
+            },
+            {
+                question: "An attacker wants to launch a massive Distributed Denial of Service (DDoS) attack but has limited botnet resources. They decide to spoof the victim's IP and use an amplification vector. Based on known amplification factors, exploiting which of the following protocols would yield the most devastating traffic multiplier?",
+                hint: "Consider the service that notoriously returns massive amounts of cached data in response to very small UDP queries.",
+                options: [
+                    { text: "Memcached", isCorrect: true, rationale: "Exploiting misconfigured instances of this caching system can multiply the attacker's initial traffic volume by approximately 51,000 times." },
+                    { text: "NTP (Network Time Protocol)", isCorrect: false, rationale: "Exploiting the monlist command in this time-sync protocol yields a significant multiplier of roughly 556x, but it is not the highest available vector." },
+                    { text: "DNS", isCorrect: false, rationale: "Requesting large zone files through this naming system yields a multiplier of roughly 70x, which is substantial but much smaller than other vectors." },
+                    { text: "ICMP", isCorrect: false, rationale: "Ping requests generate a 1-to-1 response size and are typically used in direct volumetric floods, offering no inherent amplification properties." }
+                ]
+            },
+            {
+                question: "A web server is unresponsive, but the network monitoring dashboard shows that bandwidth utilization is relatively low. Investigation reveals that the server's connection tables are completely full because thousands of TCP handshakes were initiated but never completed by the client. What category of attack is occurring?",
+                hint: "Focus on the fact that the attack exploits the state mechanism of the transport layer rather than sheer volume or complex web requests.",
+                options: [
+                    { text: "A protocol attack.", isCorrect: true, rationale: "By exploiting the mechanics of the TCP three-way handshake (specifically a SYN flood), the attacker exhausts server resources without needing massive bandwidth." },
+                    { text: "A volumetric attack.", isCorrect: false, rationale: "These attacks rely on overwhelming the actual data pipes with sheer volume (like UDP floods), which contradicts the observation of low bandwidth utilization." },
+                    { text: "An application-layer attack.", isCorrect: false, rationale: "These attacks require establishing a full connection to send legitimate-looking but complex HTTP requests, whereas this attack halts before the connection is established." },
+                    { text: "A DNS amplification attack.", isCorrect: false, rationale: "This technique generates massive amounts of inbound UDP traffic, which would be immediately visible as high bandwidth utilization on the monitoring dashboard." }
+                ]
+            },
+            {
+                question: "A new SIEM rule is implemented to detect lateral movement. However, it triggers hundreds of alerts a day whenever the automated backup service runs. Analysts are starting to ignore the SIEM dashboard entirely. What is this phenomenon called, and what is the appropriate triage verdict for these specific backup alerts?",
+                hint: "Consider the psychological impact on defenders when they are overwhelmed by alarms, and how you classify a benign event that trips a detection rule.",
+                options: [
+                    { text: "Alert Fatigue; the verdict is a False Positive.", isCorrect: true, rationale: "Analysts become desensitized due to overwhelming noise, and the specific alert is classified as a benign event that incorrectly matched the detection logic." },
+                    { text: "Alert Fatigue; the verdict is a True Negative.", isCorrect: false, rationale: "While the psychological phenomenon is correct, a True Negative means the system correctly remained silent during normal operations, rather than generating an alert." },
+                    { text: "Entity Enrichment; the verdict is a False Negative.", isCorrect: false, rationale: "Enrichment is a step in the triage process, not a psychological phenomenon, and a False Negative refers to a real attack that the system failed to detect entirely." },
+                    { text: "Log Normalization; the verdict is a True Positive.", isCorrect: false, rationale: "Normalization is the technical process of standardizing log formats, and the event cannot be a True Positive because no actual attack took place." }
+                ]
+            },
+            {
+                question: "You receive an alert from the SIEM regarding a suspicious outbound connection to an unknown IP address. Before deciding if it's an actual incident, you check VirusTotal and AlienVault OTX to see if the IP is associated with known malware campaigns. Which step of the triage process are you currently performing?",
+                hint: "This step involves gathering external intelligence to add critical context to the raw alert data.",
+                options: [
+                    { text: "Step 2 — Entity Enrichment.", isCorrect: true, rationale: "This phase focuses on cross-referencing internal logs with external threat intelligence to understand the reputation and criticality of the involved assets." },
+                    { text: "Step 1 — Initial Assessment.", isCorrect: false, rationale: "This preceding phase involves looking only at the alert source, severity, and internal detection logic to quickly gauge signal quality." },
+                    { text: "Step 3 — Verdict.", isCorrect: false, rationale: "This subsequent phase requires making a final decision (e.g., True Positive, False Positive) based on the evidence gathered during earlier investigations." },
+                    { text: "Step 4 — Escalation or Closure.", isCorrect: false, rationale: "This is the final action taken, initiating incident response procedures or documenting the event based on the final verdict." }
+                ]
+            },
+            {
+                question: "You are conducting an authorized penetration test for a client. You discover a vulnerability that makes a critical database susceptible to a resource exhaustion DoS attack. You want to prove the impact to the client. What is the ethically and professionally correct next step according to the PTES methodology?",
+                hint: "Recall the strict legal and operational boundaries regarding availability-impacting tests during an engagement.",
+                options: [
+                    { text: "Do not execute the attack on production; ensure you have explicit, scoped authorization and test in a staging environment instead.", isCorrect: true, rationale: "Because DoS inherently threatens availability and carries legal risks, it must never be launched against live systems without specific written consent and safeguards." },
+                    { text: "Execute a brief, 5-second DoS attack during off-hours to generate proof of concept logs without causing extended downtime.", isCorrect: false, rationale: "Even brief disruptions to live systems without explicit authorization violate ethical guidelines and can trigger severe legal consequences." },
+                    { text: "Notify the ISP immediately and then launch the attack against the production database to test their scrubbing capabilities.", isCorrect: false, rationale: "While notifying the ISP is a necessary step when authorized, doing so does not bypass the requirement to test in staging environments to protect production assets." },
+                    { text: "Tunnel the DoS attack through a honeypot to mask your origin and avoid triggering the client's internal alarms.", isCorrect: false, rationale: "Masking the origin of an unauthorized attack against a client's production system is highly unethical and violates the core principles of professional penetration testing." }
+                ]
+            }
+        ];
+
+        // --- Tab Logic ---
+        function switchTab(tabId) {
+            document.getElementById('tab-flashcards').classList.add('hidden');
+            document.getElementById('tab-quiz').classList.add('hidden');
+            document.getElementById('btn-flashcards').classList.remove('tab-active', 'border-b-4');
+            document.getElementById('btn-quiz').classList.remove('tab-active', 'border-b-4');
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            document.getElementById(`btn-${tabId}`).classList.add('tab-active', 'border-b-4');
+        }
+
+        // --- Render Flashcards ---
+        function renderFlashcards() {
+            const container = document.getElementById('flashcards-container');
+            let html = '';
+            
+            flashcardsData.forEach((card, index) => {
+                html += `
+                    <div class="flashcard h-64 w-full perspective-1000 cursor-pointer" onclick="this.classList.toggle('flipped')">
+                        <div class="flashcard-inner relative w-full h-full text-center shadow-lg rounded-xl transform-style-3d border border-slate-200">
+                            <div class="absolute w-full h-full bg-white text-slate-800 rounded-xl backface-hidden flex items-center justify-center p-6">
+                                <h3 class="text-xl font-bold text-blue-800">${card.front}</h3>
+                            </div>
+                            <div class="absolute w-full h-full bg-blue-50 text-slate-800 rounded-xl backface-hidden rotate-y-180 flex items-center justify-center p-6 border border-blue-200">
+                                <p class="text-sm font-medium">${card.back}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // --- Render Quiz ---
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            let html = '';
+
+            quizData.forEach((q, qIndex) => {
+                // Shuffle options
+                const shuffledOptions = shuffle([...q.options]);
+
+                html += `
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6 quiz-question-block" id="qblock-${qIndex}">
+                        <h3 class="font-bold text-lg mb-2 text-slate-900"><span class="text-blue-600 mr-2">Q${qIndex + 1}.</span>${q.question}</h3>
+                        
+                        <details class="mb-4 text-sm text-slate-500 cursor-pointer group">
+                            <summary class="inline-block hover:text-blue-600 font-medium select-none">💡 Show Hint</summary>
+                            <p class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 cursor-text">${q.hint}</p>
+                        </details>
+
+                        <div class="space-y-3">
+                `;
+
+                shuffledOptions.forEach((opt, oIndex) => {
+                    const isCorrectAttr = opt.isCorrect ? 'data-correct="true"' : 'data-correct="false"';
+                    html += `
+                            <label class="flex items-start p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors option-label relative">
+                                <input type="radio" name="q${qIndex}" value="${oIndex}" ${isCorrectAttr} class="mt-1 h-4 w-4 text-blue-600 border-slate-300 focus:ring-blue-500">
+                                <div class="ml-3">
+                                    <span class="block text-slate-700 option-text">${opt.text}</span>
+                                    <div class="rationale-text hidden mt-2 text-sm p-3 rounded-md">
+                                        <strong>Rationale:</strong> ${opt.rationale}
+                                    </div>
+                                </div>
+                            </label>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // --- Quiz Logic ---
+        function checkQuiz() {
+            const blocks = document.querySelectorAll('.quiz-question-block');
+            
+            blocks.forEach((block, index) => {
+                const selectedOption = block.querySelector(`input[name="q${index}"]:checked`);
+                const allLabels = block.querySelectorAll('.option-label');
+
+                allLabels.forEach(label => {
+                    const input = label.querySelector('input');
+                    const rationale = label.querySelector('.rationale-text');
+                    const isCorrect = input.getAttribute('data-correct') === 'true';
+
+                    // Reset styling
+                    label.classList.remove('border-red-500', 'bg-red-50', 'border-green-500', 'bg-green-50', 'border-slate-200', 'hover:bg-slate-50');
+                    rationale.classList.add('hidden');
+                    input.disabled = true; // Lock answers
+
+                    if (isCorrect) {
+                        // Highlight correct answer green
+                        label.classList.add('border-green-500', 'bg-green-50');
+                        rationale.classList.add('bg-green-100', 'text-green-800');
+                        rationale.classList.remove('hidden');
+                    } else if (input === selectedOption) {
+                        // Highlight selected wrong answer red
+                        label.classList.add('border-red-500', 'bg-red-50');
+                        rationale.classList.add('bg-red-100', 'text-red-800');
+                        rationale.classList.remove('hidden');
+                    } else {
+                        // Standardize other unselected wrong answers
+                        label.classList.add('border-slate-200', 'opacity-50');
+                    }
+                });
+            });
+
+            document.getElementById('btn-reset-quiz').classList.remove('hidden');
+        }
+
+        function resetQuiz() {
+            renderQuiz();
+            document.getElementById('btn-reset-quiz').classList.add('hidden');
+            window.scrollTo(0, document.getElementById('tab-quiz').offsetTop - 50);
+        }
+
+        // Initialize
+        renderFlashcards();
+        renderQuiz();
+    </script>
+</body>
+</html>
+
+

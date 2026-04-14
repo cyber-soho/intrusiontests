@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perimeter Hacking - Cyber.SoHo Educational Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        .nav-active {
+            border-bottom: 2px solid #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+        .section-hidden {
+            display: none;
+        }
+        .tab-active {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            border-left: 4px solid #2563eb;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- Chosen Palette: Warm Neutrals & Cyber Blue (Background: Slate-50, Text: Slate-900, Accents: Blue-600/Blue-50) -->
+<!-- Application Structure Plan: The application uses a "Learning Dashboard" architecture. Given the source material is a course module (Days 26 & 27), a top-level tabbed navigation allows users to explore each lesson non-linearly while maintaining the chronological context in the 'Overview' tab. This chunking prevents cognitive overload and presents the slides as interactive web modules. -->
+<!-- Visualization & Content Choices: 
+1. Roadmap -> Visual HTML Table -> Shows course progression. 
+2. Evasion Techniques -> Vertical Interactive Tabs -> Condenses dense text into explorable chunks. 
+3. DoS Amplification -> Logarithmic Bar Chart (Chart.js) -> Drastic numerical differences (70x vs 51,000x) require logarithmic visualization to be readable and impactful. 
+4. Triage Process -> Interactive Stepper (HTML/CSS/JS) -> Visualizes flow logically without Mermaid. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex-shrink-0 flex items-center gap-2">
+                    <span class="text-2xl">🎓</span>
+                    <div>
+                        <h1 class="font-bold text-xl text-slate-800 leading-tight">Cyber.SoHo Hub</h1>
+                        <p class="text-xs text-slate-500 hidden sm:block">Intrusion Testing: Days 26 & 27</p>
+                    </div>
+                </div>
+                <nav class="hidden md:flex space-x-8 h-full" id="desktop-nav">
+                    <a href="#" data-target="overview" class="nav-link nav-active inline-flex items-center px-1 pt-1 text-sm font-medium text-slate-500 hover:text-slate-700 h-full">Overview</a>
+                    <a href="#" data-target="lesson1" class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-slate-500 hover:text-slate-700 h-full">L1: Evasion</a>
+                    <a href="#" data-target="lesson2" class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-slate-500 hover:text-slate-700 h-full">L2: Misdirection</a>
+                    <a href="#" data-target="lesson3" class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-slate-500 hover:text-slate-700 h-full">L3: DoS</a>
+                    <a href="#" data-target="lesson4" class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-slate-500 hover:text-slate-700 h-full">L4: Triage</a>
+                </nav>
+                <div class="md:hidden flex items-center">
+                    <select id="mobile-nav" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                        <option value="overview">Overview</option>
+                        <option value="lesson1">L1: Evasion</option>
+                        <option value="lesson2">L2: Misdirection</option>
+                        <option value="lesson3">L3: DoS</option>
+                        <option value="lesson4">L4: Triage</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        
+        <section id="overview" class="content-section block">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 mb-8">
+                <div class="text-center max-w-3xl mx-auto mb-8">
+                    <span class="inline-block py-1 px-3 rounded-full bg-blue-50 text-blue-700 text-sm font-semibold mb-4">CEH Aligned | PTES Methodology</span>
+                    <h2 class="text-4xl font-extrabold text-slate-900 mb-4">Perimeter Hacking</h2>
+                    <p class="text-lg text-slate-600">Welcome to Days 26 & 27 of the Intrusion Testing module. Here, we transition from internal network exploitation to attacking and defending the very edges of the network.</p>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="text-lg font-bold mb-2">About This Section</h3>
+                    <p class="text-slate-600 mb-4">This overview provides the structural context for the current module within the broader Intrusion Testing course. It outlines the specific topics covered today so you can understand your learning trajectory before diving into the specific tactics of evasion, misdirection, and triage.</p>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="bg-slate-50 rounded-xl p-6 border border-slate-200">
+                        <h3 class="font-bold text-lg mb-4 flex items-center gap-2">🗺️ Course Roadmap</h3>
+                        <ul class="space-y-3 text-sm">
+                            <li class="flex justify-between text-slate-500"><span>Days 1-5</span> <span>Foundations & Recon</span></li>
+                            <li class="flex justify-between text-slate-500"><span>Days 6-10</span> <span>Scanning & Enumeration</span></li>
+                            <li class="flex justify-between text-slate-500"><span>Days 11-15</span> <span>Active Recon & Wi-Fi</span></li>
+                            <li class="flex justify-between text-slate-500"><span>Days 16-20</span> <span>System Hacking</span></li>
+                            <li class="flex justify-between text-slate-500"><span>Days 21-25</span> <span>Web Apps & AD</span></li>
+                            <li class="flex justify-between font-bold text-blue-700 bg-blue-50 p-2 rounded"><span>Days 26-27</span> <span>Perimeter Hacking (Today)</span></li>
+                            <li class="flex justify-between text-slate-500"><span>Days 28-30</span> <span>Reporting & Wrap-Up</span></li>
+                        </ul>
+                    </div>
+                    <div class="bg-slate-50 rounded-xl p-6 border border-slate-200">
+                        <h3 class="font-bold text-lg mb-4 flex items-center gap-2">⏱️ Today's Agenda</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-3 bg-white rounded shadow-sm">
+                                <div class="font-medium text-slate-800">1. IDS/Firewall Evasion</div>
+                                <div class="text-sm text-slate-500">35 min</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-white rounded shadow-sm">
+                                <div class="font-medium text-slate-800">2. Service Misdirection</div>
+                                <div class="text-sm text-slate-500">25 min</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-white rounded shadow-sm">
+                                <div class="font-medium text-slate-800">3. DoS Concepts</div>
+                                <div class="text-sm text-slate-500">30 min</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-white rounded shadow-sm">
+                                <div class="font-medium text-slate-800">4. Log / Alert Triage</div>
+                                <div class="text-sm text-slate-500">30 min</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="lesson1" class="content-section section-hidden">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Lesson 1: IDS/Firewall Evasion & Tunneling</h2>
+                <p class="text-xl text-slate-600">Getting past the gatekeepers</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 mb-6">
+                <h3 class="text-lg font-bold mb-2">About This Section</h3>
+                <p class="text-slate-600">This module explores how attackers bypass network security perimeters. You will interact with different evasion techniques to understand how the discrepancy between an Intrusion Detection System (IDS) and a target host can be exploited. This section aims to demonstrate that perimeters are not infallible.</p>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <div class="text-4xl mb-4">🧱</div>
+                    <h3 class="font-bold text-lg mb-2">The Firewall "Bouncer"</h3>
+                    <p class="text-sm text-slate-600 mb-4">Monitors incoming/outgoing traffic and decides to ALLOW or BLOCK based on predefined rules.</p>
+                    <ul class="text-sm space-y-2">
+                        <li><span class="font-semibold">Packet-Filtering:</span> Headers only</li>
+                        <li><span class="font-semibold">Stateful:</span> Tracks connections</li>
+                        <li><span class="font-semibold">NGFW:</span> Deep packet inspection</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <div class="text-4xl mb-4">👁️</div>
+                    <h3 class="font-bold text-lg mb-2">IDS Deployment</h3>
+                    <p class="text-sm text-slate-600 mb-4">Monitors for suspicious activity without actively blocking it (unlike IPS).</p>
+                    <ul class="text-sm space-y-2">
+                        <li><span class="font-semibold">NIDS:</span> Monitors entire subnet (Snort, Suricata)</li>
+                        <li><span class="font-semibold">HIDS:</span> Monitors single host (OSSEC)</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-800 text-white p-6 rounded-xl shadow-sm border border-slate-700">
+                    <h3 class="font-bold text-lg mb-2 text-blue-300">💡 The Key Insight</h3>
+                    <p class="text-sm text-slate-300">The IDS and the target host process packets differently. Attackers exploit that operational gap.</p>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-bold mb-4">Interactive Evasion Techniques</h3>
+            <div class="flex flex-col md:flex-row gap-6 mb-8">
+                <div class="md:w-1/3 flex flex-col space-y-2" id="evasion-tabs">
+                    <!-- JS populated -->
+                </div>
+                <div class="md:w-2/3 bg-white p-8 rounded-xl shadow-sm border border-slate-200 min-h-[250px]" id="evasion-content">
+                    <!-- JS populated -->
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-bold mb-4">Tunneling: Hiding in Plain Sight</h3>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tunnel Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Protocol/Port</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Why It Works</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Key Tools</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-200">
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-medium">SSH</td>
+                            <td class="px-6 py-4 whitespace-nowrap">TCP/22</td>
+                            <td class="px-6 py-4 text-sm text-slate-600">Encrypted channel carries any protocol</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">Built-in SSH</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-medium">HTTP</td>
+                            <td class="px-6 py-4 whitespace-nowrap">TCP/80, 443</td>
+                            <td class="px-6 py-4 text-sm text-slate-600">Web ports almost never blocked</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 font-mono">Chisel</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-medium">DNS</td>
+                            <td class="px-6 py-4 whitespace-nowrap">UDP/53</td>
+                            <td class="px-6 py-4 text-sm text-slate-600">DNS essential → rarely filtered</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 font-mono">Iodine, dnscat2</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-medium">ICMP</td>
+                            <td class="px-6 py-4 whitespace-nowrap">ICMP Echo</td>
+                            <td class="px-6 py-4 text-sm text-slate-600">Ping traffic rarely blocked</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 font-mono">ptunnel</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="lesson2" class="content-section section-hidden">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Lesson 2: Service Misdirection</h2>
+                <p class="text-xl text-slate-600">Making services appear to be something they are not</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 mb-6">
+                <h3 class="text-lg font-bold mb-2">About This Section</h3>
+                <p class="text-slate-600">This section covers the concepts of manipulating service identities and routing. You will learn the difference between offensive banner grabbing and defensive banner spoofing, and explore how honeypots are used to study attackers. The goal is to emphasize that port numbers and service banners cannot always be trusted.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2">🔄 Port Redirection</h3>
+                    <p class="text-slate-600 mb-4">Forwards traffic from one port or machine to another. This is the cornerstone of <strong>pivoting</strong> through compromised hosts.</p>
+                    <div class="bg-slate-50 p-4 rounded border border-slate-200 text-sm">
+                        <p class="font-bold mb-2">Scenario:</p>
+                        <ol class="list-decimal pl-5 space-y-1 text-slate-700">
+                            <li>Compromise DMZ web server.</li>
+                            <li>Web server can reach internal DB (3306).</li>
+                            <li>Your machine cannot reach DB directly.</li>
+                            <li>Tunnel port 3306 through the compromised server.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-4">
+                    <div class="bg-red-50 p-6 rounded-xl shadow-sm border border-red-100">
+                        <h4 class="font-bold text-red-800 mb-2">⚔️ Banner Grabbing (Attacker)</h4>
+                        <p class="text-sm text-red-700">Identifying software versions from connection strings to search for vulnerabilities.<br><span class="font-mono bg-red-100 px-1 mt-2 inline-block">Ex: SSH-2.0-OpenSSH_8.9</span></p>
+                    </div>
+                    <div class="bg-green-50 p-6 rounded-xl shadow-sm border border-green-100">
+                        <h4 class="font-bold text-green-800 mb-2">🛡️ Banner Spoofing (Defender)</h4>
+                        <p class="text-sm text-green-700">Changing the banner to mislead attackers, forcing them to waste time on wrong exploits.<br><span class="font-mono bg-green-100 px-1 mt-2 inline-block">Ex: Apache appears as Nginx</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 text-white rounded-xl shadow-sm border border-slate-700 p-8">
+                <h3 class="text-2xl font-bold mb-6 text-blue-300">The Deception Strategy: Honeypots</h3>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="bg-slate-700 p-5 rounded-lg">
+                        <div class="text-2xl mb-2">🍯</div>
+                        <h4 class="font-bold mb-1">Honeypot</h4>
+                        <p class="text-sm text-slate-300">Decoy system to attract attackers. Captures intel. 100% of traffic is suspicious.<br><span class="text-xs text-blue-200 mt-2 block">Tools: Cowrie, Artillery</span></p>
+                    </div>
+                    <div class="bg-slate-700 p-5 rounded-lg">
+                        <div class="text-2xl mb-2">🕸️</div>
+                        <h4 class="font-bold mb-1">Honeynet</h4>
+                        <p class="text-sm text-slate-300">Entire network of interconnected honeypots. Allows for longer attacker engagement and better intelligence.</p>
+                    </div>
+                    <div class="bg-slate-700 p-5 rounded-lg">
+                        <div class="text-2xl mb-2">🐌</div>
+                        <h4 class="font-bold mb-1">Tarpit</h4>
+                        <p class="text-sm text-slate-300">Accepts connections but responds extremely slowly. Traps and breaks automated scanning tools.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="lesson3" class="content-section section-hidden">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Lesson 3: DoS Concepts & Ethics</h2>
+                <p class="text-xl text-slate-600">The attack that does not steal — it destroys availability</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 mb-6">
+                <h3 class="text-lg font-bold mb-2">About This Section</h3>
+                <p class="text-slate-600">This module breaks down the mechanics of Denial of Service (DoS) attacks, contrasting simple volumetric attacks with massive amplification techniques. Because DoS inherently threatens availability, this section strongly emphasizes the legal and ethical boundaries that must be maintained during penetration testing.</p>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-xl mb-4">Attack Categories</h3>
+                    <div class="space-y-4">
+                        <div class="border-l-4 border-blue-500 pl-4">
+                            <h4 class="font-bold text-slate-800">1. Volumetric Attacks</h4>
+                            <p class="text-sm text-slate-600">Floods network bandwidth (e.g., UDP/ICMP floods). Like pouring water until the hose bursts.</p>
+                        </div>
+                        <div class="border-l-4 border-purple-500 pl-4">
+                            <h4 class="font-bold text-slate-800">2. Protocol Attacks</h4>
+                            <p class="text-sm text-slate-600">Exploits protocol weaknesses (e.g., SYN Flood). Like starting phone calls but never answering.</p>
+                        </div>
+                        <div class="border-l-4 border-red-500 pl-4">
+                            <h4 class="font-bold text-slate-800">3. Application-Layer Attacks</h4>
+                            <p class="text-sm text-slate-600">Targets specific apps (Layer 7 HTTP floods). Like 1000 customers ordering the most complex dish at once.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-xl mb-4 text-center">Amplification Factors (Log Scale)</h3>
+                    <p class="text-xs text-slate-500 text-center mb-4">By spoofing the victim's IP, attackers use external servers to multiply their traffic.</p>
+                    <div class="chart-container">
+                        <canvas id="amplificationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-red-50 border-l-4 border-red-600 p-6 rounded-r-xl shadow-sm">
+                <h3 class="text-xl font-bold text-red-900 mb-4 flex items-center gap-2">⚖️ Penetration Testing Ethics</h3>
+                <p class="text-red-800 mb-4">Never perform DoS testing without explicit, written, scoped authorization. Unauthorized DoS is criminal everywhere (e.g., US CFAA, UK Computer Misuse Act).</p>
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="bg-white p-3 rounded shadow-sm text-sm border border-red-100"><strong>1. Explicit Auth:</strong> Must be in Rules of Engagement.</div>
+                    <div class="bg-white p-3 rounded shadow-sm text-sm border border-red-100"><strong>2. Scoped:</strong> Strict bandwidth limits & time windows.</div>
+                    <div class="bg-white p-3 rounded shadow-sm text-sm border border-red-100"><strong>3. Notification:</strong> ISP & internal IT informed.</div>
+                    <div class="bg-white p-3 rounded shadow-sm text-sm border border-red-100"><strong>4. Non-Production:</strong> Use staging environments.</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="lesson4" class="content-section section-hidden">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Lesson 4: Log / Alert Triage</h2>
+                <p class="text-xl text-slate-600">Sorting the real threats from the noise</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 mb-6">
+                <h3 class="text-lg font-bold mb-2">About This Section</h3>
+                <p class="text-slate-600">This final section shifts focus to the defender's perspective inside a Security Operations Center (SOC). It illustrates how raw logs are transformed into actionable alerts via a SIEM, and walks you through the critical triage process required to combat alert fatigue and identify real breaches.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-xl mb-4">The SIEM Funnel</h3>
+                    <p class="text-sm text-slate-600 mb-6">Millions of raw log lines go in → a prioritized list of potential incidents comes out.</p>
+                    <div class="flex flex-col items-center gap-2">
+                        <div class="w-full bg-slate-100 p-3 text-center rounded border border-slate-200 font-mono text-xs">Firewall | IDS | OS | Web (Syslog, WEL, CEF)</div>
+                        <div class="text-xl">⬇️</div>
+                        <div class="w-4/5 bg-blue-100 p-3 text-center rounded border border-blue-200 text-blue-800 font-bold">SIEM (Splunk, QRadar, Sentinel)</div>
+                        <div class="w-4/5 text-xs text-center text-slate-500">Collects → Normalizes → Correlates → Applies Rules</div>
+                        <div class="text-xl">⬇️</div>
+                        <div class="w-2/5 bg-red-100 p-3 text-center rounded border border-red-200 text-red-800 font-bold">Prioritized Alerts</div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-xl mb-4">Verdict Matrix</h3>
+                    <p class="text-sm text-slate-600 mb-4">The goal of triage is accurately categorizing the alert.</p>
+                    <div class="grid grid-cols-2 grid-rows-2 gap-2 h-48">
+                        <div class="bg-red-50 border border-red-200 rounded flex flex-col justify-center items-center p-2 text-center group hover:bg-red-100 transition-colors">
+                            <span class="font-bold text-red-800">True Positive</span>
+                            <span class="text-xs text-slate-600 hidden group-hover:block mt-1">Real attack correctly flagged</span>
+                        </div>
+                        <div class="bg-orange-50 border border-orange-200 rounded flex flex-col justify-center items-center p-2 text-center group hover:bg-orange-100 transition-colors">
+                            <span class="font-bold text-orange-800">False Positive</span>
+                            <span class="text-xs text-slate-600 hidden group-hover:block mt-1">Benign event matched rule. Needs tuning.</span>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded flex flex-col justify-center items-center p-2 text-center group hover:bg-slate-100 transition-colors">
+                            <span class="font-bold text-slate-800">False Negative</span>
+                            <span class="text-xs text-slate-600 hidden group-hover:block mt-1">Real attack missed. Highly dangerous.</span>
+                        </div>
+                        <div class="bg-green-50 border border-green-200 rounded flex flex-col justify-center items-center p-2 text-center group hover:bg-green-100 transition-colors">
+                            <span class="font-bold text-green-800">True Negative</span>
+                            <span class="text-xs text-slate-600 hidden group-hover:block mt-1">Correctly ignored normal traffic</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 text-white p-8 rounded-xl shadow-sm">
+                <h3 class="text-2xl font-bold mb-6 text-center text-blue-300">The Triage Process Explorer</h3>
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4 relative">
+                    <div class="absolute hidden md:block w-full h-1 bg-slate-600 top-1/2 -z-10"></div>
+                    
+                    <button class="triage-step w-full md:w-1/4 bg-blue-600 hover:bg-blue-500 p-4 rounded-lg text-center cursor-pointer transition-colors shadow-lg z-10" data-step="1">
+                        <div class="font-bold text-lg mb-1">Step 1</div>
+                        <div class="text-sm">Assessment</div>
+                    </button>
+                    <button class="triage-step w-full md:w-1/4 bg-slate-700 hover:bg-slate-600 p-4 rounded-lg text-center cursor-pointer transition-colors shadow-lg z-10" data-step="2">
+                        <div class="font-bold text-lg mb-1">Step 2</div>
+                        <div class="text-sm">Enrichment</div>
+                    </button>
+                    <button class="triage-step w-full md:w-1/4 bg-slate-700 hover:bg-slate-600 p-4 rounded-lg text-center cursor-pointer transition-colors shadow-lg z-10" data-step="3">
+                        <div class="font-bold text-lg mb-1">Step 3</div>
+                        <div class="text-sm">Verdict</div>
+                    </button>
+                    <button class="triage-step w-full md:w-1/4 bg-slate-700 hover:bg-slate-600 p-4 rounded-lg text-center cursor-pointer transition-colors shadow-lg z-10" data-step="4">
+                        <div class="font-bold text-lg mb-1">Step 4</div>
+                        <div class="text-sm">Resolution</div>
+                    </button>
+                </div>
+                
+                <div class="mt-8 bg-slate-900 p-6 rounded-lg border border-slate-700 min-h-[120px]" id="triage-detail">
+                    <h4 class="text-xl font-bold text-blue-400 mb-2">Step 1 — Initial Assessment</h4>
+                    <p class="text-slate-300">Review alert source, severity, and detection logic. Calibrate signal quality before deep investigation to save time on known noisy rules.</p>
+                </div>
+            </div>
+            
+            <div class="mt-8 bg-yellow-50 p-6 rounded-xl border border-yellow-200">
+                <h4 class="font-bold text-yellow-800 mb-2">⚠️ The Threat: Alert Fatigue</h4>
+                <p class="text-sm text-yellow-900">Thousands of alerts per day, mostly false positives, cause analysts to dismiss alerts without proper investigation. Solutions include: Continuous rule tuning, SOAR (Automation), and UEBA (Behaviour Analytics).</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-8 text-center mt-auto">
+        <div class="max-w-7xl mx-auto px-4">
+            <p class="font-bold text-white mb-2">Cyber.SoHo Educational Hub</p>
+            <p class="text-sm mb-4">"From the Industry to the Classroom — Building the IT's Future, Today and Together!"</p>
+            <p class="text-xs">&copy; 2026 Cyber.SoHo Educational Hub. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- Navigation Logic ---
+        const navLinks = document.querySelectorAll('.nav-link');
+        const mobileNav = document.getElementById('mobile-nav');
+        const sections = document.querySelectorAll('.content-section');
+
+        function switchSection(targetId) {
+            // Update desktop nav
+            navLinks.forEach(link => {
+                if(link.dataset.target === targetId) {
+                    link.classList.add('nav-active');
+                    link.classList.remove('text-slate-500');
+                } else {
+                    link.classList.remove('nav-active');
+                    link.classList.add('text-slate-500');
+                }
+            });
+
+            // Update mobile nav
+            mobileNav.value = targetId;
+
+            // Show/Hide sections
+            sections.forEach(sec => {
+                if(sec.id === targetId) {
+                    sec.classList.remove('section-hidden');
+                    // Render chart if DoS section
+                    if(targetId === 'lesson3') renderAmplificationChart();
+                } else {
+                    sec.classList.add('section-hidden');
+                }
+            });
+            window.scrollTo(0,0);
+        }
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchSection(e.target.dataset.target);
+            });
+        });
+
+        mobileNav.addEventListener('change', (e) => {
+            switchSection(e.target.value);
+        });
+
+
+        // --- Lesson 1: Evasion Tabs Logic ---
+        const evasionData = [
+            { id: 'frag', title: 'Packet Fragmentation', icon: '🧩', content: 'Splits packets into tiny fragments (e.g., 8 bytes). The IDS skips reassembly, so signatures never match the fragmented payload. <br><br><strong>Nmap flag:</strong> <code>-f</code>' },
+            { id: 'splice', title: 'Session Splicing', icon: '🧵', content: 'Sends a continuous stream of micro-packets. Because they are too small, they fail to trigger pattern matching within the IDS engine.' },
+            { id: 'ttl', title: 'TTL Manipulation', icon: '⏳', content: 'Crafted Time To Live (TTL) values ensure a benign packet reaches the IDS but expires before the target. A second malicious packet then reaches the target unseen.' },
+            { id: 'obfuscate', title: 'Obfuscation & Encoding', icon: '🔣', content: 'Using Unicode, Base64, or polymorphic shellcode. The target host decodes the payload, but the IDS cannot match the obfuscated text against known signatures.' },
+            { id: 'decoy', title: 'Decoy Scanning', icon: '👥', content: 'Creates multiple fake source IPs so the defender cannot identify the real scanner among the noise.<br><br><strong>Nmap flag:</strong> <code>-D RND:10</code> (10 fake IPs)' },
+            { id: 'port', title: 'Source Port Manipulation', icon: '🚪', content: 'Sets the source port to a trusted service (like port 53 for DNS) to exploit poorly configured firewall trust rules.<br><br><strong>Nmap flag:</strong> <code>--source-port 53</code>' }
+        ];
+
+        const tabsContainer = document.getElementById('evasion-tabs');
+        const contentContainer = document.getElementById('evasion-content');
+
+        function renderEvasionTabs() {
+            evasionData.forEach((item, index) => {
+                const btn = document.createElement('button');
+                btn.className = `text-left px-4 py-3 rounded-r-lg transition-colors border-l-4 border-transparent hover:bg-slate-100 ${index === 0 ? 'tab-active' : ''}`;
+                btn.innerHTML = `<span class="mr-2">${item.icon}</span> ${item.title}`;
+                btn.onclick = () => {
+                    // Update active state
+                    Array.from(tabsContainer.children).forEach(c => c.classList.remove('tab-active'));
+                    btn.classList.add('tab-active');
+                    // Update content
+                    contentContainer.innerHTML = `
+                        <div class="text-4xl mb-4">${item.icon}</div>
+                        <h4 class="text-xl font-bold mb-4">${item.title}</h4>
+                        <p class="text-slate-600 leading-relaxed">${item.content}</p>
+                    `;
+                };
+                tabsContainer.appendChild(btn);
+            });
+            // Initial content
+            contentContainer.innerHTML = `
+                <div class="text-4xl mb-4">${evasionData[0].icon}</div>
+                <h4 class="text-xl font-bold mb-4">${evasionData[0].title}</h4>
+                <p class="text-slate-600 leading-relaxed">${evasionData[0].content}</p>
+            `;
+        }
+        renderEvasionTabs();
+
+
+        // --- Lesson 3: Chart.js Logic ---
+        let ampChartInstance = null;
+        function renderAmplificationChart() {
+            if(ampChartInstance) return; // Already rendered
+            
+            const ctx = document.getElementById('amplificationChart').getContext('2d');
+            ampChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['DNS', 'NTP', 'Memcached'],
+                    datasets: [{
+                        label: 'Amplification Factor (Multiplier)',
+                        data: [70, 556, 51000],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)', // Blue
+                            'rgba(139, 92, 246, 0.7)', // Purple
+                            'rgba(239, 68, 68, 0.7)'   // Red
+                        ],
+                        borderColor: [
+                            'rgb(37, 99, 235)',
+                            'rgb(124, 58, 237)',
+                            'rgb(220, 38, 38)'
+                        ],
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Factor: ~${context.raw.toLocaleString()}x`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'logarithmic',
+                            title: {
+                                display: true,
+                                text: 'Multiplier (Logarithmic Scale)'
+                            },
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    if (value === 10 || value === 100 || value === 1000 || value === 10000 || value === 100000) {
+                                        return value.toLocaleString() + 'x';
+                                    }
+                                    return '';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
+        // --- Lesson 4: Triage Stepper Logic ---
+        const triageSteps = [
+            { title: "Step 1 — Initial Assessment", text: "Review alert source, severity, and detection logic. Calibrate signal quality before deep investigation to save time on known noisy rules." },
+            { title: "Step 2 — Entity Enrichment", text: "Who is affected? Is this normal behaviour? Check asset criticality. Cross-reference with Threat Intel sources like MITRE ATT&CK, AlienVault OTX, or VirusTotal." },
+            { title: "Step 3 — Verdict", text: "Categorize the alert strictly into: True Positive (real attack), False Positive (benign rule match), True Negative (correctly ignored), or False Negative (missed attack)." },
+            { title: "Step 4 — Escalation or Closure", text: "True positives require immediate incident response and escalation. False positives must be documented and the rule tuned to prevent alert fatigue." }
+        ];
+
+        const stepBtns = document.querySelectorAll('.triage-step');
+        const triageDetail = document.getElementById('triage-detail');
+
+        stepBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Reset all
+                stepBtns.forEach(b => {
+                    b.classList.remove('bg-blue-600');
+                    b.classList.add('bg-slate-700');
+                });
+                // Activate clicked
+                btn.classList.remove('bg-slate-700');
+                btn.classList.add('bg-blue-600');
+                
+                // Update text
+                const stepIndex = parseInt(btn.dataset.step) - 1;
+                const data = triageSteps[stepIndex];
+                
+                triageDetail.innerHTML = `
+                    <h4 class="text-xl font-bold text-blue-400 mb-2">${data.title}</h4>
+                    <p class="text-slate-300">${data.text}</p>
+                `;
+            });
+        });
+
+    </script>
+</body>
+</html>
+
+
+
+
